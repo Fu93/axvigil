@@ -1,0 +1,45 @@
+name: Contracts
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'contracts/**'
+      - '.github/workflows/contracts.yml'
+      - 'SPEC.md'
+  pull_request:
+    paths:
+      - 'contracts/**'
+      - '.github/workflows/contracts.yml'
+      - 'SPEC.md'
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    name: Foundry build and tests
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: contracts
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Install Foundry
+        uses: foundry-rs/foundry-toolchain@v1
+
+      - name: Build
+        run: forge build
+
+      - name: Run fast test suite
+        run: forge test --no-match-test test_productionFullSupply
+
+      # Keep the full 7,777-token distribution test explicit and separate from
+      # the normal PR suite because it is intentionally resource-intensive.
+      - name: Run production distribution test
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        run: forge test --match-test test_productionFullSupply
