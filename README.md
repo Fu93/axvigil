@@ -26,6 +26,7 @@ The current public prototype implements the smart-contract credential layer:
 - `contracts/test`: unit, fuzz, rarity-distribution and invariant tests.
 - `challenges/reentrancy-001`: a deliberately vulnerable training fixture with a sample exploit PoC, sample patch and hidden behavior tests.
 - `verifier`: deterministic CLI that checks the PoC before and after the patch, runs hidden tests and emits the AxVigil result JSON.
+- `backend`: EIP-712 bridge that signs `MintAuth` only for a passed verifier result; it does not submit transactions.
 
 The agent, backend and web layers are described in [`SPEC.md`](SPEC.md) and are being built as separate demo components.
 
@@ -73,6 +74,17 @@ python -m verifier.verifier \
 ```
 
 The verifier requires the PoC to pass against the vulnerable baseline, fail after the patch, and leave the hidden tests passing.
+
+Once a result has `passed: true`, the backend bridge binds its `submissionHash` into the contract's EIP-712 authorization:
+
+```bash
+pip install -r backend/requirements.txt
+export AXVIGIL_SIGNER_PRIVATE_KEY=0x...
+python -m backend.mint_auth --result verifier-result.json \
+  --agent-id 1 --to 0xYourAgentOwner --chain-id 97 \
+  --verifying-contract 0xYourAxVigilCollectible \
+  --nonce 1 --deadline 1790000000
+```
 
 ## Security and demo scope
 
