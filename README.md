@@ -86,6 +86,16 @@ For a one-command local demonstration of all three layers, run:
 
 The script uses a deterministic demo-only signer key, never submits a transaction, and runs the verifier, EIP-712 signer and Foundry integration test in sequence.
 
+## Run the local-chain demo
+
+To deploy the contracts and send a real mint transaction on a temporary Anvil chain:
+
+```bash
+./scripts/local_anvil_demo.sh
+```
+
+This flow starts chain ID `31337`, runs the verifier, passes its `submissionHash` into a Foundry deployment script, deploys `MockAgentID`, `AxVigilSkill` and `AxVigilCollectible`, creates Agent ID `1`, signs `MintAuth`, and broadcasts `mint()`. The script prints the contract addresses, token ID and skill solve count. The private key is Anvil's first deterministic local-only account and must never be used on a public network.
+
 Once a result has `passed: true`, the backend bridge binds its `submissionHash` into the contract's EIP-712 authorization:
 
 ```bash

@@ -72,4 +72,21 @@ contract VerifierMintIntegrationTest is AxVigilBase {
         vm.expectRevert(AxVigilCollectible.InvalidSignature.selector);
         nft.mint(auth, signature);
     }
+
+    function testMintAtGenesisBlockDoesNotUnderflow() public {
+        AxVigilCollectible.MintAuth memory auth = AxVigilCollectible.MintAuth({
+            agentId: agentA,
+            to: alice,
+            vulnClass: 0,
+            difficulty: 0,
+            pool: 0,
+            submissionHash: VERIFIED_REENTRANCY_SUBMISSION,
+            nonce: 9003,
+            deadline: block.timestamp + 1 hours
+        });
+        bytes memory signature = _sign(auth, signerPk);
+        vm.roll(0);
+        vm.prank(alice);
+        assertEq(nft.mint(auth, signature), 1);
+    }
 }
