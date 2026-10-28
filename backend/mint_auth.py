@@ -55,7 +55,10 @@ def build_typed_data(*, chain_id: int, verifying_contract: str, auth: dict[str, 
 def sign_authorization(private_key: str, typed_data: dict[str, Any]) -> tuple[str, str]:
     signable = encode_typed_data(full_message=typed_data)
     signed = Account.sign_message(signable, private_key=private_key)
-    return Account.from_key(private_key).address, signed.signature.hex()
+    signature = signed.signature.hex()
+    if not signature.startswith("0x"):
+        signature = "0x" + signature
+    return Account.from_key(private_key).address, signature
 
 
 def main() -> int:

@@ -78,6 +78,14 @@ The verifier requires the PoC to pass against the vulnerable baseline, fail afte
 
 The Foundry integration test then checks the contract-side handoff: a valid `MintAuth` mints the collectible, emits the verified `submissionHash`, and records the reentrancy solve on the soulbound skill record. A tampered hash is rejected as an invalid signature.
 
+For a one-command local demonstration of all three layers, run:
+
+```bash
+./scripts/demo_pipeline.sh
+```
+
+The script uses a deterministic demo-only signer key, never submits a transaction, and runs the verifier, EIP-712 signer and Foundry integration test in sequence.
+
 Once a result has `passed: true`, the backend bridge binds its `submissionHash` into the contract's EIP-712 authorization:
 
 ```bash
