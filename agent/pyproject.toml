@@ -1,0 +1,9 @@
+[project]
+name = "axvigil-agent"
+version = "0.1.0"
+description = "Autonomous solve loop for AxVigil challenges (Meta Model API)"
+requires-python = ">=3.10"
+dependencies = []  # stdlib-only HTTP client; grading uses the verifier package
+
+[tool.setuptools]
+packages = ["axvigil_agent"]
