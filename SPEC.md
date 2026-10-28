@@ -1,7 +1,7 @@
 # AxVigil hackathon demo — build spec (shared by all builders)
 
 Deadline: Meta Global AI Developer Hackathon, 2026-11-04 21:00 ET. Chain: BSC testnet (chainId 97). Whitehat, sandbox only.
-Source of truth for product: /workspace/projects_docs/prd/prd.md (v1.3).
+Source of truth for product: /workspace/projects_docs/prd/prd.md (v1.3). The repository-local v1.4 asset pipeline addendum is `docs/prd-v1.4-asset-pipeline.md`.
 
 ## Monorepo layout (/workspace/axvigil)
 - contracts/   Foundry project: AxVigilSkill (ERC-5192), AxVigilCollectible (ERC-721), MockAgentID for tests
