@@ -98,6 +98,18 @@ This flow starts chain ID `31337`, runs the verifier, passes its `submissionHash
 
 For BSC testnet deployment, first run [`scripts/bsc_preflight.sh`](scripts/bsc_preflight.sh) with a dedicated testnet wallet. The full wallet, faucet, deployment and post-deployment checklist is in [`docs/bsc-testnet-deployment.md`](docs/bsc-testnet-deployment.md).
 
+## BSC testnet deployment (chain 97)
+
+The first public testnet deployment is live. The deployment uses the demo-only `MockAgentID` registry and a 50 mint-per-hour cap. No seed batch was committed yet, so the owner must commit a seed before a mint can be demonstrated.
+
+| Contract | Address | Explorer |
+|---|---|---|
+| MockAgentID | `0x7Aa441477f0246353bdAe504cF0F9B3027D6d45e` | [view](https://testnet.bscscan.com/address/0x7Aa441477f0246353bdAe504cF0F9B3027D6d45e) |
+| AxVigilSkill | `0xaCd74265DcFc516bD81d9E7173a57ddEdBD3a593` | [view](https://testnet.bscscan.com/address/0xaCd74265DcFc516bD81d9E7173a57ddEdBD3a593) |
+| AxVigilCollectible | `0xFDc7744074d49e9049B82A7CCc76824f75f80437` | [view](https://testnet.bscscan.com/address/0xFDc7744074d49e9049B82A7CCc76824f75f80437) |
+
+The full public deployment record, including transaction hashes, is [`deployments/bsc-testnet-97.json`](deployments/bsc-testnet-97.json).
+
 Once a result has `passed: true`, the backend bridge binds its `submissionHash` into the contract's EIP-712 authorization:
 
 ```bash

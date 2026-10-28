@@ -1,0 +1,33 @@
+{
+  "network": "BSC Testnet",
+  "chainId": 97,
+  "rpcUrl": "https://data-seed-prebsc-1-s1.bnbchain.org:8545",
+  "explorer": "https://testnet.bscscan.com",
+  "deployer": "0x4E38ec3f38D5c947B60E7e1273890Eea51501Ef8",
+  "owner": "0x4E38ec3f38D5c947B60E7e1273890Eea51501Ef8",
+  "signer": "0x4E38ec3f38D5c947B60E7e1273890Eea51501Ef8",
+  "agentRegistry": {
+    "name": "MockAgentID",
+    "address": "0x7Aa441477f0246353bdAe504cF0F9B3027D6d45e",
+    "deployTx": "0x5d8f3daab4521eb24b6f61ce6665180c0c3cf1750520761ab148f326895f49a2"
+  },
+  "skill": {
+    "name": "AxVigilSkill",
+    "address": "0xaCd74265DcFc516bD81d9E7173a57ddEdBD3a593",
+    "deployTx": "0x0285addf1c48ecaf711890478d641c057f389a4a465852ff1abad32898374ecc"
+  },
+  "collectible": {
+    "name": "AxVigilCollectible",
+    "address": "0xFDc7744074d49e9049B82A7CCc76824f75f80437",
+    "deployTx": "0xa74f202a1426072cd61a122c82fa247680f6aa0cbd4a9a0896f1ae2b3bbbc96f2"
+  },
+  "postDeployTxs": [
+    "0xe9a6c6a8c5d1186add5760668b31f25210fc392270f7e015ebb00ead4d8f3bd2",
+    "0xc41ce01d88603f628911692581e46be04005dee1ea6577f4d078f669f8ef354a"
+  ],
+  "gasPriceWei": "100000000",
+  "notes": [
+    "MockAgentID is an open-mint testnet/demo registry, not a production registry.",
+    "No seed batch was committed during deployment; commit a seed before attempting mint()."
+  ]
+}
