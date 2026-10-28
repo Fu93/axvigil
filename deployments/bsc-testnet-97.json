@@ -39,7 +39,18 @@
       "0x493ac2cb71504cb643f95c8e1b3a2a7dd53cc33e95428d6cc8297138e100155b",
       "0xc125505638e6562e965977610cbad7a0cfc6f3579c38f3660c24a578a73f5ecd",
       "0xf78ae69add796a107302aaafc178c0b45c4c5936ebcb5ebe47c58f3836b14fce"
-    ]
+    ],
+    "reveal": {
+      "batchId": 1,
+      "vulnClass": 0,
+      "vulnClassName": "REENTRANCY",
+      "tier": 0,
+      "tierName": "COMMON",
+      "artId": 0,
+      "tokenURI": "0",
+      "seedRevealTx": "0x4a0cb0039cd88c8573cab7bd30a909c2d601036f2607b516dc62abe34f407733",
+      "tokenRevealTx": "0xe17d8f2ea32ee87698bc5367aca087ebb12a841083cd2416111aea525dba6401"
+    }
   },
   "gasPriceWei": "100000000",
   "notes": [
