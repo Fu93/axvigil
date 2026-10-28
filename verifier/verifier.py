@@ -99,7 +99,12 @@ def main() -> int:
         # forge-std is supplied by the repository's Foundry submodule.
         repo_lib = Path(__file__).resolve().parents[1] / "contracts/lib"
         if repo_lib.is_dir():
-            (work / "lib").symlink_to(repo_lib, target_is_directory=True)
+            try:
+                (work / "lib").symlink_to(repo_lib, target_is_directory=True)
+            except OSError:
+                # Windows may deny directory symlinks without Developer Mode or elevation.
+                # Copying the pinned submodules preserves deterministic grading semantics.
+                shutil.copytree(repo_lib, work / "lib")
         submitted_poc = work / "test/SubmittedPoC.t.sol"
         submitted_poc.write_bytes(poc_bytes)
 

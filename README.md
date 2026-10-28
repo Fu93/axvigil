@@ -110,6 +110,8 @@ The first public testnet deployment is live. The deployment uses the demo-only `
 
 The full public deployment record, including transaction hashes, is [`deployments/bsc-testnet-97.json`](deployments/bsc-testnet-97.json).
 
+The first live testnet demo has also completed successfully: verifier `reentrancy-001` passed, Agent ID `1` was created, and Collectible token `1` was minted to the deployer. `AxVigilSkill.totalSolves(1)` is `1` and `currentBatch` is `1`. The three live-demo transactions are [commit seed](https://testnet.bscscan.com/tx/0x493ac2cb71504cb643f95c8e1b3a2a7dd53cc33e95428d6cc8297138e100155b), [create Agent ID](https://testnet.bscscan.com/tx/0xc125505638e6562e965977610cbad7a0cfc6f3579c38f3660c24a578a73f5ecd), and [mint collectible](https://testnet.bscscan.com/tx/0xf78ae69add796a107302aaafc178c0b45c4c5936ebcb5ebe47c58f3836b14fce). The reusable script is [`contracts/script/BscLiveDemo.s.sol`](contracts/script/BscLiveDemo.s.sol); its seed is generated and retained locally, never committed.
+
 Once a result has `passed: true`, the backend bridge binds its `submissionHash` into the contract's EIP-712 authorization:
 
 ```bash

@@ -25,9 +25,25 @@
     "0xe9a6c6a8c5d1186add5760668b31f25210fc392270f7e015ebb00ead4d8f3bd2",
     "0xc41ce01d88603f628911692581e46be04005dee1ea6577f4d078f669f8ef354a"
   ],
+  "liveDemo": {
+    "challengeId": "reentrancy-001",
+    "passed": true,
+    "submissionHash": "0x3aeb184fb05db9cc7b890ad8e9f44e3f789d71730758cb76ad445182d46da514",
+    "agentId": 1,
+    "tokenId": 1,
+    "agentOwner": "0x4E38ec3f38D5c947B60E7e1273890Eea51501Ef8",
+    "nftOwner": "0x4E38ec3f38D5c947B60E7e1273890Eea51501Ef8",
+    "skillTotalSolves": 1,
+    "currentBatch": 1,
+    "transactions": [
+      "0x493ac2cb71504cb643f95c8e1b3a2a7dd53cc33e95428d6cc8297138e100155b",
+      "0xc125505638e6562e965977610cbad7a0cfc6f3579c38f3660c24a578a73f5ecd",
+      "0xf78ae69add796a107302aaafc178c0b45c4c5936ebcb5ebe47c58f3836b14fce"
+    ]
+  },
   "gasPriceWei": "100000000",
   "notes": [
     "MockAgentID is an open-mint testnet/demo registry, not a production registry.",
-    "No seed batch was committed during deployment; commit a seed before attempting mint()."
+    "The demo seed is intentionally kept local and is not stored in this manifest."
   ]
 }
