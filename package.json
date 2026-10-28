@@ -1,0 +1,11 @@
+{
+  "name": "axvigil-workbench",
+  "private": true,
+  "version": "0.1.0",
+  "scripts": {
+    "test:ui": "node scripts/ui_smoke.cjs"
+  },
+  "devDependencies": {
+    "playwright": "1.62.1"
+  }
+}

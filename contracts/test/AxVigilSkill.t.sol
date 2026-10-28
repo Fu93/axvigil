@@ -147,8 +147,9 @@ contract AxVigilSkillTest is AxVigilBase {
         _mint(alice, agentA, 1, 1, 0);
         assertEq(skill.ownerOf(agentA), alice);
 
-        // selling the collectible does not move the skill record
+        // Before sellout, the collectible cannot trade.
         vm.prank(alice);
+        vm.expectRevert(AxVigilCollectible.TradingNotOpen.selector);
         nft.transferFrom(alice, bob, 1);
         assertEq(skill.ownerOf(agentA), alice);
 
@@ -167,6 +168,21 @@ contract AxVigilSkillTest is AxVigilBase {
         nft.mint(a, sig);
         _mint(newWallet, agentA, 0, 0, 0);
         assertEq(skill.solvesOf(agentA, 0), 1);
+    }
+
+    function test_collectibleTradeAfterSelloutDoesNotMoveSkill() public {
+        _deploy([uint256(4), 0, 0, 0, 0], 100);
+        agentA = registry.mint(alice);
+        uint256 agentB = registry.mint(bob);
+        _mint(alice, agentA, 0, 0, 0);
+        _mint(alice, agentA, 1, 1, 0);
+        _mint(bob, agentB, 0, 0, 0);
+        _mint(bob, agentB, 2, 0, 0);
+        vm.prank(alice);
+        nft.transferFrom(alice, bob, 1);
+        assertEq(nft.ownerOf(1), bob);
+        assertEq(skill.ownerOf(agentA), alice);
+        assertEq(skill.totalSolves(agentA), 2);
     }
 
     function test_balanceOfUnsupported() public {

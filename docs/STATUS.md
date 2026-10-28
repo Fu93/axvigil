@@ -11,7 +11,7 @@ It is not a claim that every PRD P0 requirement is production-ready.
 | Isolation | Docker offline worker, non-root, read-only root, tmpfs, CPU/memory/pid/time limits, no signer key | Host-level deployment validation; microVMs before hostile public traffic |
 | Operations | One worker, backpressure, persistent request limits, >90% pass-rate breaker after 10 results/15 min | Class-specific adaptive thresholds, near-answer clustering, distributed queue and metrics |
 | Credentials | Separate signer process, short-lived auth, chain eligibility recheck | Stronger signer policy isolation and remote attestation of grader results |
-| Collection | Existing ERC-721 + locked skill record; signed dual outcome, fixed production tiers and limits | Contract audit, VRF, metadata freeze, record ERC-721 compatibility |
+| Collection | Existing ERC-721 + locked skill record; signed dual outcome, fixed production tiers/limits, transfer gate until sellout | Contract audit, VRF, metadata freeze, record ERC-721 compatibility |
 | Rarity | Existing operator commit-reveal, stage pools, draw without replacement | Owner withholding/bias protection, VRF v2.5 mainnet consumer |
 | NFT images | Existing skill SVG and collectible metadata URI hooks | Muse Image generation, content storage and submission-specific collectible metadata |
 | UI | Real wallet login, challenge, submit, verification, mint receipt, skill counts | Collection gallery, rarity reveal display, richer error recovery |
@@ -21,9 +21,6 @@ It is not a claim that every PRD P0 requirement is production-ready.
 
 ## Existing contract deviations to review before release
 
-- The collectible can currently transfer **before** sellout. PRD §5.9 proposes waiting until
-  all 7,777 have minted. This behavior was present before this implementation; it has not
-  silently been changed in an integration PR.
 - Rarity staging opens the first high-tier allocation at token #1, as documented by the
   existing contract, rather than waiting until 25%. Four releases at 25/50/75/100% would
   require a different final-draw interpretation. Confirm product semantics before mainnet.

@@ -22,3 +22,10 @@ jobs:
       - run: python -m scripts.calibrate --variants 20
       - run: docker build -f verifier/Dockerfile -t axvigil-grader:local .
       - run: python -m scripts.sandbox_smoke
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: npm
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium
+      - run: npm run test:ui

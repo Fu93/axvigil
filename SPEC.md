@@ -1,7 +1,7 @@
 # AxVigil hackathon demo — build spec (shared by all builders)
 
 Deadline: Meta Global AI Developer Hackathon, 2026-11-04 21:00 ET. Chain: BSC testnet (chainId 97). Whitehat, sandbox only.
-Source of truth for product: /workspace/projects_docs/prd/prd.md (v1.3).
+Product source: user-supplied AxVigil PRD v1.2 (2026-10-28); implementation status: docs/STATUS.md.
 
 ## Monorepo layout (/workspace/axvigil)
 - contracts/   Foundry project: AxVigilSkill (ERC-5192), AxVigilCollectible (ERC-721), MockAgentID for tests
@@ -30,6 +30,7 @@ Agent ID: SPACE ID .ai Agent ID registry on BSC mainnet 0x60B9262456dE011F7d15a5
 
 ## Fixed rules
 - Max 2 collectibles per Agent ID tokenId, lifetime. Quota bound to tokenId, not wallet.
+- Collectible secondary transfers open only after sellout; skills never transfer independently.
 - Total supply 7,777; tiers Common 5,444 / Rare 1,555 / Epic 622 / Legendary 152 / Hidden 4, drawn without replacement.
 - Hidden released 1 per 25% of supply minted; Legendary released in 4 equal stages.
 - Hourly mint cap; pausable; rotatable signer; supply cannot increase.

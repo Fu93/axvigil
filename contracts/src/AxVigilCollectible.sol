@@ -173,6 +173,7 @@ contract AxVigilCollectible is ERC721, Ownable2Step, Pausable, EIP712 {
     error AlreadyRevealed();
     error ProvenanceAlreadySet();
     error ZeroAddress();
+    error TradingNotOpen();
 
     // ---------------------------------------------------------------------
     // Constructor
@@ -442,6 +443,15 @@ contract AxVigilCollectible is ERC721, Ownable2Step, Pausable, EIP712 {
         if (h == bytes32(0)) revert InvalidParams();
         provenanceHash = h;
         emit ProvenanceHashSet(h);
+    }
+
+    /// @dev PRD: secondary transfers open only after the fixed collection sells out.
+    ///      Agent ID transfers and skill records are independent of this gate.
+    function _update(address to, uint256 tokenId, address auth) internal override returns (address) {
+        if (_ownerOf(tokenId) != address(0) && to != address(0) && totalMinted < maxSupply) {
+            revert TradingNotOpen();
+        }
+        return super._update(to, tokenId, auth);
     }
 
     // ---------------------------------------------------------------------

@@ -1,11 +1,202 @@
 <!doctype html>
-<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>AxVigil — Verified fixes</title><link rel="stylesheet" href="/style.css"><script src="/app.js" defer></script></head>
-<body><div class="shell"><header><a class="brand" href="/" aria-label="AxVigil home"><span class="mark">A<span>×</span></span> AxVigil<span class="version">LAB / 01</span></a><a href="https://github.com/Fu93/axvigil" target="_blank" rel="noreferrer">SOURCE ↗</a></header>
-<main><section class="hero"><div><p class="eyebrow"><span class="dot"></span> AGENT SECURITY TRAINING GROUND</p><h1>Finding the bug<br>is only <em>half the work.</em></h1><p class="intro">Train an agent to fix smart contracts. Prove the exploit, repair the code, and earn a portable record of what it can actually do.</p><div class="tags"><span>DETERMINISTIC VERIFICATION</span><span>TESTNET ONLY</span><span>NO REAL FUNDS</span></div></div><aside class="credential"><div class="cardtop"><span>AX / SKILL RECORD</span><span>◈</span></div><div class="orb"><span>⌁</span></div><div class="cardbottom"><span>PROOF OF REPAIR</span><strong>Capability.<br>Made verifiable.</strong><small>Agent-bound · Non-transferable</small></div></aside></section>
-<section class="overview" aria-label="Protocol status"><div><small>COLLECTION LIMIT</small><strong id="supply">— / 7,777</strong></div><div><small>PER AGENT ID</small><strong>2 lifetime mints</strong></div><div><small>CHAIN</small><strong id="network">Connecting…</strong></div><div><small>ARENA</small><strong id="gate">Checking…</strong></div></section>
-<div class="sectiontitle"><h2>The repair workbench</h2><span>01 — 04 / VERIFY YOUR WORK</span></div>
-<section class="workbench"><aside class="steps"><div class="step active"><b>01</b><div>Identify your agent<small>Wallet ownership, verified</small></div></div><div class="step"><b>02</b><div>Take a challenge<small>A fresh seeded variant</small></div></div><div class="step"><b>03</b><div>Prove the repair<small>PoC + functional checks</small></div></div><div class="step"><b>04</b><div>Record the skill<small>Two distinct outcomes</small></div></div><div class="sidetext">The collectible can change hands.<br>The capability stays with the Agent ID.</div></aside>
-<div class="workspace"><div class="connectrow"><label>AGENT ID<input id="agentId" inputmode="numeric" pattern="[0-9]+" placeholder="e.g. 1" aria-label="Agent ID"></label><button id="connect">Connect & sign in <span>↗</span></button></div><p id="wallet" class="muted">Connect an EVM wallet on BSC testnet or local Anvil.</p><div class="divider"></div><div class="challengerow"><label>CHALLENGE CLASS<select id="vulnClass"><option value="0">01 · Reentrancy / Basic</option><option value="1">02 · Price manipulation / Advanced</option><option value="2">03 · Access control / Basic</option></select></label><button id="start" disabled>Draw challenge →</button></div><p id="challengeInfo" class="muted">Reference solutions are checked before the timer starts.</p><div class="editorhead"><span>CHALLENGE.SOL</span><button id="copy" class="quiet" disabled>Copy source</button></div><pre id="source" tabindex="0">// Your challenge will appear here.
-// Read the contract. Reproduce the bug. Preserve its purpose.</pre><div class="editors"><label>PATCH · COMPLETE CHALLENGE.SOL<textarea id="patch" spellcheck="false" placeholder="pragma solidity ^0.8.28; contract Challenge { ... }"></textarea></label><label>POC · SELF-CONTAINED ATTACK.SOL<textarea id="poc" spellcheck="false" placeholder="contract Attack { function run(address target) external payable { ... } }"></textarea></label></div><div class="actionrow"><span class="muted">No imports · ≤80 changed lines · 1 hour</span><button id="submit" disabled>Verify repair →</button></div><div id="checks" class="checks" aria-label="Verification results"></div><div class="mintrow"><div><strong>Verified work earns two outcomes.</strong><p class="muted">An Agent ID skill record + a collectible. Minting costs testnet gas.</p></div><button id="mint" disabled>Authorize & mint ↗</button></div><p id="message" role="status" aria-live="polite">Ready when you are.</p></div></section>
-<section class="record"><div><p class="eyebrow">PORTABLE CAPABILITY</p><h2>Your agent’s track record.</h2><p class="muted">Skills follow the Agent ID when it moves wallets. Buying a collectible does not buy the skill.</p></div><div id="skillRecord" class="skillbox">Sign in to view your on-chain skill record.</div></section>
-<section class="notes"><p><b>A transparent prototype.</b> Three original teaching fixtures inspired by historical vulnerability classes. Verification runs on isolated synthetic Anvil state, not a historical-chain replay. Difficulty calibration is pending.</p><p>Rarity uses operator commit-reveal for this testnet demo. The operator can influence outcomes; production requires VRF. No token, income or investment promises.</p></section></main><footer><span>AXVIGIL / VERIFIED FIXES, NOT JUST FINDINGS.</span><span>OPEN SOURCE · TESTNET PROTOTYPE</span></footer></div></body></html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>AxVigil — Verified fixes</title>
+    <link rel="stylesheet" href="/style.css" />
+    <script src="/app.js" defer></script>
+  </head>
+  <body>
+    <div class="shell">
+      <header>
+        <a class="brand" href="/" aria-label="AxVigil home"
+          ><span class="mark">A<span>×</span></span> AxVigil<span
+            class="version"
+            >LAB / 01</span
+          ></a
+        ><a
+          href="https://github.com/Fu93/axvigil"
+          target="_blank"
+          rel="noreferrer"
+          >SOURCE ↗</a
+        >
+      </header>
+      <main>
+        <section class="hero">
+          <div>
+            <p class="eyebrow">
+              <span class="dot"></span> AGENT SECURITY TRAINING GROUND
+            </p>
+            <h1>Finding the bug<br />is only <em>half the work.</em></h1>
+            <p class="intro">
+              Train an agent to fix smart contracts. Prove the exploit, repair
+              the code, and earn a portable record of what it can actually do.
+            </p>
+            <div class="tags">
+              <span>DETERMINISTIC VERIFICATION</span><span>TESTNET ONLY</span
+              ><span>NO REAL FUNDS</span>
+            </div>
+          </div>
+          <aside class="credential">
+            <div class="cardtop">
+              <span>AX / SKILL RECORD</span><span>◈</span>
+            </div>
+            <div class="orb"><span>⌁</span></div>
+            <div class="cardbottom">
+              <span>PROOF OF REPAIR</span
+              ><strong>Capability.<br />Made verifiable.</strong
+              ><small>Agent-bound · Non-transferable</small>
+            </div>
+          </aside>
+        </section>
+        <section class="overview" aria-label="Protocol status">
+          <div>
+            <small>COLLECTION LIMIT</small
+            ><strong id="supply">— / 7,777</strong>
+          </div>
+          <div>
+            <small>PER AGENT ID</small><strong>2 lifetime mints</strong>
+          </div>
+          <div>
+            <small>CHAIN</small><strong id="network">Connecting…</strong>
+          </div>
+          <div><small>ARENA</small><strong id="gate">Checking…</strong></div>
+        </section>
+        <div class="sectiontitle">
+          <h2>The repair workbench</h2>
+          <span>01 — 04 / VERIFY YOUR WORK</span>
+        </div>
+        <section class="workbench">
+          <aside class="steps">
+            <div class="step active">
+              <b>01</b>
+              <div>
+                Identify your agent<small>Wallet ownership, verified</small>
+              </div>
+            </div>
+            <div class="step">
+              <b>02</b>
+              <div>Take a challenge<small>A fresh seeded variant</small></div>
+            </div>
+            <div class="step">
+              <b>03</b>
+              <div>Prove the repair<small>PoC + functional checks</small></div>
+            </div>
+            <div class="step">
+              <b>04</b>
+              <div>Record the skill<small>Two distinct outcomes</small></div>
+            </div>
+            <div class="sidetext">
+              The collectible can change hands.<br />The capability stays with
+              the Agent ID.
+            </div>
+          </aside>
+          <div class="workspace">
+            <div class="connectrow">
+              <label
+                >AGENT ID<input
+                  id="agentId"
+                  inputmode="numeric"
+                  pattern="[0-9]+"
+                  placeholder="e.g. 1"
+                  aria-label="Agent ID" /></label
+              ><button id="connect">Connect & sign in <span>↗</span></button>
+            </div>
+            <p id="wallet" class="muted">
+              Connect an EVM wallet on BSC testnet or local Anvil.
+            </p>
+            <div class="divider"></div>
+            <div class="challengerow">
+              <label
+                >CHALLENGE CLASS<select id="vulnClass">
+                  <option value="0">01 · Reentrancy / Basic</option>
+                  <option value="1">02 · Price manipulation / Advanced</option>
+                  <option value="2">03 · Access control / Basic</option>
+                </select></label
+              ><button id="start" disabled>Draw challenge →</button>
+            </div>
+            <p id="challengeInfo" class="muted">
+              Reference solutions are checked before the timer starts.
+            </p>
+            <div class="editorhead">
+              <span>CHALLENGE.SOL</span
+              ><button id="copy" class="quiet" disabled>Copy source</button>
+            </div>
+            <pre id="source" tabindex="0">
+// Your challenge will appear here.
+// Read the contract. Reproduce the bug. Preserve its purpose.</pre
+            >
+            <div class="editors">
+              <label
+                >PATCH · COMPLETE CHALLENGE.SOL<textarea
+                  id="patch"
+                  spellcheck="false"
+                  placeholder="pragma solidity ^0.8.28; contract Challenge { ... }"
+                ></textarea></label
+              ><label
+                >POC · SELF-CONTAINED ATTACK.SOL<textarea
+                  id="poc"
+                  spellcheck="false"
+                  placeholder="contract Attack { function run(address target) external payable { ... } }"
+                ></textarea>
+              </label>
+            </div>
+            <div class="actionrow">
+              <span class="muted">No imports · ≤80 changed lines · 1 hour</span
+              ><button id="submit" disabled>Verify repair →</button>
+            </div>
+            <div
+              id="checks"
+              class="checks"
+              aria-label="Verification results"
+            ></div>
+            <div class="mintrow">
+              <div>
+                <strong>Verified work earns two outcomes.</strong>
+                <p class="muted">
+                  An Agent ID skill record + a collectible. Minting costs
+                  testnet gas.
+                </p>
+              </div>
+              <button id="mint" disabled>Authorize & mint ↗</button>
+            </div>
+            <p id="message" role="status" aria-live="polite">
+              Ready when you are.
+            </p>
+          </div>
+        </section>
+        <section class="record">
+          <div>
+            <p class="eyebrow">PORTABLE CAPABILITY</p>
+            <h2>Your agent’s track record.</h2>
+            <p class="muted">
+              Skills follow the Agent ID when it moves wallets. Buying a
+              collectible does not buy the skill.
+            </p>
+          </div>
+          <div id="skillRecord" class="skillbox">
+            Sign in to view your on-chain skill record.
+          </div>
+        </section>
+        <section class="notes">
+          <p>
+            <b>A transparent prototype.</b> Three original teaching fixtures
+            inspired by historical vulnerability classes. Verification runs on
+            isolated synthetic Anvil state, not a historical-chain replay.
+            Difficulty calibration is pending.
+          </p>
+          <p>
+            Rarity uses operator commit-reveal for this testnet demo. The
+            operator can influence outcomes; production requires VRF. No token,
+            income or investment promises.
+          </p>
+        </section>
+      </main>
+      <footer>
+        <span>AXVIGIL / VERIFIED FIXES, NOT JUST FINDINGS.</span
+        ><span>OPEN SOURCE · TESTNET PROTOTYPE</span>
+      </footer>
+    </div>
+  </body>
+</html>

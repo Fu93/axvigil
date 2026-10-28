@@ -1,11 +1,11 @@
 # AxVigil contracts (Foundry)
 
 Hackathon demo contracts for AxVigil on BSC testnet (chainId 97). The binding interface is
-`../SPEC.md`. Product context is in the PRD (v1.3).
+`../SPEC.md`. Product context is in the supplied PRD v1.2.
 
 | File | What it is |
 |---|---|
-| `src/AxVigilCollectible.sol` | Tradeable ERC-721. EIP-712 `MintAuth` mint, fixed tier pools, staged release, commit-reveal rarity, per-agent quota, hourly cap, pause |
+| `src/AxVigilCollectible.sol` | ERC-721, tradeable after sellout. EIP-712 `MintAuth` mint, fixed tier pools, staged release, commit-reveal rarity, per-agent quota, hourly cap, pause |
 | `src/AxVigilSkill.sol` | ERC-5192 soulbound skill record, one per Agent ID, ownership proxied to the Agent ID registry, on-chain SVG |
 | `src/MockAgentID.sol` | Open-mint ERC-721 standing in for the SPACE ID Agent ID registry (testnet/tests only) |
 | `src/interfaces/*` | `IAgentRegistry` (ownerOf), `IERC5192`, `IAxVigilSkill` |
@@ -52,6 +52,9 @@ MintAuth(uint256 agentId,address to,uint8 vulnClass,uint8 difficulty,uint8 pool,
 9. supply left
 10. hourly cap not reached
 11. a seed batch is open
+
+Secondary transfers revert with `TradingNotOpen` until `totalMinted == maxSupply`.
+The Agent ID itself can still move between wallets, carrying its skill history and quota.
 
 The one call then:
 - mints token `totalMinted + 1` to `to` (`_mint`, so there is no receiver callback),

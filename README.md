@@ -103,7 +103,9 @@ python -m scripts.sandbox_smoke  # requires the Docker image built above
 The calibration command runs trusted, repository-owned reference code directly on local
 Anvil to verify solvability across 3 × 20 source variants. **Do not substitute this path
 for the Docker boundary for external submissions.** It does not measure Muse pass rates.
-CI runs contract tests, Python tests, the 60-variant matrix and Docker smoke tests.
+CI runs contract tests, Python tests, the 60-variant matrix, Docker smoke tests and a
+mocked wallet UI regression on desktop/mobile. Run the latter with `npm ci`,
+`npx playwright install chromium`, and `npm run test:ui`.
 
 ## Muse agent
 

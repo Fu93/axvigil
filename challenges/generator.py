@@ -78,7 +78,7 @@ def generate(vuln_class: int, seed: int | None = None) -> Challenge:
         (bool ok,) = to.call{value: amount}("");
         require(ok, "send");
     }"""
-    # Seed-derived storage name/constant and shuffled function order; not an AST novelty claim.
+    # Seed-derived storage name/constant; not an AST novelty claim.
     code = (
         HEADER
         + f"contract Challenge {{\n    uint256 public constant VARIANT = {tag};\n    {body}\n    receive() external payable {{}}\n}}\n"
