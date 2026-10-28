@@ -1,0 +1,13 @@
+{
+  "challengeId": "reentrancy-vault",
+  "vulnClass": 0,
+  "difficulty": 0,
+  "targetFile": "Vault.sol",
+  "contractName": "Vault",
+  "requiredFunctions": ["deposit", "withdraw", "totalAssets"],
+  "hiddenTests": "Hidden.t.sol",
+  "pragma": "0.8.28",
+  "limits": { "maxChangedLines": 30, "maxBytes": 4000 },
+  "title": "Reentrant Vault",
+  "summary": "A vault pays out before clearing the caller's balance. Find the reentrancy and fix it without breaking deposit/withdraw accounting."
+}
