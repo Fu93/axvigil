@@ -1,0 +1,31 @@
+[profile.default]
+src = "src"
+out = "out"
+libs = ["lib"]
+solc_version = "0.8.28"
+evm_version = "cancun"
+optimizer = true
+optimizer_runs = 200
+via_ir = false
+ffi = false
+# The full 7,777-supply test needs more than the default 2^30 test gas.
+gas_limit = "18446744073709551615"
+memory_limit = 1073741824
+remappings = [
+  "@openzeppelin/contracts/=lib/openzeppelin-contracts/contracts/",
+  "forge-std/=lib/forge-std/src/",
+]
+
+[fuzz]
+runs = 64
+
+[invariant]
+runs = 32
+depth = 64
+fail_on_revert = false
+
+[rpc_endpoints]
+bsc_testnet = "${BSC_TESTNET_RPC}"
+
+[lint]
+lint_on_build = false
