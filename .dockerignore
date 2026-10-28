@@ -1,0 +1,11 @@
+.git
+.env*
+!.env.example
+.venv
+artifacts
+**/__pycache__
+.pytest_cache
+contracts/lib
+contracts/out
+contracts/cache
+contracts/broadcast

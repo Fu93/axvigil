@@ -1,0 +1,13 @@
+.env
+.venv/
+__pycache__/
+.pytest_cache/
+*.pyc
+*.sqlite*
+contracts/out/
+contracts/cache/
+contracts/broadcast/
+node_modules/
+artifacts/
+.env.*
+!.env.example
