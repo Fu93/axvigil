@@ -45,6 +45,12 @@ contract AxVigilCollectible is ERC721, Ownable2Step, Pausable, EIP712 {
         "MintAuth(uint256 agentId,address to,uint8 vulnClass,uint8 difficulty,uint8 pool,bytes32 submissionHash,uint256 nonce,uint256 deadline)"
     );
 
+    /// @dev Records a verified solve on the skill record WITHOUT minting a collectible.
+    ///      Lets an agent's skill record grow past the 2-collectible cap (e.g. all 3 classes).
+    bytes32 public constant SKILL_AUTH_TYPEHASH = keccak256(
+        "SkillAuth(uint256 agentId,uint8 vulnClass,uint8 difficulty,bytes32 submissionHash,uint256 nonce,uint256 deadline)"
+    );
+
     uint256 public constant MAX_PER_AGENT = 2;
     uint8 public constant NUM_TIERS = 5; // 0 COMMON, 1 RARE, 2 EPIC, 3 LEGENDARY, 4 HIDDEN
     uint8 public constant NUM_CLASSES = 3; // 0 REENTRANCY, 1 PRICE_MANIPULATION, 2 ACCESS_CONTROL
@@ -70,6 +76,15 @@ contract AxVigilCollectible is ERC721, Ownable2Step, Pausable, EIP712 {
         uint8 vulnClass;
         uint8 difficulty;
         uint8 pool;
+        bytes32 submissionHash;
+        uint256 nonce;
+        uint256 deadline;
+    }
+
+    struct SkillAuth {
+        uint256 agentId;
+        uint8 vulnClass;
+        uint8 difficulty;
         bytes32 submissionHash;
         uint256 nonce;
         uint256 deadline;
@@ -122,6 +137,9 @@ contract AxVigilCollectible is ERC721, Ownable2Step, Pausable, EIP712 {
     mapping(uint256 tier => mapping(uint256 vulnClass => uint256)) public artCount;
 
     mapping(uint256 nonce => bool) public nonceUsed;
+    /// @notice Each verified solve (submissionHash) can drive at most one on-chain action,
+    ///         whether a collectible mint or a skill-only record. Prevents a replayed solve.
+    mapping(bytes32 submissionHash => bool) public submissionUsed;
     mapping(uint256 agentId => uint256) public mintedPerAgent;
     mapping(uint256 hourIndex => uint256) public mintedInHour;
     mapping(uint256 tokenId => TokenData) private _tokens;
@@ -153,6 +171,9 @@ contract AxVigilCollectible is ERC721, Ownable2Step, Pausable, EIP712 {
         uint256 nonce
     );
     event TokenRevealed(uint256 indexed tokenId, uint8 tier, uint32 artId);
+    event SkillRecorded(
+        uint256 indexed agentId, uint8 vulnClass, uint8 difficulty, bytes32 submissionHash, uint256 nonce
+    );
     event SeedCommitted(uint32 indexed batchId, bytes32 seedHash);
     event SeedRevealed(uint32 indexed batchId, bytes32 seed);
     event SignerUpdated(address indexed oldSigner, address indexed newSigner);
@@ -162,6 +183,7 @@ contract AxVigilCollectible is ERC721, Ownable2Step, Pausable, EIP712 {
 
     error Expired();
     error NonceUsed();
+    error SubmissionUsed();
     error InvalidSignature();
     error NotAgentOwner();
     error AgentQuotaReached();
@@ -234,6 +256,7 @@ contract AxVigilCollectible is ERC721, Ownable2Step, Pausable, EIP712 {
 
         // --- effects ---
         nonceUsed[auth.nonce] = true;
+        submissionUsed[auth.submissionHash] = true;
         mintedPerAgent[auth.agentId] += 1;
         mintedInHour[block.timestamp / 1 hours] += 1;
         tokenId = ++totalMinted;
@@ -263,6 +286,7 @@ contract AxVigilCollectible is ERC721, Ownable2Step, Pausable, EIP712 {
     function _checkAuth(MintAuth calldata auth, bytes calldata signature) internal view {
         if (block.timestamp > auth.deadline) revert Expired();
         if (nonceUsed[auth.nonce]) revert NonceUsed();
+        if (submissionUsed[auth.submissionHash]) revert SubmissionUsed();
         if (auth.vulnClass >= NUM_CLASSES || auth.difficulty >= NUM_DIFFICULTIES || auth.pool > POOL_PREMIUM) {
             revert InvalidParams();
         }
@@ -308,6 +332,47 @@ contract AxVigilCollectible is ERC721, Ownable2Step, Pausable, EIP712 {
 
     function domainSeparator() external view returns (bytes32) {
         return _domainSeparatorV4();
+    }
+
+    // ---------------------------------------------------------------------
+    // Skill-only record (no collectible, no quota)
+    // ---------------------------------------------------------------------
+
+    /// @notice Record a verified solve on the agent's skill record without minting a collectible.
+    /// @dev Collectibles are capped at MAX_PER_AGENT, but the skill record is a resume that should
+    ///      grow with every verified solve (so all three class emblems can light up). This path
+    ///      shares the signer, nonce space and submissionHash dedup with `mint`, so a given solve
+    ///      drives at most one on-chain action. Caller must own `auth.agentId` in the registry.
+    function recordSolve(SkillAuth calldata auth, bytes calldata signature) external whenNotPaused {
+        if (block.timestamp > auth.deadline) revert Expired();
+        if (nonceUsed[auth.nonce]) revert NonceUsed();
+        if (submissionUsed[auth.submissionHash]) revert SubmissionUsed();
+        if (auth.vulnClass >= NUM_CLASSES || auth.difficulty >= NUM_DIFFICULTIES) revert InvalidParams();
+
+        (address recovered, ECDSA.RecoverError err,) = ECDSA.tryRecover(hashSkillAuth(auth), signature);
+        if (err != ECDSA.RecoverError.NoError || recovered != signer) revert InvalidSignature();
+        if (agentRegistry.ownerOf(auth.agentId) != msg.sender) revert NotAgentOwner();
+
+        // --- effects ---
+        nonceUsed[auth.nonce] = true;
+        submissionUsed[auth.submissionHash] = true;
+
+        // --- interactions ---
+        // Reverts (rolling back the effects above) if the record was revoked.
+        skill.recordSolve(auth.agentId, auth.vulnClass, auth.difficulty);
+
+        emit SkillRecorded(auth.agentId, auth.vulnClass, auth.difficulty, auth.submissionHash, auth.nonce);
+    }
+
+    /// @notice EIP-712 digest of a SkillAuth.
+    function hashSkillAuth(SkillAuth calldata a) public view returns (bytes32) {
+        return _hashTypedDataV4(
+            keccak256(
+                abi.encode(
+                    SKILL_AUTH_TYPEHASH, a.agentId, a.vulnClass, a.difficulty, a.submissionHash, a.nonce, a.deadline
+                )
+            )
+        );
     }
 
     // ---------------------------------------------------------------------
