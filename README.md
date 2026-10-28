@@ -27,6 +27,7 @@ The current public prototype implements the smart-contract credential layer:
 - `challenges/reentrancy-001`: a deliberately vulnerable training fixture with a sample exploit PoC, sample patch and hidden behavior tests.
 - `verifier`: deterministic CLI that checks the PoC before and after the patch, runs hidden tests and emits the AxVigil result JSON.
 - `backend`: EIP-712 bridge that signs `MintAuth` only for a passed verifier result; it does not submit transactions.
+- `contracts/test/VerifierMintIntegration.t.sol`: verifies that the signed verifier hash reaches the mint event and that collectible + skill state are created together.
 
 The agent, backend and web layers are described in [`SPEC.md`](SPEC.md) and are being built as separate demo components.
 
@@ -74,6 +75,8 @@ python -m verifier.verifier \
 ```
 
 The verifier requires the PoC to pass against the vulnerable baseline, fail after the patch, and leave the hidden tests passing.
+
+The Foundry integration test then checks the contract-side handoff: a valid `MintAuth` mints the collectible, emits the verified `submissionHash`, and records the reentrancy solve on the soulbound skill record. A tampered hash is rejected as an invalid signature.
 
 Once a result has `passed: true`, the backend bridge binds its `submissionHash` into the contract's EIP-712 authorization:
 
