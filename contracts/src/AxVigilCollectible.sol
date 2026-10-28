@@ -270,7 +270,15 @@ contract AxVigilCollectible is ERC721, Ownable2Step, Pausable, EIP712 {
             batchId: batchId,
             artId: 0,
             // Not secret by itself (validators can see it); combined with the committed seed at reveal.
-            entropy: keccak256(abi.encode(blockhash(block.number - 1), block.prevrandao, tokenId, auth.to))
+            // Guard block.number == 0 (genesis / script simulation) so the subtraction can't underflow.
+            entropy: keccak256(
+                abi.encode(
+                    block.number > 0 ? blockhash(block.number - 1) : bytes32(0),
+                    block.prevrandao,
+                    tokenId,
+                    auth.to
+                )
+            )
         });
         agentOfToken[tokenId] = auth.agentId;
 

@@ -19,6 +19,15 @@ contract AxVigilCollectibleTest is AxVigilBase {
 
     // ------------------------------------------------------------------ mint
 
+    /// @dev Regression: `blockhash(block.number - 1)` must not underflow when
+    ///      block.number == 0 (genesis / forge-script simulation / a fresh chain).
+    function test_mintAtGenesisBlock() public {
+        vm.roll(0);
+        uint256 id = _mint(alice, agentA, 0, 0, 0);
+        assertEq(id, 1);
+        assertEq(nft.ownerOf(1), alice);
+    }
+
     function test_validMint() public {
         uint256 id = _mint(alice, agentA, 1, 1, 0);
         assertEq(id, 1);
