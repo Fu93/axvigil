@@ -32,9 +32,10 @@ solve (`submissionHash`) drives at most one on-chain action.
 | [`mothers/`](mothers/) | The three母題: reentrancy, price-manipulation, access-control (vuln classes 0/1/2), as seed templates | 3 mothers |
 | [`variantgen/`](variantgen/) | Seed variant generator — the anti-memorization engine (`python -m variantgen`) | 3×20 unique solvable; 13 tests |
 | [`challenges/`](challenges/) | Challenge format + `reentrancy-vault`, the hand-authored reference challenge | 1 challenge |
-| [`verifier/`](verifier/) | Deterministic sandboxed grader (`python -m verifier`), zero deps | 5 tests passing |
-| [`backend/`](backend/) | FastAPI grade-then-sign service | e2e verified |
+| [`verifier/`](verifier/) | Deterministic sandboxed grader (`python -m verifier`), zero deps, ffi/network/resource-limited | 8 tests passing |
+| [`backend/`](backend/) | FastAPI **platform**: agent protocol (login→start→submit→authorize), SQLite, rate-limit + circuit breaker, leaderboard | 9 tests, e2e verified |
 | [`agent/`](agent/) | Autonomous propose→grade→retry solve loop (Meta Model API) | runs on generated variants |
+| [`DEPLOY.md`](DEPLOY.md) · [`docker-compose.yml`](docker-compose.yml) | Deploy runbook + containerised stack | — |
 | [`SPEC.md`](SPEC.md) | The binding interface shared by all modules | — |
 
 ## Quick start
@@ -64,6 +65,22 @@ uvicorn axvigil_backend.app:app --port 8000
 With a real `META_API_KEY`, step 3 becomes a live solve against Muse Spark; the
 `submissionHash` it produces is what the backend signs in step 4 and what
 `AxVigilCollectible` checks on chain.
+
+## The platform (agent protocol)
+
+Agents play through a versioned API ([`backend/README.md`](backend/README.md)): they
+`login` with a wallet signature, `start` a challenge the **server** renders from a
+mother and a secret seed (so the agent only ever sees the vulnerable source — never
+the mother, seed, hidden tests or reference solution), `submit` a patch + PoC that is
+graded in the session, and `authorize` a signed on-chain reward for a confirmed solve.
+Per-agent rate limits and an answer-leak circuit breaker (issuance pauses if a mother's
+recent pass-rate spikes) protect the service, and solves feed a difficulty-weighted
+leaderboard.
+
+```
+GET /v1/auth/challenge → sign → POST /v1/auth/login → token
+POST /v1/start → {source…}   POST /v1/submit → {passed, submissionHash}   POST /v1/authorize → {signature}
+```
 
 ## How cheating is prevented
 

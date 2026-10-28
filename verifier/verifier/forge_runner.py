@@ -16,6 +16,38 @@ import tempfile
 from dataclasses import dataclass, field
 from pathlib import Path
 
+try:
+    import resource  # POSIX only
+except ImportError:  # pragma: no cover - Windows
+    resource = None
+
+
+def _rlimit_preexec(cpu_s: int, mem_bytes: int, fsize_bytes: int, nproc: int):
+    """Build a preexec_fn that caps the child's CPU, address space, output file
+    size and process count. Defence in depth around untrusted submitted code,
+    on top of the wall-clock timeout, ffi=false and no network."""
+    if resource is None:
+        return None
+
+    def _apply():  # runs in the child between fork and exec
+        def _set(res, soft):
+            try:
+                hard = resource.getrlimit(res)[1]
+                cap = soft if hard == resource.RLIM_INFINITY else min(soft, hard)
+                resource.setrlimit(res, (cap, hard))
+            except (ValueError, OSError):
+                pass
+        _set(resource.RLIMIT_CPU, cpu_s)
+        _set(resource.RLIMIT_FSIZE, fsize_bytes)
+        if hasattr(resource, "RLIMIT_NPROC"):
+            _set(resource.RLIMIT_NPROC, nproc)
+        # Address space: forge/solc are memory-hungry, so keep this generous and
+        # skip it if it would be too low to run the toolchain at all.
+        if mem_bytes >= 1 << 30:
+            _set(resource.RLIMIT_AS, mem_bytes)
+
+    return _apply
+
 REPO_CONTRACTS = Path(__file__).resolve().parents[2] / "contracts"
 DEFAULT_FORGE_STD = REPO_CONTRACTS / "lib" / "forge-std" / "src"
 DEFAULT_OZ = REPO_CONTRACTS / "lib" / "openzeppelin-contracts" / "contracts"
@@ -72,11 +104,15 @@ def run_test(
     oz: Path = DEFAULT_OZ,
     timeout_s: int = 120,
     fuzz_seed: int = 0xA11CE,
+    mem_limit_bytes: int = 4 << 30,
+    fsize_limit_bytes: int = 256 << 20,
+    nproc_limit: int = 256,
 ) -> RunResult:
     """Compile `sources`+`tests` and run forge tests matching `match_path`.
 
     sources/tests: {relative filename -> solidity text}. match_path is relative
-    to the temp project root (e.g. "test/Poc.t.sol").
+    to the temp project root (e.g. "test/Poc.t.sol"). Untrusted code runs with
+    ffi disabled, no network, a wall-clock timeout and POSIX resource limits.
     """
     workdir = Path(tempfile.mkdtemp(prefix="axv-verify-"))
     try:
@@ -105,9 +141,16 @@ def run_test(
         env["FOUNDRY_OFFLINE"] = "true"
         env["FOUNDRY_FUZZ_SEED"] = str(fuzz_seed)
 
+        # CPU limit a little above the wall limit so the timeout fires first in
+        # the normal case and the CPU cap only catches a runaway process.
+        preexec = _rlimit_preexec(
+            cpu_s=timeout_s + 10, mem_bytes=mem_limit_bytes,
+            fsize_bytes=fsize_limit_bytes, nproc=nproc_limit,
+        )
         try:
             proc = subprocess.run(
-                cmd, cwd=workdir, env=env, capture_output=True, text=True, timeout=timeout_s
+                cmd, cwd=workdir, env=env, capture_output=True, text=True,
+                timeout=timeout_s, preexec_fn=preexec, start_new_session=True,
             )
         except subprocess.TimeoutExpired:
             return RunResult(compiled=False, timed_out=True, raw="timeout")
