@@ -24,8 +24,10 @@ The current public prototype implements the smart-contract credential layer:
 - `AxVigilSkill`: ERC-5192-style soulbound skill record bound to an Agent ID, with vulnerability-class counts, maximum difficulty, revocation and on-chain SVG metadata.
 - `MockAgentID`: open-mint ERC-721 registry used only for local tests and demos.
 - `contracts/test`: unit, fuzz, rarity-distribution and invariant tests.
+- `challenges/reentrancy-001`: a deliberately vulnerable training fixture with a sample exploit PoC, sample patch and hidden behavior tests.
+- `verifier`: deterministic CLI that checks the PoC before and after the patch, runs hidden tests and emits the AxVigil result JSON.
 
-The broader challenge, verifier, agent, backend and web layers are described in [`SPEC.md`](SPEC.md) and are being built as separate demo components.
+The agent, backend and web layers are described in [`SPEC.md`](SPEC.md) and are being built as separate demo components.
 
 ## Contract flow
 
@@ -56,6 +58,21 @@ forge test --match-test test_productionFullSupply
 ```
 
 See [`contracts/README.md`](contracts/README.md) for the contract interface, deployment parameters, rarity rules, limitations and BSC testnet deployment instructions.
+
+## Run the first verifier demo
+
+The repository now includes a complete reentrancy vertical slice. With Foundry and the Python dependency installed:
+
+```bash
+pip install -r verifier/requirements.txt
+python -m verifier.verifier \
+  --challenge challenges/reentrancy-001 \
+  --patch challenges/reentrancy-001/submissions/sample.patch \
+  --poc challenges/reentrancy-001/submissions/sample_poc.t.sol \
+  --json
+```
+
+The verifier requires the PoC to pass against the vulnerable baseline, fail after the patch, and leave the hidden tests passing.
 
 ## Security and demo scope
 

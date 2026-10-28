@@ -1,0 +1,17 @@
+--- a/src/Vault.sol
++++ b/src/Vault.sol
+@@ -13,11 +13,11 @@
+         uint256 amount = balances[msg.sender];
+         require(amount > 0, "no balance");
+ 
+-        // Vulnerability: the recipient can call withdrawAll again before the balance is cleared.
++        // Effects happen before the interaction, so a callback sees no balance.
++        balances[msg.sender] = 0;
++
+         (bool ok,) = msg.sender.call{value: amount}("");
+         require(ok, "transfer failed");
+-
+-        balances[msg.sender] = 0;
+     }
+ 
+     receive() external payable {}
