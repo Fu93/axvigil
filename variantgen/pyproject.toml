@@ -1,0 +1,15 @@
+[project]
+name = "axvigil-variantgen"
+version = "0.1.0"
+description = "Seed-based variant generator (anti-memorization) for AxVigil mothers"
+requires-python = ">=3.10"
+dependencies = []
+
+[project.optional-dependencies]
+dev = ["pytest>=8"]
+
+[tool.setuptools]
+packages = ["variantgen"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

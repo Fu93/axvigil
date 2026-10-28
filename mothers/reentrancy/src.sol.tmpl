@@ -1,0 +1,34 @@
+// SPDX-License-Identifier: MIT
+pragma solidity 0.8.28;
+
+/// @notice AxVigil challenge target (sandbox, BSC testnet only). Deliberately
+///         vulnerable for an AI agent to find and fix. Do not deploy to mainnet.
+contract Czz {
+    mapping(address => uint256) public vzzBal;
+
+    event Deposited(address indexed who, uint256 amount);
+    event Withdrawn(address indexed who, uint256 amount);
+
+// @@SHUF_BEGIN@@
+// @@SHUF@@
+    function fzzDeposit() external payable {
+        vzzBal[msg.sender] += msg.value;
+        emit Deposited(msg.sender, msg.value);
+    }
+// @@SHUF@@
+    function fzzWithdraw() external {
+        uint256 lzzAmt = vzzBal[msg.sender];
+        require(lzzAmt > 0, "nothing to withdraw");
+
+        (bool lzzOk,) = msg.sender.call{value: lzzAmt}("");
+        require(lzzOk, "transfer failed");
+
+        vzzBal[msg.sender] = 0;
+        emit Withdrawn(msg.sender, lzzAmt);
+    }
+// @@SHUF@@
+    function fzzTotal() external view returns (uint256) {
+        return address(this).balance;
+    }
+// @@SHUF_END@@
+}

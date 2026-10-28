@@ -1,0 +1,51 @@
+// SPDX-License-Identifier: MIT
+pragma solidity 0.8.28;
+
+import {Test} from "forge-std/Test.sol";
+import {Czz} from "../src/Czz.sol";
+
+contract HiddenTest is Test {
+    Czz internal treasury;
+    address internal owner = makeAddr("owner");
+    address internal alice = makeAddr("alice");
+    address internal bob = makeAddr("bob");
+    address internal recip = makeAddr("recip");
+
+    function setUp() public {
+        vm.prank(owner);
+        treasury = new Czz();
+        vm.deal(alice, 10 ether);
+        vm.deal(bob, 10 ether);
+    }
+
+    function test_ownerIsDeployer() public view {
+        assertEq(treasury.vzzOwner(), owner);
+    }
+
+    function test_depositCreditsAndHolds() public {
+        vm.prank(alice);
+        treasury.fzzDeposit{value: 3 ether}();
+        assertEq(treasury.vzzBal(alice), 3 ether);
+        assertEq(treasury.fzzTotal(), 3 ether);
+    }
+
+    function test_ownerCanSweep() public {
+        vm.prank(alice);
+        treasury.fzzDeposit{value: 4 ether}();
+
+        vm.prank(owner);
+        treasury.fzzAdmin(recip);
+
+        assertEq(treasury.fzzTotal(), 0, "treasury emptied");
+        assertEq(recip.balance, 4 ether, "funds delivered to recipient");
+    }
+
+    function test_nonOwnerCannotSweep() public {
+        vm.prank(alice);
+        treasury.fzzDeposit{value: 1 ether}();
+
+        vm.prank(bob);
+        vm.expectRevert(bytes("not owner"));
+        treasury.fzzAdmin(bob);
+    }
+}
