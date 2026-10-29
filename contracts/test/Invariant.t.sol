@@ -100,10 +100,11 @@ contract AxVigilInvariantTest is Test {
     }
 
     function invariant_supplyNeverExceedsMax() public view {
-        assertLe(nft.totalMinted(), nft.drawableSupply());
+        assertLe(nft.totalMinted(), nft.maxSupply());
+        assertLe(nft.totalMinted() - nft.drawnOf(4), nft.drawableSupply());
         assertEq(nft.maxSupply(), 53);
-        assertEq(nft.drawableSupply(), 49, "4 hidden reserved");
-        assertEq(nft.drawnOf(4), 0, "hidden is not drawn");
+        assertEq(nft.drawableSupply(), 49, "public quota, hidden not included");
+        assertLe(nft.drawnOf(4), tiers[4], "hidden quota");
     }
 
     function invariant_drawnMatchesRevealedAndWithinPools() public view {
@@ -114,9 +115,12 @@ contract AxVigilInvariantTest is Test {
         for (uint256 t; t < 5; ++t) {
             uint256 d = nft.drawnOf(t);
             assertLe(d, tiers[t], "tier pool never exceeded");
-            if (t == 4) assertEq(d, 0, "hidden stays out of the draw");
             if (t == 3) assertLe(d, (tiers[t] * (stage + 1)) / 4, "staged release");
             sum += d;
+        }
+        for (uint256 id = 1; id <= revealed; ++id) {
+            AxVigilCollectible.TokenData memory td = nft.tokenData(id);
+            if (td.pool != 2) assertLt(td.tier, 4, "only pool 2 can draw hidden");
         }
         assertEq(sum, revealed);
         assertLe(revealed, nft.totalMinted());

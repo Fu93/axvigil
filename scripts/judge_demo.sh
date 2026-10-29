@@ -86,7 +86,7 @@ echo "registry    $REGISTRY"
 echo "collectible $COLLECTIBLE"
 echo "skill       $SKILL"
 echo "agent id    $AGENT_ID"
-echo "max supply  $MAX_SUPPLY  drawable $DRAWABLE (hidden 4 is not in the draw)"
+echo "max supply  $MAX_SUPPLY  public $DRAWABLE (hidden does not consume a public slot; pool 2 rolls it at 0.25%)"
 
 echo ""
 echo "== 3/4 platform API (ownership checked against the local registry) =="
@@ -147,7 +147,7 @@ cast send "$COLLECTIBLE" "revealTokens(uint256)" 5 \
   --private-key "$PLAYER_KEY" --rpc-url "$RPC_URL" >/dev/null
 
 echo "collectible tokenURI: $(cast call "$COLLECTIBLE" "tokenURI(uint256)(string)" 1 --rpc-url "$RPC_URL")"
-echo "tier (0 common .. 3 legendary; hidden is not drawn): $(cast call "$COLLECTIBLE" "tierOf(uint256)(uint8)" 1 --rpc-url "$RPC_URL")"
+echo "tier (0 common .. 3 legendary, 4 hidden only from pool 2): $(cast call "$COLLECTIBLE" "tierOf(uint256)(uint8)" 1 --rpc-url "$RPC_URL")"
 cast call "$SKILL" "tokenURI(uint256)(string)" "$AGENT_ID" --rpc-url "$RPC_URL" >"$TMP_DIR/skill-uri.txt"
 python3 - <<'PY' "$TMP_DIR/skill-uri.txt"
 import base64, json, sys

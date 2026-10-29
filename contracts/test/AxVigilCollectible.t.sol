@@ -367,7 +367,9 @@ contract AxVigilCollectibleTest is AxVigilBase {
 
     function test_productionConfig() public view {
         assertEq(nft.maxSupply(), 7777);
-        assertEq(nft.drawableSupply(), 7773, "hidden is reserved, not minted");
+        assertEq(nft.drawableSupply(), 7773, "public quota; hidden is extra up to maxSupply");
+        assertEq(nft.HIDDEN_CHANCE_BPS(), 25);
+        assertLt(nft.HIDDEN_CHANCE_BPS(), nft.MAX_HIDDEN_CHANCE_BPS());
         assertEq(nft.tierTotal(0), 5444);
         assertEq(nft.tierTotal(1), 1555);
         assertEq(nft.tierTotal(2), 622);
@@ -375,7 +377,8 @@ contract AxVigilCollectibleTest is AxVigilBase {
         assertEq(nft.tierTotal(4), 4);
         uint256[5] memory av = nft.availableNow();
         assertEq(av[3], 38, "legendary stage 1");
-        assertEq(av[4], 0, "hidden is not in the random draw");
+        assertEq(av[4], 0, "hidden is not in the weighted ladder");
+        assertEq(nft.hiddenRemaining(), 4);
     }
 
     function test_revert_unsafeStagedConfig() public {

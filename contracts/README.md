@@ -68,19 +68,19 @@ If the skill record has been revoked, the whole mint reverts.
 (tier, vulnClass) bucket, up to `tierTotal(tier)` images and metadata files named by artId.
 `setProvenanceHash(h)` commits to the hash of the whole generated set and can be called once.
 
-**Tiers** `0 COMMON 5444, 1 RARE 1555, 2 EPIC 622, 3 LEGENDARY 152, 4 HIDDEN 4` (constructor params; `maxSupply` is immutable and is their sum). `drawableSupply` is `maxSupply - hidden` (7,773 in production). `mint` stops there. Hidden is not assigned by `revealTokens`.
+**Tiers** `0 COMMON 5444, 1 RARE 1555, 2 EPIC 622, 3 LEGENDARY 152, 4 HIDDEN 4` (constructor params; `maxSupply` is immutable and is their sum, 7,777). `drawableSupply` is the public tiers only (7,773). `mint` closes when `totalMinted - hiddenDrawn` reaches that public quota, or when `totalMinted` reaches `maxSupply`. A revealed Hidden piece does not consume a public slot.
 
-**Staged release.** Draw index `i` sits in stage `i*4/drawableSupply` (0..3). LEGENDARY has `total*(stage+1)/4` released, so it goes 38 → 76 → 114 → 152 across the drawable supply. Hidden is not released into the draw. The constructor rejects a config where a legendary stage could empty the drawable pool.
+**Staged release.** Draw index `i` sits in stage `i*4/drawableSupply` (0..3). LEGENDARY has `total*(stage+1)/4` released, so it goes 38 → 76 → 114 → 152 across the public supply. Hidden is not stage-gated and is not in the weighted ladder. The constructor rejects a config where a legendary stage could empty the public pool.
 
 **Pools.** The pool is the difficulty, and `mint` reverts with `PoolDifficultyMismatch` if they differ.
 
 | Difficulty | Pool | Multipliers (Common, Rare, Epic, Legendary) | Hidden |
 |---|---|---|---|
-| 0 BASIC | 0 | 1, 1, 1, 1 | 0 |
-| 1 ADVANCED | 1 | 1, 2, 4, 8 | 0 |
-| 2 LEGENDARY | 2 | 1, 3, 8, 16 | 0 |
+| 0 BASIC | 0 | 1, 1, 1, 1 | never |
+| 1 ADVANCED | 1 | 1, 2, 4, 8 | never |
+| 2 LEGENDARY | 2 | 1, 3, 8, 16 | fixed 25/10000 (0.25%), and only while a piece remains |
 
-Weights multiply the remaining released count, so a higher pool is a better chance at rarer public tiers, never a guarantee, and never a way to draw Hidden. At the first production draw the legendary-tier share is about 0.50% / 2.68% / 3.87% across the three pools (`contracts/test/Rarity.t.sol`). Quotas are exact at the end of the draw: every public tier is filled, Hidden drawn stays 0.
+The Hidden roll is `rand % 10000 < 25` on pool 2, before the weighted ladder. It does not use remaining counts, so the chance stays 0.25% as other tiers deplete, strictly below 0.30% (`MAX_HIDDEN_CHANCE_BPS`). On a hit, one of the 4 Hidden pieces is taken without replacement and the public ladder is skipped for that token. On a miss, the public ladder runs as before. If the public ladder is empty, reveal stops instead of forcing Hidden or reverting. Hidden does not reduce the 7,773 public pieces: after a Hidden reveal, another public mint is still available, up to 7,777 total. Hidden that is never rolled stays unminted. Quotas are exact ceilings and are never exceeded. At the first production draw the legendary-tier share of the public ladder is about 0.50% / 2.68% / 3.87% across the three pools (`contracts/test/Rarity.t.sol`).
 
 **Skill record.** `mint` calls `skill.recordSolve` once. There is no second entry point, so `totalSolves` equals the number of successful mints for that Agent ID and cannot pass 2.
 
