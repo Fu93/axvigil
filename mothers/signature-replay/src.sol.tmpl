@@ -1,0 +1,36 @@
+// SPDX-License-Identifier: MIT
+pragma solidity 0.8.28;
+
+/// @notice AxVigil challenge target (sandbox, BSC testnet only). Deliberately
+///         vulnerable for an AI agent to find and fix. Do not deploy to mainnet.
+///
+/// A treasury that releases funds to anyone presenting a voucher (to, amount)
+/// signed by the authorizer. The voucher is bound to this contract's address.
+contract Czz {
+    address public vzzSigner;
+    mapping(bytes32 => bool) public vzzUsed;
+
+    event Released(address indexed to, uint256 amount);
+
+    constructor(address _signer) payable {
+        vzzSigner = _signer;
+    }
+
+// @@SHUF_BEGIN@@
+// @@SHUF@@
+    /// @notice Release `amount` to `to` against a voucher signed by the authorizer.
+    function fzzClaim(address to, uint256 amount, uint8 v, bytes32 r, bytes32 s) external {
+        bytes32 lzzDigest = keccak256(abi.encodePacked(address(this), to, amount));
+        require(ecrecover(lzzDigest, v, r, s) == vzzSigner, "bad signature");
+        // VULNERABLE: the voucher is never marked spent, so the same signature can be
+        // replayed to release the funds again and again until the treasury is empty.
+        (bool ok,) = to.call{value: amount}("");
+        require(ok, "transfer failed");
+        emit Released(to, amount);
+    }
+// @@SHUF@@
+    function fzzTotal() external view returns (uint256) {
+        return address(this).balance;
+    }
+// @@SHUF_END@@
+}

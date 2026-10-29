@@ -1,0 +1,21 @@
+{
+  "motherId": "signature-replay",
+  "vulnClass": 2,
+  "difficulty": 2,
+  "targetSentinel": "Czz",
+  "pragma": "0.8.28",
+  "fixId": "sig_replay",
+  "identifiers": {
+    "Czz": "contract",
+    "fzzClaim": "verb_claim",
+    "fzzTotal": "verb_total",
+    "vzzSigner": "noun_signer",
+    "vzzUsed": "noun_voucher",
+    "lzzDigest": "noun_digest"
+  },
+  "requiredFunctionSentinels": ["fzzClaim", "fzzTotal"],
+  "distractors": [1, 3],
+  "limits": { "maxChangedLines": 16, "maxBytes": 6000 },
+  "title": "Replayable Voucher Treasury",
+  "summary": "A treasury releases funds against a signed voucher, but never records that a voucher was spent, so the same signature can be replayed to drain it. Stop the replay without changing the voucher format."
+}

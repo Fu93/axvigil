@@ -39,6 +39,11 @@ POOLS: dict[str, list[str]] = {
     "verb_admin_set": ["setOwner", "transferOwnership", "assignAdmin", "handover", "reassignOwner"],
     "verb_sweep": ["sweep", "drain", "rescueFunds", "withdrawAll", "collect"],
     "verb_config": ["setFee", "configure", "tune", "setParam", "adjust"],
+    # signature-replay mother (legendary)
+    "verb_claim": ["claim", "redeem", "release", "payout", "settle", "disburse"],
+    "noun_signer": ["signer", "authorizer", "issuer", "attestor", "approver", "notary"],
+    "noun_voucher": ["used", "consumed", "redeemed", "spent", "seenVoucher", "settled"],
+    "noun_digest": ["digest", "voucherHash", "message", "payload", "claimHash"],
 }
 
 # Structurally-distinct harmless functions. {name} is replaced with a unique id.

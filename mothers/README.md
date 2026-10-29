@@ -2,15 +2,17 @@
 
 Each mother is one vulnerability template. The seed variant generator in
 [`../variantgen/`](../variantgen/) renders a mother + seed into a concrete,
-gradeable challenge. All three cover a distinct vulnerability class and are
-derived from well-known, publicly documented bug patterns (sandbox toys — do not
-deploy to mainnet).
+gradeable challenge. The four mothers span three distinct vulnerability classes
+and all three difficulty tiers (basic, advanced, legendary), and are derived from
+well-known, publicly documented bug patterns (sandbox toys — do not deploy to
+mainnet).
 
-| Mother | Vuln class | The bug | The intended fix |
-|---|---|---|---|
-| `reentrancy` | 0 reentrancy | `withdraw` makes the external call before zeroing the balance | checks-effects-interactions (zero first) |
-| `price-manipulation` | 1 price manipulation | collateral is valued at the live spot price, movable by a swap in the same tx | value at the manipulation-resistant reference price |
-| `access-control` | 2 access control | a privileged treasury sweep has no owner check | restrict to the owner |
+| Mother | Vuln class | Difficulty | The bug | The intended fix |
+|---|---|---|---|---|
+| `reentrancy` | 0 reentrancy | 0 basic | `withdraw` makes the external call before zeroing the balance | checks-effects-interactions (zero first) |
+| `price-manipulation` | 1 price manipulation | 1 advanced | collateral is valued at the live spot price, movable by a swap in the same tx | value at the manipulation-resistant reference price |
+| `access-control` | 2 access control | 0 basic | a privileged treasury sweep has no owner check | restrict to the owner |
+| `signature-replay` | 2 access control | 2 legendary | a signed voucher is never recorded as spent, so the signature can be replayed to drain the treasury | mark each voucher digest spent after the signature check |
 
 Each PoC passes on the vulnerable version and fails on the patched one, so the
 grader scores the **differential**, not an absolute test.

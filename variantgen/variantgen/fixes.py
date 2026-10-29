@@ -73,8 +73,31 @@ def fix_price_twap(src: str, ctx: dict) -> str:
     return pattern.sub(f"{safe_fn}()", src)
 
 
+def fix_sig_replay(src: str, ctx: dict) -> str:
+    """Mark each voucher digest as spent after the signature check, so a signed
+    voucher can't be replayed. Inserts the guard right after the ecrecover require."""
+    ids = _ids(ctx)
+    used = ids["vzzUsed"]
+    digest = ids["lzzDigest"]
+    signer = ids["vzzSigner"]
+
+    pat = re.compile(
+        rf"([ \t]*require\(ecrecover\({re.escape(digest)}, v, r, s\) == {re.escape(signer)}, \"[^\"]*\"\);\n)"
+    )
+    m = pat.search(src)
+    if not m:
+        raise ValueError("sig-replay fix: could not locate the signature check")
+    indent = re.match(r"[ \t]*", m.group(1)).group(0)
+    guard = (
+        f'{indent}require(!{used}[{digest}], "voucher already used");\n'
+        f'{indent}{used}[{digest}] = true;\n'
+    )
+    return src[: m.end()] + guard + src[m.end():]
+
+
 FIXES = {
     "reentrancy_cei": fix_reentrancy_cei,
     "access_control": fix_access_control,
     "price_twap": fix_price_twap,
+    "sig_replay": fix_sig_replay,
 }

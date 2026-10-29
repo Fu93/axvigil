@@ -1,0 +1,52 @@
+// SPDX-License-Identifier: MIT
+pragma solidity 0.8.28;
+
+import {Test} from "forge-std/Test.sol";
+import {Czz} from "../src/Czz.sol";
+
+contract HiddenTest is Test {
+    Czz internal treasury;
+    uint256 internal signerPk = 0xA11CE;
+    address internal signerAddr;
+    address internal alice = makeAddr("alice");
+    address internal bob = makeAddr("bob");
+
+    function setUp() public {
+        signerAddr = vm.addr(signerPk);
+        treasury = new Czz{value: 10 ether}(signerAddr);
+    }
+
+    function _voucher(address to, uint256 amount) internal view returns (uint8 v, bytes32 r, bytes32 s) {
+        bytes32 digest = keccak256(abi.encodePacked(address(treasury), to, amount));
+        (v, r, s) = vm.sign(signerPk, digest);
+    }
+
+    function test_signerIsAuthorizer() public view {
+        assertEq(treasury.vzzSigner(), signerAddr);
+    }
+
+    function test_validVoucherPays() public {
+        (uint8 v, bytes32 r, bytes32 s) = _voucher(alice, 1 ether);
+        uint256 before = alice.balance;
+        treasury.fzzClaim(alice, 1 ether, v, r, s);
+        assertEq(alice.balance, before + 1 ether, "recipient paid");
+        assertEq(treasury.fzzTotal(), 9 ether, "treasury debited");
+    }
+
+    function test_badSignatureReverts() public {
+        (uint8 v, bytes32 r, bytes32 s) = _voucher(alice, 1 ether);
+        // tamper with the amount so the recovered signer no longer matches
+        vm.expectRevert(bytes("bad signature"));
+        treasury.fzzClaim(alice, 2 ether, v, r, s);
+    }
+
+    function test_distinctVouchersEachPay() public {
+        (uint8 v1, bytes32 r1, bytes32 s1) = _voucher(alice, 1 ether);
+        (uint8 v2, bytes32 r2, bytes32 s2) = _voucher(bob, 3 ether);
+        treasury.fzzClaim(alice, 1 ether, v1, r1, s1);
+        treasury.fzzClaim(bob, 3 ether, v2, r2, s2);
+        assertEq(alice.balance, 1 ether);
+        assertEq(bob.balance, 3 ether);
+        assertEq(treasury.fzzTotal(), 6 ether);
+    }
+}
