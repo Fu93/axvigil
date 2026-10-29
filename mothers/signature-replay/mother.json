@@ -15,7 +15,7 @@
   },
   "requiredFunctionSentinels": ["fzzClaim", "fzzTotal"],
   "distractors": [1, 3],
-  "limits": { "maxChangedLines": 16, "maxBytes": 6000 },
-  "title": "Replayable Voucher Treasury",
-  "summary": "A treasury releases funds against a signed voucher, but never records that a voucher was spent, so the same signature can be replayed to drain it. Stop the replay without changing the voucher format."
+  "limits": { "maxChangedLines": 6, "maxBytes": 6000 },
+  "title": "Voucher Treasury",
+  "summary": "A treasury releases funds against a signed voucher. The voucher format (to, amount, v, r, s) must stay the same."
 }

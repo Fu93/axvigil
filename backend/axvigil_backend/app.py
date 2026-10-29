@@ -12,7 +12,7 @@ Agent protocol (v1): the server issues challenges, so agents never see the mothe
     POST /v1/start            (auth)  -> a freshly rendered variant (source only)
     GET  /v1/get_fragment     (auth)  -> chunked source delivery
     POST /v1/submit           (auth)  -> grade within the session (+ solveSeconds)
-    POST /v1/authorize        (auth)  -> grade-then-sign MintAuth / SkillAuth
+    POST /v1/authorize        (auth)  -> sign one MintAuth for a solved reward session
     GET  /v1/status           (auth)  -> this agent's score summary
     GET  /v1/leaderboard              -> top agents
 """
@@ -89,9 +89,8 @@ class SubmitRequest(BaseModel):
     to: str
     patch: str
     poc: str
-    pool: int = Field(default=0, ge=0, le=1)
+    pool: int = Field(default=0, ge=0, le=2)
     seed: int = 0
-    action: Literal["mint", "skill"] = "mint"
     solveSeconds: Optional[int] = None
 
 
@@ -108,20 +107,14 @@ def submit(req: SubmitRequest) -> dict:
     except Exception as e:
         raise HTTPException(500, f"grading failed: {e}")
     result = res.to_json()
-    if not res.passed:
-        return {"passed": False, "result": result}
-    if _signer is None:
-        return {"passed": True, "result": result, "note": "signing not configured"}
-    if req.action == "mint":
-        signed = _signer.sign_mint(agent_id=req.agentId, to=req.to, vuln_class=res.vulnClass,
-                                   difficulty=res.difficulty, pool=req.pool,
-                                   submission_hash=res.submissionHash, ttl_s=settings.auth_ttl_s)
-    else:
-        signed = _signer.sign_skill(agent_id=req.agentId, vuln_class=res.vulnClass,
-                                    difficulty=res.difficulty, submission_hash=res.submissionHash,
-                                    ttl_s=settings.auth_ttl_s)
-    return {"passed": True, "result": result, "action": signed.kind,
-            "auth": signed.auth, "signature": signed.signature, "signer": signed.signer}
+    # Direct grading does not deal a server-chosen challenge and does not sign.
+    # Mint authorizations come only from /v1/authorize on a reward session.
+    return {
+        "passed": res.passed,
+        "result": result,
+        "authorizable": False,
+        "note": "mint authorizations are issued only for server-assigned reward sessions via /v1/authorize",
+    }
 
 
 # --------------------------------------------------------------------------- v1
@@ -168,6 +161,7 @@ class StartRequest(BaseModel):
     vulnClass: Optional[int] = None
     difficulty: Optional[int] = None
     motherId: Optional[str] = None
+    practice: bool = False
 
 
 @app.post("/v1/start")
@@ -176,7 +170,7 @@ def v1_start(req: StartRequest, agent: dict = Depends(require_agent)) -> dict:
     try:
         return platform.start(address=agent["addr"], agent_id=agent["agentId"],
                               vuln_class=req.vulnClass, difficulty=req.difficulty,
-                              mother_id=req.motherId)
+                              mother_id=req.motherId, practice=req.practice)
     except ProtocolError as e:
         raise HTTPException(e.status, e.detail)
 
@@ -210,7 +204,7 @@ def v1_submit(req: PlaySubmit, agent: dict = Depends(require_agent)) -> dict:
 class AuthorizeRequest(BaseModel):
     sessionId: str
     to: Optional[str] = None
-    action: Literal["mint", "skill"] = "mint"
+    action: Literal["mint"] = "mint"
 
 
 @app.post("/v1/authorize")

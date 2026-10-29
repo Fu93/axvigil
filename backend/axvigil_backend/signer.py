@@ -1,8 +1,10 @@
-"""EIP-712 signing of MintAuth / SkillAuth.
+"""EIP-712 signing of MintAuth.
 
-The domain and type encodings here are cross-checked against the contract's
-`hashMintAuth` / `hashSkillAuth` in contracts/test/EIP712Digest.t.sol — the
-digests must match exactly or the chain will reject every signature.
+The domain and type encoding is cross-checked against the contract's
+`hashMintAuth` in contracts/test/EIP712Digest.t.sol — the digest must match
+exactly or the chain will reject every signature.
+
+There is no SkillAuth. A solve is recorded only by `mint`, one for one.
 """
 
 from __future__ import annotations
@@ -27,21 +29,9 @@ _MINT_TYPES = {
         {"name": "deadline", "type": "uint256"},
     ]
 }
-_SKILL_TYPES = {
-    "SkillAuth": [
-        {"name": "agentId", "type": "uint256"},
-        {"name": "vulnClass", "type": "uint8"},
-        {"name": "difficulty", "type": "uint8"},
-        {"name": "submissionHash", "type": "bytes32"},
-        {"name": "nonce", "type": "uint256"},
-        {"name": "deadline", "type": "uint256"},
-    ]
-}
-
-# Public aliases — the single source of truth for the EIP-712 MintAuth encoding,
+# Public alias — the single source of truth for the EIP-712 MintAuth encoding,
 # reused by the mint_auth CLI so there is only one definition in the repo.
 MINT_AUTH_TYPES = _MINT_TYPES
-SKILL_AUTH_TYPES = _SKILL_TYPES
 DOMAIN_NAME = "AxVigil"
 DOMAIN_VERSION = "1"
 
@@ -75,7 +65,7 @@ def mint_typed_data(chain_id: int, verifying_contract: str, message: dict) -> di
 
 @dataclass
 class SignedAuth:
-    kind: str  # "mint" | "skill"
+    kind: str  # "mint"
     auth: dict
     signature: str  # 0x r||s||v (65 bytes)
     signer: str
@@ -135,23 +125,6 @@ class AuthSigner:
         out = dict(msg)
         out["submissionHash"] = submission_hash
         return SignedAuth("mint", out, sig, self.address, digest)
-
-    def sign_skill(
-        self, *, agent_id: int, vuln_class: int, difficulty: int,
-        submission_hash: str, ttl_s: int = 3600,
-    ) -> SignedAuth:
-        msg = {
-            "agentId": int(agent_id),
-            "vulnClass": int(vuln_class),
-            "difficulty": int(difficulty),
-            "submissionHash": _b32(submission_hash),
-            "nonce": self._nonce(),
-            "deadline": self._deadline(ttl_s),
-        }
-        sig, digest = self._sign(_SKILL_TYPES, msg)
-        out = dict(msg)
-        out["submissionHash"] = submission_hash
-        return SignedAuth("skill", out, sig, self.address, digest)
 
 
 def _b32(h: str) -> bytes:

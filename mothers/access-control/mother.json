@@ -16,7 +16,7 @@
   },
   "requiredFunctionSentinels": ["fzzDeposit", "fzzAdmin", "fzzTotal"],
   "distractors": [1, 3],
-  "limits": { "maxChangedLines": 12, "maxBytes": 6000 },
-  "title": "Unguarded Treasury Sweep",
-  "summary": "A privileged function that moves all funds is missing its owner check, so anyone can call it. Restrict it to the owner without breaking deposits or the owner's own use."
+  "limits": { "maxChangedLines": 8, "maxBytes": 6000 },
+  "title": "Treasury Sweep",
+  "summary": "A function moves the whole treasury balance. Deposits and an honest owner's sweep must keep working."
 }

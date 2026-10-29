@@ -9,10 +9,16 @@ import shutil
 import pytest
 
 from axvigil_verifier.forge_runner import run_test
+from axvigil_verifier.toolchain import discover_solc, forge_executable
 
-_forge = os.environ.get("FORGE") or shutil.which("forge")
-_solc = os.environ.get("SOLC") or shutil.which("solc")
-pytestmark = pytest.mark.skipif(not (_forge and _solc), reason="forge/solc not available")
+_forge = forge_executable()
+_solc = discover_solc()
+
+
+@pytest.fixture(scope="session", autouse=True)
+def _require_forge():
+    if not _forge:
+        pytest.fail("forge is required. Install foundry; solc is discovered from svm if needed.")
 
 _HEADER = """// SPDX-License-Identifier: MIT
 pragma solidity 0.8.28;

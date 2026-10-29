@@ -6,13 +6,13 @@ Two paths: a **local devnet** (anvil) that needs nothing external, and **BSC tes
 > For the authoritative BSC testnet checklist (faucet, preflight, verification) and the
 > live deployment record, see [`docs/bsc-testnet-deployment.md`](docs/bsc-testnet-deployment.md)
 > and [`deployments/bsc-testnet-97.json`](deployments/bsc-testnet-97.json). This file adds
-> the local-devnet path and the `LiveFlow` lifecycle (which also exercises the
-> `recordSolve` third-class path).
+> the local-devnet path and the `LiveFlow` lifecycle (two mints, each writing one skill solve).
 
 ## Local devnet — full lifecycle in two commands
 
-Proves deploy → two mints → a skill-only 3rd class → commit-reveal → tier draw, all on a
-live chain, with no faucet and no network.
+Proves deploy → two mints (the lifetime cap, 1:1 with skill solves) → commit-reveal → tier draw, all on a
+live chain, with no faucet and no network. A third mint reverts. The script deploys the current
+contracts; the already-live BSC testnet addresses do not have this cap pairing or the three-pool ladder.
 
 ```bash
 # 1. a local chain at BSC testnet's chainId
@@ -24,7 +24,7 @@ forge script script/LiveFlow.s.sol --rpc-url http://127.0.0.1:8545 --broadcast
 ```
 
 `LiveFlow.s.sol` prints the deployed addresses and the resulting state (tiers drawn,
-`classCounts` reaching `[1,1,1]`, `maxDifficulty` LEGENDARY). To read the on-chain skill art:
+`classCounts` `[1,1,0]`, `totalSolves` 2, `mintedPerAgent` 2). To read the on-chain skill art:
 
 ```bash
 SKILL=<AxVigilSkill address from the script output>
@@ -56,7 +56,7 @@ forge script script/Deploy.s.sol --rpc-url bsc_testnet --broadcast
 After deploy, set `VERIFYING_CONTRACT` in `backend/.env` to the printed
 `AxVigilCollectible` address, start the backend, and the signer it uses must equal the
 `SIGNER` address above. The agent (`agent/`) solves challenges and the backend signs the
-resulting `MintAuth`/`SkillAuth`; the Agent ID owner submits them.
+resulting `MintAuth`; the Agent ID owner submits it. Pool in that signature must equal difficulty.
 
 ### Operating commit-reveal (owner)
 

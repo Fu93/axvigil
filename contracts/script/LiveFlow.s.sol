@@ -9,8 +9,8 @@ import {IAgentRegistry} from "../src/interfaces/IAgentRegistry.sol";
 import {IAxVigilSkill} from "../src/interfaces/IAxVigilSkill.sol";
 
 /// @notice End-to-end lifecycle on a live chain (local anvil --chain-id 97):
-///         deploy -> two mints -> a skill-only 3rd class -> commit-reveal -> reveal tiers.
-///         Proves the deploy path and the whole reward flow actually execute on chain.
+///         deploy -> two mints (the lifetime cap, each writing one skill solve) ->
+///         commit-reveal -> reveal tiers. There is no mint-free third class.
 ///
 ///   anvil --chain-id 97 &
 ///   forge script script/LiveFlow.s.sol --rpc-url http://127.0.0.1:8545 --broadcast
@@ -43,18 +43,10 @@ contract LiveFlow is Script {
         registry.mintId(alice, 1); // Agent ID #1 -> alice
         vm.stopBroadcast();
 
-        // --- two collectible mints for agent 1 (reentrancy + price classes) ---
-        _mint(nft, alice, 1, 0, 0, 1, keccak256("solve-reentrancy"), 1);
+        // --- two collectible mints for agent 1. Pool must equal difficulty.
+        //     basic reentrancy (pool 0) and advanced price (pool 1). A third mint would revert.
+        _mint(nft, alice, 1, 0, 0, 0, keccak256("solve-reentrancy"), 1);
         _mint(nft, alice, 1, 1, 1, 1, keccak256("solve-price"), 2);
-
-        // --- 3rd class via skill-only record (no collectible, no quota) ---
-        AxVigilCollectible.SkillAuth memory sa = AxVigilCollectible.SkillAuth({
-            agentId: 1, vulnClass: 2, difficulty: 2,
-            submissionHash: keccak256("solve-access"), nonce: 3, deadline: 4102444800
-        });
-        (uint8 v, bytes32 r, bytes32 s) = vm.sign(SIGNER_PK, nft.hashSkillAuth(sa));
-        vm.broadcast(ALICE_PK);
-        nft.recordSolve(sa, abi.encodePacked(r, s, v));
 
         // --- reveal the batch and draw tiers ---
         vm.startBroadcast(OWNER_PK);
@@ -73,7 +65,7 @@ contract LiveFlow is Script {
         console2.log("tier token#1  ", nft.tierOf(1));
         console2.log("tier token#2  ", nft.tierOf(2));
         uint32[3] memory counts = skill.classCounts(1);
-        console2.log("skill classes solved (reentrancy/price/access):");
+        console2.log("skill classes solved (reentrancy/price/access), 1:1 with mints:");
         console2.log(counts[0], counts[1], counts[2]);
         console2.log("skill maxDifficulty", skill.maxDifficulty(1));
         console2.log("skill totalSolves  ", skill.totalSolves(1));

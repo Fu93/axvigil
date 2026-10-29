@@ -21,7 +21,7 @@
   },
   "requiredFunctionSentinels": ["fzzSpot", "fzzSafe", "fzzDeposit", "fzzBorrow", "fzzRepay", "fzzSwap"],
   "distractors": [1, 3],
-  "limits": { "maxChangedLines": 20, "maxBytes": 8000 },
-  "title": "Spot-Price Lending Pool",
-  "summary": "Collateral is valued at the instantaneous pool (spot) price, which a single-tx swap can move. Value it with the manipulation-resistant reference price instead."
+  "limits": { "maxChangedLines": 8, "maxBytes": 8000 },
+  "title": "Lending Pool",
+  "summary": "A user borrows quote against deposited base collateral. Honest deposits, borrows and repays must keep working."
 }

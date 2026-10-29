@@ -23,15 +23,27 @@ The PoC test file must import the target via "../src/<TargetFile>" and compile u
 the challenge's pragma. Keep the patch as small as possible."""
 
 
+def _budget(limits: dict | None) -> str:
+    limits = limits or {}
+    lines = limits.get("maxChangedLines", "unspecified")
+    nbytes = limits.get("maxBytes", "unspecified")
+    return (
+        f"Patch budget: at most {lines} changed lines (additions plus deletions) "
+        f"and at most {nbytes} bytes for the full patched file. "
+        "A larger rewrite fails patchWithinLimits even if the bug is fixed."
+    )
+
+
 def build_user_prompt(
     *, challenge_id: str, target_file: str, contract_name: str, vuln_class_name: str,
-    pragma: str, source: str, required_functions: list[str],
+    pragma: str, source: str, required_functions: list[str], limits: dict | None = None,
 ) -> str:
     funcs = ", ".join(required_functions) if required_functions else "(none specified)"
     return f"""Challenge: {challenge_id}
 Target file: {target_file}   (contract {contract_name}, pragma {pragma})
 Suspected class: {vuln_class_name}
 Public functions that must remain: {funcs}
+{_budget(limits)}
 
 Source of {target_file}:
 ```solidity
@@ -41,9 +53,14 @@ Source of {target_file}:
 Return the JSON object described in the system message."""
 
 
-def build_retry_prompt(*, prev_patch: str, prev_poc: str, result_log: str, checks: dict) -> str:
+def build_retry_prompt(
+    *, prev_patch: str, prev_poc: str, result_log: str, checks: dict,
+    source: str, limits: dict | None = None,
+) -> str:
     failed = [k for k, v in checks.items() if not v]
     return f"""Your previous submission did NOT pass. Failed checks: {failed}
+
+{_budget(limits)}
 
 Grader log:
 {result_log}
@@ -62,6 +79,11 @@ Your previous patched_contract:
 Your previous poc_test:
 ```solidity
 {prev_poc}
+```
+
+Original source, which the patch is graded against:
+```solidity
+{source}
 ```
 
 Fix the failing checks and return the full JSON object again."""

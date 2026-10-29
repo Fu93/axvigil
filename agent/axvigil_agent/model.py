@@ -62,7 +62,20 @@ class MetaModelClient:
         )
         with urllib.request.urlopen(req, timeout=self.timeout_s) as resp:
             data = json.loads(resp.read().decode("utf-8"))
-        return data["choices"][0]["message"]["content"]
+        # Reasoning models can return content=null when the reply is cut off.
+        # Hand the solver an empty string so it takes the unparseable-retry path
+        # instead of crashing on None.strip().
+        return message_text(data["choices"][0]["message"])
+
+
+def message_text(message: object) -> str:
+    """Assistant text from a chat message. Missing or null content is ""."""
+    if not isinstance(message, dict):
+        return ""
+    content = message.get("content")
+    if isinstance(content, str):
+        return content
+    return ""
 
 
 class ScriptedClient:

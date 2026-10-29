@@ -29,7 +29,7 @@ contract AxVigilCollectibleTest is AxVigilBase {
     }
 
     function test_validMint() public {
-        uint256 id = _mint(alice, agentA, 1, 1, 0);
+        uint256 id = _mint(alice, agentA, 1, 1, 1);
         assertEq(id, 1);
         assertEq(nft.ownerOf(1), alice);
         assertEq(nft.totalMinted(), 1);
@@ -38,7 +38,7 @@ contract AxVigilCollectibleTest is AxVigilBase {
         assertEq(nft.vulnClassOf(1), 1);
         AxVigilCollectible.TokenData memory t = nft.tokenData(1);
         assertEq(t.difficulty, 1);
-        assertEq(t.pool, 0);
+        assertEq(t.pool, 1);
         assertFalse(t.revealed);
         assertEq(t.batchId, 1);
         // same signature also wrote the skill record
@@ -60,7 +60,7 @@ contract AxVigilCollectibleTest is AxVigilBase {
 
     /// @dev Our digest matches an independent EIP-712 encoding of the SPEC struct.
     function test_eip712DigestMatchesSpec() public {
-        AxVigilCollectible.MintAuth memory a = _auth(agentA, alice, 2, 2, 1);
+        AxVigilCollectible.MintAuth memory a = _auth(agentA, alice, 2, 2, 2);
         bytes32 typehash = keccak256(
             "MintAuth(uint256 agentId,address to,uint8 vulnClass,uint8 difficulty,uint8 pool,bytes32 submissionHash,uint256 nonce,uint256 deadline)"
         );
@@ -136,7 +136,7 @@ contract AxVigilCollectibleTest is AxVigilBase {
     function test_revert_tamperedField() public {
         AxVigilCollectible.MintAuth memory a = _auth(agentA, alice, 0, 0, 0);
         bytes memory sig = _sign(a, signerPk);
-        a.pool = 1; // try to upgrade to PREMIUM
+        a.pool = 2; // try to upgrade a basic solve into the legendary pool
         vm.prank(alice);
         vm.expectRevert(AxVigilCollectible.InvalidSignature.selector);
         nft.mint(a, sig);
@@ -171,6 +171,26 @@ contract AxVigilCollectibleTest is AxVigilBase {
         vm.prank(alice);
         vm.expectRevert(AxVigilCollectible.InvalidParams.selector);
         nft.mint(a, sig);
+    }
+
+    /// @dev The signed pool has to be the difficulty. A basic solve cannot enter the advanced pool.
+    function test_revert_poolMustMatchDifficulty() public {
+        AxVigilCollectible.MintAuth memory a = _auth(agentA, alice, 0, 0, 1);
+        bytes memory sig = _sign(a, signerPk);
+        vm.prank(alice);
+        vm.expectRevert(abi.encodeWithSelector(AxVigilCollectible.PoolDifficultyMismatch.selector, uint8(0), uint8(1)));
+        nft.mint(a, sig);
+        assertEq(skill.totalSolves(agentA), 0);
+        assertEq(nft.mintedPerAgent(agentA), 0);
+    }
+
+    function test_legendaryPoolFollowsLegendaryDifficulty() public {
+        uint256 id = _mint(alice, agentA, 2, 2, 2);
+        assertEq(nft.poolForDifficulty(2), 2);
+        assertEq(nft.tokenData(id).pool, 2);
+        assertEq(nft.tokenData(id).difficulty, 2);
+        assertEq(skill.totalSolves(agentA), 1);
+        assertEq(nft.mintedPerAgent(agentA), 1);
     }
 
     function test_revert_thirdMintPerAgent() public {
@@ -347,6 +367,7 @@ contract AxVigilCollectibleTest is AxVigilBase {
 
     function test_productionConfig() public view {
         assertEq(nft.maxSupply(), 7777);
+        assertEq(nft.drawableSupply(), 7773, "hidden is reserved, not minted");
         assertEq(nft.tierTotal(0), 5444);
         assertEq(nft.tierTotal(1), 1555);
         assertEq(nft.tierTotal(2), 622);
@@ -354,11 +375,11 @@ contract AxVigilCollectibleTest is AxVigilBase {
         assertEq(nft.tierTotal(4), 4);
         uint256[5] memory av = nft.availableNow();
         assertEq(av[3], 38, "legendary stage 1");
-        assertEq(av[4], 1, "hidden stage 1");
+        assertEq(av[4], 0, "hidden is not in the random draw");
     }
 
     function test_revert_unsafeStagedConfig() public {
-        // HIDDEN=3 releases 0 in stage 0 and LEGENDARY=1 releases 0: first draw would have an empty pool.
+        // Drawable supply is 1 (the single legendary). Four stages cannot open on one token.
         uint256[5] memory bad = [uint256(0), 0, 0, 1, 3];
         vm.expectRevert(AxVigilCollectible.InvalidParams.selector);
         new AxVigilCollectible(

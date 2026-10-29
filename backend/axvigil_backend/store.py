@@ -35,7 +35,18 @@ CREATE TABLE IF NOT EXISTS sessions (
   submitted_at REAL,
   solve_seconds INTEGER,
   submission_hash TEXT,
-  authorized   INTEGER NOT NULL DEFAULT 0
+  authorized   INTEGER NOT NULL DEFAULT 0,
+  reward       INTEGER NOT NULL DEFAULT 1    -- 1 = server-assigned reward attempt (counts toward the cap)
+);
+CREATE TABLE IF NOT EXISTS authorizations (
+  id              INTEGER PRIMARY KEY AUTOINCREMENT,
+  session_id      TEXT NOT NULL UNIQUE,
+  agent_id        INTEGER NOT NULL,
+  submission_hash TEXT NOT NULL UNIQUE,
+  difficulty      INTEGER NOT NULL,
+  pool            INTEGER NOT NULL,
+  signature       TEXT NOT NULL,
+  created_at      REAL NOT NULL
 );
 CREATE TABLE IF NOT EXISTS solves (
   id           INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -58,9 +69,27 @@ CREATE TABLE IF NOT EXISTS nonces (
   used       INTEGER NOT NULL DEFAULT 0
 );
 CREATE INDEX IF NOT EXISTS idx_sessions_addr ON sessions(address);
+CREATE INDEX IF NOT EXISTS idx_sessions_agent_reward ON sessions(agent_id, reward);
 CREATE INDEX IF NOT EXISTS idx_solves_agent ON solves(agent_id);
 CREATE INDEX IF NOT EXISTS idx_solves_mother_time ON solves(mother_id, created_at);
+CREATE INDEX IF NOT EXISTS idx_auth_agent ON authorizations(agent_id);
 """
+
+
+class QuotaExceeded(Exception):
+    """The Agent ID already has two reward attempts or two mint authorizations."""
+
+
+class AlreadyAuthorized(Exception):
+    pass
+
+
+class DuplicateSubmission(Exception):
+    """This submissionHash was already used for an authorization."""
+
+
+class NotRewardSession(Exception):
+    pass
 
 
 class Store:
@@ -72,7 +101,13 @@ class Store:
             if str(path) != ":memory:":
                 self._conn.execute("PRAGMA journal_mode=WAL")
             self._conn.executescript(_SCHEMA)
+            self._ensure_reward_column()
             self._conn.commit()
+
+    def _ensure_reward_column(self) -> None:
+        cols = {row[1] for row in self._conn.execute("PRAGMA table_info(sessions)")}
+        if "reward" not in cols:
+            self._conn.execute("ALTER TABLE sessions ADD COLUMN reward INTEGER NOT NULL DEFAULT 1")
 
     # ---- agents ----
     def upsert_agent(self, address: str, agent_id: int) -> None:
@@ -108,13 +143,82 @@ class Store:
             return True
 
     # ---- sessions ----
-    def create_session(self, s: dict[str, Any]) -> None:
+    def reward_attempt_count(self, agent_id: int) -> int:
         with self._lock:
+            return int(self._conn.execute(
+                "SELECT COUNT(*) AS n FROM sessions WHERE agent_id=? AND reward=1", (agent_id,)
+            ).fetchone()["n"])
+
+    def mint_authorization_count(self, agent_id: int) -> int:
+        with self._lock:
+            return int(self._conn.execute(
+                "SELECT COUNT(*) AS n FROM authorizations WHERE agent_id=?", (agent_id,)
+            ).fetchone()["n"])
+
+    def create_session(self, s: dict[str, Any]) -> None:
+        """Insert a session. Reward sessions are capped at 2 per Agent ID, counted at open
+        time so abandoning one does not free the slot."""
+        reward = 1 if s.get("reward", True) else 0
+        with self._lock:
+            if reward:
+                n = int(self._conn.execute(
+                    "SELECT COUNT(*) AS n FROM sessions WHERE agent_id=? AND reward=1",
+                    (s["agent_id"],),
+                ).fetchone()["n"])
+                if n >= 2:
+                    raise QuotaExceeded(
+                        "reward cap reached: 2 server-assigned challenges per Agent ID"
+                    )
+            row = dict(s)
+            row["reward"] = reward
             self._conn.execute(
                 "INSERT INTO sessions(session_id,address,agent_id,mother_id,seed,challenge_id,"
-                "vuln_class,difficulty,started_at,expires_at,status) "
+                "vuln_class,difficulty,started_at,expires_at,status,reward) "
                 "VALUES(:session_id,:address,:agent_id,:mother_id,:seed,:challenge_id,"
-                ":vuln_class,:difficulty,:started_at,:expires_at,'open')", s,
+                ":vuln_class,:difficulty,:started_at,:expires_at,'open',:reward)", row,
+            )
+            self._conn.commit()
+
+    def commit_mint_authorization(
+        self, *, session_id: str, agent_id: int, submission_hash: str,
+        difficulty: int, pool: int, signature: str,
+    ) -> None:
+        """Record one mint authorization. One per solved reward session, at most two per
+        Agent ID, and a submissionHash can be authorized only once."""
+        with self._lock:
+            row = self._conn.execute(
+                "SELECT * FROM sessions WHERE session_id=?", (session_id,)
+            ).fetchone()
+            if row is None:
+                raise KeyError(session_id)
+            if not row["reward"]:
+                raise NotRewardSession()
+            if row["status"] != "solved":
+                raise ValueError("session is not solved")
+            if int(row["agent_id"]) != int(agent_id):
+                raise ValueError("agent mismatch")
+            if row["submission_hash"] != submission_hash:
+                raise ValueError("submission hash mismatch")
+            if row["authorized"]:
+                raise AlreadyAuthorized()
+            n = int(self._conn.execute(
+                "SELECT COUNT(*) AS n FROM authorizations WHERE agent_id=?", (agent_id,)
+            ).fetchone()["n"])
+            if n >= 2:
+                raise QuotaExceeded("mint authorization cap reached")
+            taken = self._conn.execute(
+                "SELECT 1 FROM authorizations WHERE submission_hash=?", (submission_hash,)
+            ).fetchone()
+            if taken:
+                raise DuplicateSubmission()
+            self._conn.execute(
+                "INSERT INTO authorizations(session_id,agent_id,submission_hash,difficulty,pool,"
+                "signature,created_at) VALUES(?,?,?,?,?,?,?)",
+                (session_id, agent_id, submission_hash, difficulty, pool, signature, time.time()),
+            )
+            self._conn.execute(
+                "UPDATE sessions SET authorized=1 WHERE session_id=? AND authorized=0",
+                (session_id,),
             )
             self._conn.commit()
 

@@ -33,7 +33,7 @@ contract LocalDemo is Script {
             to: deployer,
             vulnClass: 0,
             difficulty: 1,
-            pool: 0,
+            pool: 1,
             submissionHash: submissionHash,
             nonce: 1,
             deadline: block.timestamp + 1 hours

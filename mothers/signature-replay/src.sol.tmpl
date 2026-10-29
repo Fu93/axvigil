@@ -8,7 +8,6 @@ pragma solidity 0.8.28;
 /// signed by the authorizer. The voucher is bound to this contract's address.
 contract Czz {
     address public vzzSigner;
-    mapping(bytes32 => bool) public vzzUsed;
 
     event Released(address indexed to, uint256 amount);
 
@@ -22,8 +21,6 @@ contract Czz {
     function fzzClaim(address to, uint256 amount, uint8 v, bytes32 r, bytes32 s) external {
         bytes32 lzzDigest = keccak256(abi.encodePacked(address(this), to, amount));
         require(ecrecover(lzzDigest, v, r, s) == vzzSigner, "bad signature");
-        // VULNERABLE: the voucher is never marked spent, so the same signature can be
-        // replayed to release the funds again and again until the treasury is empty.
         (bool ok,) = to.call{value: amount}("");
         require(ok, "transfer failed");
         emit Released(to, amount);

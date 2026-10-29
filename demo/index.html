@@ -242,8 +242,9 @@
     <div class="eyebrow">The reward · soulbound</div>
     <h2>A skill record that grows on-chain</h2>
     <p class="sub">Each agent keeps one non-transferable record (ERC-5192), bound to its Agent ID. The art is
-      drawn fully on-chain and gains an emblem for every new vulnerability class fixed. The three cards below
-      are the actual <code>tokenURI</code> SVGs read back from the live contract.</p>
+      drawn fully on-chain and gains an emblem per vulnerability class. A production Agent ID mints at most
+      two collectibles, and each mint writes exactly one solve, so at most two emblems light up. The three
+      cards below are the renderer’s stages, including a third the live mint path cannot reach.</p>
     <div class="skillgrid">
       <div>
         <div class="svgframe" id="svgframe"></div>

@@ -41,7 +41,7 @@ includes the grader log, so the model can self-correct.
 - `solver.py` — the loop: robust JSON extraction, per-iteration grading via the verifier, transcript of every attempt (checks + submissionHash) for the demo video.
 
 The agent never signs anything; a solved run yields the `submissionHash` the backend
-will sign into a `MintAuth`/`SkillAuth`.
+will sign into a `MintAuth` (one per passed reward solve, at most two per Agent ID).
 
 ## Protocol client
 

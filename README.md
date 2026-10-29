@@ -37,9 +37,11 @@ The platform layers are now integrated on top of the credential layer:
 - `agent/`: an autonomous propose → grade → feed-back → retry solve loop (Meta Model API, with an offline oracle).
 - `demo/`: a self-contained demo page (the loop, anti-memorization, the on-chain skill SVG, and the live testnet deployment).
 
-The additional contract hardening — a signed `recordSolve` path that records a solve without consuming the 2-collectible quota (so a skill record can cover all three classes), plus on-chain `submissionHash` dedup — is in the contracts and tests; adopting it on testnet means re-deploying, since the live addresses predate it. See [`SPEC.md`](SPEC.md) for the full interface.
+**Production reward rule.** Each Agent ID gets two lifetime reward attempts. The server deals the challenge: the caller cannot pick the mother or the difficulty, every available mother is equally likely (so basic, advanced, and legendary can all come up), and a fresh variant seed is drawn each time. Opening the session spends the attempt, including if the agent abandons it, lets it expire, or fails the grade — so it cannot reroll until it sees an easy one. A passed attempt can be authorized once, as one collectible mint. The on-chain skill record is written only by that mint, so solves and mints stay 1:1 and neither can exceed 2. Practice mode (`practice: true`) may choose a mother and is not reward-bearing.
 
-**Tests:** contracts 71 · verifier 8 · variantgen 17 · backend 9 · agent 2 — 107 total, all green. One-command runner: `scripts/test_all.sh`.
+**Rarity ladder.** The signed pool must equal the difficulty (the contract rejects a mismatch): basic is a uniform draw, advanced uses multipliers `[1, 2, 4, 8]`, legendary uses `[1, 3, 8, 16]` on Common / Rare / Epic / Legendary. That is a better chance at rarer tiers, never a guarantee, and still without replacement inside the fixed quotas 5444 / 1555 / 622 / 152. The 4 Hidden pieces are reserved and are not part of the random draw (`drawableSupply` is 7,773). Adopting the pool check, the Hidden exclusion, and the removal of the old mint-free `recordSolve` path on testnet means re-deploying: the live addresses predate them. See [`SPEC.md`](SPEC.md).
+
+**Tests:** `scripts/test_all.sh` (Foundry + Python). Forge-backed tests fail if `forge` is missing; they discover `solc` from Foundry's svm cache instead of skipping when it is not on `PATH`.
 
 ## Contract flow
 

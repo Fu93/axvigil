@@ -36,12 +36,14 @@ contract Handler is Test {
             agentId = registry.mint(address(this));
             agents.push(agentId);
         }
+        // Pool is the difficulty. `premium` selects the best pool; otherwise the fuzzed difficulty.
+        uint8 difficulty = premium ? 2 : uint8(diff % 3);
         AxVigilCollectible.MintAuth memory a = AxVigilCollectible.MintAuth({
             agentId: agentId,
             to: address(this),
             vulnClass: vc % 3,
-            difficulty: diff % 3,
-            pool: premium ? 1 : 0,
+            difficulty: difficulty,
+            pool: difficulty,
             submissionHash: bytes32(nonce),
             nonce: nonce++,
             deadline: block.timestamp + 1 days
@@ -98,18 +100,22 @@ contract AxVigilInvariantTest is Test {
     }
 
     function invariant_supplyNeverExceedsMax() public view {
-        assertLe(nft.totalMinted(), nft.maxSupply());
+        assertLe(nft.totalMinted(), nft.drawableSupply());
         assertEq(nft.maxSupply(), 53);
+        assertEq(nft.drawableSupply(), 49, "4 hidden reserved");
+        assertEq(nft.drawnOf(4), 0, "hidden is not drawn");
     }
 
     function invariant_drawnMatchesRevealedAndWithinPools() public view {
         uint256 revealed = nft.nextToReveal() - 1;
         uint256 sum;
-        uint256 stage = revealed == 0 ? 0 : ((revealed - 1) * 4) / nft.maxSupply();
+        uint256 denom = nft.drawableSupply();
+        uint256 stage = revealed == 0 ? 0 : ((revealed - 1) * 4) / denom;
         for (uint256 t; t < 5; ++t) {
             uint256 d = nft.drawnOf(t);
             assertLe(d, tiers[t], "tier pool never exceeded");
-            if (t >= 3) assertLe(d, (tiers[t] * (stage + 1)) / 4, "staged release");
+            if (t == 4) assertEq(d, 0, "hidden stays out of the draw");
+            if (t == 3) assertLe(d, (tiers[t] * (stage + 1)) / 4, "staged release");
             sum += d;
         }
         assertEq(sum, revealed);

@@ -61,7 +61,7 @@ contract AxVigilSkillTest is AxVigilBase {
 
     function test_onePerAgentAndCounts() public {
         _mint(alice, agentA, 0, 0, 0);
-        _mint(alice, agentA, 2, 2, 1);
+        _mint(alice, agentA, 2, 2, 2);
         assertEq(skill.totalRecords(), 1, "one record per agent");
         assertEq(skill.solvesOf(agentA, 0), 1);
         assertEq(skill.solvesOf(agentA, 1), 0);
@@ -100,7 +100,7 @@ contract AxVigilSkillTest is AxVigilBase {
     }
 
     function test_revoke() public {
-        _mint(alice, agentA, 0, 1, 0);
+        _mint(alice, agentA, 0, 1, 1);
         vm.expectEmit(true, false, false, true, address(skill));
         emit Revoked(agentA, "leaked answer");
         vm.prank(owner);
@@ -144,7 +144,7 @@ contract AxVigilSkillTest is AxVigilBase {
     /// The record follows the Agent ID: changing wallets does not lose it, selling the collectible
     /// does not move it.
     function test_followsAgentIdTransfer() public {
-        _mint(alice, agentA, 1, 1, 0);
+        _mint(alice, agentA, 1, 1, 1);
         assertEq(skill.ownerOf(agentA), alice);
 
         // selling the collectible does not move the skill record
@@ -178,7 +178,7 @@ contract AxVigilSkillTest is AxVigilBase {
         _mint(alice, agentA, 0, 0, 0);
         string memory uri1 = skill.tokenURI(agentA);
         assertTrue(_startsWith(uri1, "data:application/json;base64,"));
-        _mint(alice, agentA, 1, 2, 0);
+        _mint(alice, agentA, 1, 2, 2);
         string memory uri2 = skill.tokenURI(agentA);
         assertGt(bytes(uri2).length, bytes(uri1).length, "SVG gains an element per new class");
         assertTrue(keccak256(bytes(uri1)) != keccak256(bytes(uri2)));
