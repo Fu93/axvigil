@@ -85,57 +85,5 @@ def test_nonce_is_single_use():
     assert client.post("/v1/auth/login", json=body).status_code == 401  # replay rejected
 
 
-@pytest.mark.skipif(not (_forge and _solc), reason="forge/solc not available")
-def test_full_flow_start_submit_authorize():
-    from variantgen.render import Mother, render_challenge
-
-    token = _login(agent_id=1)
-    hdr = {"Authorization": f"Bearer {token}"}
-
-    r = client.post("/v1/start", headers=hdr, json={"motherId": "reentrancy"})
-    assert r.status_code == 200, r.text
-    ch = r.json()
-    assert "source" in ch and "solution" not in ch  # agent never gets the solution
-    seed = int(re.search(r"-(\d+)$", ch["challengeId"]).group(1))
-
-    # fragment delivery works and reassembles to the full source
-    n = ch["fragmentCount"]
-    frags = [client.get("/v1/get_fragment", headers=hdr,
-                        params={"sessionId": ch["sessionId"], "index": i}).json()["data"]
-             for i in range(n)]
-    assert "".join(frags) == ch["source"]
-
-    # reconstruct the reference solution for this exact seed (as an oracle agent)
-    tmp = Path(tempfile.mkdtemp(prefix="axv-sol-"))
-    try:
-        render_challenge(Mother(REPO / "mothers" / "reentrancy"), seed, tmp)
-        patch = (tmp / "solution" / "patched" / ch["targetFile"]).read_text()
-        poc = (tmp / "solution" / "poc" / "Poc.t.sol").read_text()
-    finally:
-        shutil.rmtree(tmp, ignore_errors=True)
-
-    r = client.post("/v1/submit", headers=hdr,
-                    json={"sessionId": ch["sessionId"], "patch": patch, "poc": poc})
-    assert r.status_code == 200, r.text
-    body = r.json()
-    assert body["passed"] is True, body["result"]["log"]
-    assert body["result"]["solveSeconds"] is not None
-    assert body["authorizable"] is True
-
-    # authorize -> a signed MintAuth whose signature recovers to the signer
-    r = client.post("/v1/authorize", headers=hdr,
-                    json={"sessionId": ch["sessionId"], "action": "mint"})
-    assert r.status_code == 200, r.text
-    az = r.json()
-    assert az["auth"]["submissionHash"] == body["result"]["submissionHash"]
-    assert az["signature"].startswith("0x") and len(az["signature"]) == 132
-
-    # authorizing twice is refused
-    assert client.post("/v1/authorize", headers=hdr,
-                       json={"sessionId": ch["sessionId"], "action": "mint"}).status_code == 409
-
-    # status + leaderboard reflect the solve
-    st = client.get("/v1/status", headers=hdr).json()
-    assert st["solved"] >= 1 and st["score"] >= 1
-    lb = client.get("/v1/leaderboard").json()
-    assert any(row["agentId"] == 1 for row in lb)
+# The full login → start → submit → authorize flow is exercised through the
+# reference client in agent/tests/test_protocol_client.py (one flow implementation).

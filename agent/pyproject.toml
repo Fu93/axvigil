@@ -3,7 +3,7 @@ name = "axvigil-agent"
 version = "0.1.0"
 description = "Autonomous solve loop for AxVigil challenges (Meta Model API)"
 requires-python = ">=3.10"
-dependencies = []  # stdlib-only HTTP client; grading uses the verifier package
+dependencies = ["eth-account>=0.13,<1"]  # protocol_client signs login messages
 
 [tool.setuptools]
 packages = ["axvigil_agent"]

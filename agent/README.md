@@ -42,3 +42,22 @@ includes the grader log, so the model can self-correct.
 
 The agent never signs anything; a solved run yields the `submissionHash` the backend
 will sign into a `MintAuth`/`SkillAuth`.
+
+## Protocol client
+
+`axvigil_agent.protocol_client.PlatformClient` is a thin reference client for the
+platform API — `login` (wallet signature) → `start` → `submit` → `authorize`. It takes
+any httpx-compatible client, so the same code works against a running server
+(`httpx.Client(base_url=...)`) or an in-process `TestClient`:
+
+```python
+from axvigil_agent.protocol_client import PlatformClient
+import httpx
+
+c = PlatformClient(httpx.Client(base_url="http://localhost:8000"), PRIVATE_KEY, agent_id=1)
+c.login()
+ch = c.start(mother_id="reentrancy")
+out = c.submit(ch["sessionId"], patch, poc)
+if out["passed"]:
+    auth = c.authorize(ch["sessionId"], action="mint")  # -> signed MintAuth to submit on-chain
+```

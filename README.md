@@ -39,7 +39,7 @@ The platform layers are now integrated on top of the credential layer:
 
 The additional contract hardening — a signed `recordSolve` path that records a solve without consuming the 2-collectible quota (so a skill record can cover all three classes), plus on-chain `submissionHash` dedup — is in the contracts and tests; adopting it on testnet means re-deploying, since the live addresses predate it. See [`SPEC.md`](SPEC.md) for the full interface.
 
-**Tests:** contracts 71 · verifier 8 · variantgen 13 · backend 10.
+**Tests:** contracts 71 · verifier 8 · variantgen 13 · backend 9 · agent 2 — 103 total, all green. One-command runner: `scripts/test_all.sh`.
 
 ## Contract flow
 

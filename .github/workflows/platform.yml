@@ -54,6 +54,9 @@ jobs:
       - name: backend protocol tests
         run: PYTHONPATH=. python -m pytest tests/ -q
         working-directory: backend
+      - name: agent protocol-client tests
+        run: PYTHONPATH=. python -m pytest tests/ -q
+        working-directory: agent
       - name: mint-auth bridge test
         run: python -m pytest backend/test_mint_auth.py -q
       - name: grade the deployed reentrancy-001 sample
