@@ -3,8 +3,8 @@
   "chainId": 97,
   "rpcUrl": "https://bsc-testnet-rpc.publicnode.com",
   "explorer": "https://testnet.bscscan.com",
-  "sourceCommit": "2fcaa37eca4a646f255b4b1dd7ff81b07471bbe7",
-  "sourceNote": "PR #4 hardened contracts: 2 mints per Agent ID, pool bound to difficulty, HIDDEN excluded from the draw (drawableSupply 7773), no mint-free recordSolve path.",
+  "sourceCommit": "039436272143da7f27de4ce3cd621352510b0c5d",
+  "sourceNote": "PR #8 contracts: 2 mints per Agent ID, pool bound to difficulty, Hidden drawable only from pool 2 at a fixed HIDDEN_CHANCE_BPS=25 (cap 30), 7773 public pieces + up to 4 Hidden (maxSupply 7777).",
   "deployer": "0x4E38ec3f38D5c947B60E7e1273890Eea51501Ef8",
   "owner": "0x4E38ec3f38D5c947B60E7e1273890Eea51501Ef8",
   "signer": "0x4E38ec3f38D5c947B60E7e1273890Eea51501Ef8",
@@ -12,23 +12,23 @@
     "name": "MockAgentID",
     "address": "0x7Aa441477f0246353bdAe504cF0F9B3027D6d45e",
     "deployTx": "0x5d8f3daab4521eb24b6f61ce6665180c0c3cf1750520761ab148f326895f49a2",
-    "note": "reused from the previous deployment"
+    "note": "reused from the original deployment"
   },
   "skill": {
     "name": "AxVigilSkill",
-    "address": "0xF572376A24467F5a70D0063448e5386BB842cD30",
-    "deployTx": "0x90cb4c24b54f6c25573bbb96148c011f58c550759a88e09bfc81ff70fd0ef3ac",
-    "block": 139641088
+    "address": "0x337743Da5894B58039743f46f689337991cECD18",
+    "deployTx": "0x9e29ae16dacc1cf78a52943b8e34034bc9485731dc757a6cc307e750d267a4d8",
+    "block": 139652372
   },
   "collectible": {
     "name": "AxVigilCollectible",
-    "address": "0x7dd86cB7d4e2d7E0b731FB86D53Bd12D02751685",
-    "deployTx": "0xdd9a1d5851cdfac6cae6467ba8f90d5f0afd3838cf62015ec5dcc23c79114938",
-    "block": 139641091
+    "address": "0x06580BFc1626f7DD3d7B841FD304e6f2B23e4658",
+    "deployTx": "0xfe8680a125a66434f28da33348e432490ba6e39f1ed31853de82d9dc80fef5f6",
+    "block": 139652376
   },
   "postDeployTxs": {
-    "grantMinterRole": "0xea6a6be373ea7b1ab659ccb3ed992e689526733e35bea18bc153f4a0bcc27de8",
-    "setBaseURI": "0xe61bf2e49fc0878b04f7e4c0bb4cd388a9bc1b3912d4beabd7de73499333e1dc"
+    "grantMinterRole": "0x480d15039932584740e18b6b49d866d85c4168a7c4ab7960e962eed6a6f2fde8",
+    "setBaseURI": "0xe93f5a46a4c557ee36c4b7f720d87e6a8cd5ecd7ec009895d58e935967658a00"
   },
   "config": {
     "tierCounts": [
@@ -66,20 +66,26 @@
         16,
         0
       ]
-    }
+    },
+    "hiddenChanceBps": {
+      "pool0": 0,
+      "pool1": 0,
+      "pool2": 25
+    },
+    "maxHiddenChanceBps": 30
   },
   "gasPriceWei": "200000000",
   "smokeTest": {
-    "description": "Local backend (in-process) signed a MintAuth for a server-assigned reward session solved with the reference solution; Agent ID 1 (deployer) minted it.",
-    "commitSeedTx": "0x12b0715db6d7a78a87725a8eb7a88ef780a7953d06c980a1bda3806a41c0685e",
-    "mintTx": "0x30ffd1b1872e5f00c06a6696374a45a807c87ccc563fe7def5fbd74866c856af",
+    "description": "Local backend with real-RPC Agent ID ownership check signed a MintAuth for a server-assigned reward session (dealt legendary, pool 2) solved with the reference solution; Agent ID 1 (deployer) minted it.",
+    "commitSeedTx": "0x75814c08a186facf2b1738cea2b54cc0b53492acd5f25cfa9621ff6d11c7db25",
+    "mintTx": "0x2381283bef977534ff5eaa234c6bdf7160a6a80a84aec4238d2063ceb7b826ea",
     "agentId": 1,
     "tokenId": 1,
     "currentBatch": 1,
     "vulnClass": 2,
-    "difficulty": 0,
-    "pool": 0,
-    "submissionHash": "0xfec3d7259bcd36bfae1bd26567edd87619c16c33efc9badca6e4ab3c7339a778",
+    "difficulty": 2,
+    "pool": 2,
+    "submissionHash": "0x80834fbc89e0be163ee745d19461c788c4ed86441c513cc6203c183b000864df",
     "mintedPerAgent": 1,
     "skillTotalSolves": 1,
     "revealed": false
@@ -91,61 +97,152 @@
   "previous": {
     "network": "BSC Testnet",
     "chainId": 97,
-    "rpcUrl": "https://data-seed-prebsc-1-s1.bnbchain.org:8545",
+    "rpcUrl": "https://bsc-testnet-rpc.publicnode.com",
     "explorer": "https://testnet.bscscan.com",
+    "sourceCommit": "2fcaa37eca4a646f255b4b1dd7ff81b07471bbe7",
+    "sourceNote": "PR #4 hardened contracts: 2 mints per Agent ID, pool bound to difficulty, HIDDEN excluded from the draw (drawableSupply 7773), no mint-free recordSolve path.",
     "deployer": "0x4E38ec3f38D5c947B60E7e1273890Eea51501Ef8",
     "owner": "0x4E38ec3f38D5c947B60E7e1273890Eea51501Ef8",
     "signer": "0x4E38ec3f38D5c947B60E7e1273890Eea51501Ef8",
     "agentRegistry": {
       "name": "MockAgentID",
       "address": "0x7Aa441477f0246353bdAe504cF0F9B3027D6d45e",
-      "deployTx": "0x5d8f3daab4521eb24b6f61ce6665180c0c3cf1750520761ab148f326895f49a2"
+      "deployTx": "0x5d8f3daab4521eb24b6f61ce6665180c0c3cf1750520761ab148f326895f49a2",
+      "note": "reused from the previous deployment"
     },
     "skill": {
       "name": "AxVigilSkill",
-      "address": "0xaCd74265DcFc516bD81d9E7173a57ddEdBD3a593",
-      "deployTx": "0x0285addf1c48ecaf711890478d641c057f389a4a465852ff1abad32898374ecc"
+      "address": "0xF572376A24467F5a70D0063448e5386BB842cD30",
+      "deployTx": "0x90cb4c24b54f6c25573bbb96148c011f58c550759a88e09bfc81ff70fd0ef3ac",
+      "block": 139641088
     },
     "collectible": {
       "name": "AxVigilCollectible",
-      "address": "0xFDc7744074d49e9049B82A7CCc76824f75f80437",
-      "deployTx": "0xa74f202a1426072cd61a122c82fa247680f6aa0cbd4a9a0896f1ae2b3bbbc96f2"
+      "address": "0x7dd86cB7d4e2d7E0b731FB86D53Bd12D02751685",
+      "deployTx": "0xdd9a1d5851cdfac6cae6467ba8f90d5f0afd3838cf62015ec5dcc23c79114938",
+      "block": 139641091
     },
-    "postDeployTxs": [
-      "0xe9a6c6a8c5d1186add5760668b31f25210fc392270f7e015ebb00ead4d8f3bd2",
-      "0xc41ce01d88603f628911692581e46be04005dee1ea6577f4d078f669f8ef354a"
-    ],
-    "liveDemo": {
-      "challengeId": "reentrancy-001",
-      "passed": true,
-      "submissionHash": "0x3aeb184fb05db9cc7b890ad8e9f44e3f789d71730758cb76ad445182d46da514",
-      "agentId": 1,
-      "tokenId": 1,
-      "agentOwner": "0x4E38ec3f38D5c947B60E7e1273890Eea51501Ef8",
-      "nftOwner": "0x4E38ec3f38D5c947B60E7e1273890Eea51501Ef8",
-      "skillTotalSolves": 1,
-      "currentBatch": 1,
-      "transactions": [
-        "0x493ac2cb71504cb643f95c8e1b3a2a7dd53cc33e95428d6cc8297138e100155b",
-        "0xc125505638e6562e965977610cbad7a0cfc6f3579c38f3660c24a578a73f5ecd",
-        "0xf78ae69add796a107302aaafc178c0b45c4c5936ebcb5ebe47c58f3836b14fce"
+    "postDeployTxs": {
+      "grantMinterRole": "0xea6a6be373ea7b1ab659ccb3ed992e689526733e35bea18bc153f4a0bcc27de8",
+      "setBaseURI": "0xe61bf2e49fc0878b04f7e4c0bb4cd388a9bc1b3912d4beabd7de73499333e1dc"
+    },
+    "config": {
+      "tierCounts": [
+        5444,
+        1555,
+        622,
+        152,
+        4
       ],
-      "reveal": {
-        "batchId": 1,
-        "vulnClass": 0,
-        "vulnClassName": "REENTRANCY",
-        "tier": 0,
-        "tierName": "COMMON",
-        "artId": 0,
-        "tokenURI": "0",
-        "seedRevealTx": "0x4a0cb0039cd88c8573cab7bd30a909c2d601036f2607b516dc62abe34f407733",
-        "tokenRevealTx": "0xe17d8f2ea32ee87698bc5367aca087ebb12a841083cd2416111aea525dba6401"
+      "maxSupply": 7777,
+      "drawableSupply": 7773,
+      "maxPerAgent": 2,
+      "hourlyCap": 50,
+      "baseURI": "",
+      "unrevealedURI": "ipfs://unrevealed.json",
+      "poolWeights": {
+        "0": [
+          1,
+          1,
+          1,
+          1,
+          0
+        ],
+        "1": [
+          1,
+          2,
+          4,
+          8,
+          0
+        ],
+        "2": [
+          1,
+          3,
+          8,
+          16,
+          0
+        ]
       }
     },
-    "gasPriceWei": "100000000",
+    "gasPriceWei": "200000000",
+    "smokeTest": {
+      "description": "Local backend (in-process) signed a MintAuth for a server-assigned reward session solved with the reference solution; Agent ID 1 (deployer) minted it.",
+      "commitSeedTx": "0x12b0715db6d7a78a87725a8eb7a88ef780a7953d06c980a1bda3806a41c0685e",
+      "mintTx": "0x30ffd1b1872e5f00c06a6696374a45a807c87ccc563fe7def5fbd74866c856af",
+      "agentId": 1,
+      "tokenId": 1,
+      "currentBatch": 1,
+      "vulnClass": 2,
+      "difficulty": 0,
+      "pool": 0,
+      "submissionHash": "0xfec3d7259bcd36bfae1bd26567edd87619c16c33efc9badca6e4ab3c7339a778",
+      "mintedPerAgent": 1,
+      "skillTotalSolves": 1,
+      "revealed": false
+    },
     "notes": [
       "MockAgentID is an open-mint testnet/demo registry, not a production registry.",
-      "The demo seed is intentionally kept local and is not stored in this manifest."
-    ]
+      "The batch-1 seed is kept local (outside the repo) and is not stored in this manifest."
+    ],
+    "previous": {
+      "network": "BSC Testnet",
+      "chainId": 97,
+      "rpcUrl": "https://data-seed-prebsc-1-s1.bnbchain.org:8545",
+      "explorer": "https://testnet.bscscan.com",
+      "deployer": "0x4E38ec3f38D5c947B60E7e1273890Eea51501Ef8",
+      "owner": "0x4E38ec3f38D5c947B60E7e1273890Eea51501Ef8",
+      "signer": "0x4E38ec3f38D5c947B60E7e1273890Eea51501Ef8",
+      "agentRegistry": {
+        "name": "MockAgentID",
+        "address": "0x7Aa441477f0246353bdAe504cF0F9B3027D6d45e",
+        "deployTx": "0x5d8f3daab4521eb24b6f61ce6665180c0c3cf1750520761ab148f326895f49a2"
+      },
+      "skill": {
+        "name": "AxVigilSkill",
+        "address": "0xaCd74265DcFc516bD81d9E7173a57ddEdBD3a593",
+        "deployTx": "0x0285addf1c48ecaf711890478d641c057f389a4a465852ff1abad32898374ecc"
+      },
+      "collectible": {
+        "name": "AxVigilCollectible",
+        "address": "0xFDc7744074d49e9049B82A7CCc76824f75f80437",
+        "deployTx": "0xa74f202a1426072cd61a122c82fa247680f6aa0cbd4a9a0896f1ae2b3bbbc96f2"
+      },
+      "postDeployTxs": [
+        "0xe9a6c6a8c5d1186add5760668b31f25210fc392270f7e015ebb00ead4d8f3bd2",
+        "0xc41ce01d88603f628911692581e46be04005dee1ea6577f4d078f669f8ef354a"
+      ],
+      "liveDemo": {
+        "challengeId": "reentrancy-001",
+        "passed": true,
+        "submissionHash": "0x3aeb184fb05db9cc7b890ad8e9f44e3f789d71730758cb76ad445182d46da514",
+        "agentId": 1,
+        "tokenId": 1,
+        "agentOwner": "0x4E38ec3f38D5c947B60E7e1273890Eea51501Ef8",
+        "nftOwner": "0x4E38ec3f38D5c947B60E7e1273890Eea51501Ef8",
+        "skillTotalSolves": 1,
+        "currentBatch": 1,
+        "transactions": [
+          "0x493ac2cb71504cb643f95c8e1b3a2a7dd53cc33e95428d6cc8297138e100155b",
+          "0xc125505638e6562e965977610cbad7a0cfc6f3579c38f3660c24a578a73f5ecd",
+          "0xf78ae69add796a107302aaafc178c0b45c4c5936ebcb5ebe47c58f3836b14fce"
+        ],
+        "reveal": {
+          "batchId": 1,
+          "vulnClass": 0,
+          "vulnClassName": "REENTRANCY",
+          "tier": 0,
+          "tierName": "COMMON",
+          "artId": 0,
+          "tokenURI": "0",
+          "seedRevealTx": "0x4a0cb0039cd88c8573cab7bd30a909c2d601036f2607b516dc62abe34f407733",
+          "tokenRevealTx": "0xe17d8f2ea32ee87698bc5367aca087ebb12a841083cd2416111aea525dba6401"
+        }
+      },
+      "gasPriceWei": "100000000",
+      "notes": [
+        "MockAgentID is an open-mint testnet/demo registry, not a production registry.",
+        "The demo seed is intentionally kept local and is not stored in this manifest."
+      ]
+    }
   }
 }
