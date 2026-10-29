@@ -68,7 +68,7 @@ Grader log:
 What each check means:
 - pocProvesBug: your PoC must PASS on the ORIGINAL contract (actually trigger the bug).
 - pocFailsAfterPatch: your PoC must FAIL on your PATCHED contract (the fix must close it).
-- hiddenTestsPass: hidden functional tests must still pass on your patched contract.
+- hiddenTestsPass: hidden functional tests must still pass on your patched contract. If this failed, the patch changed intended behaviour; keep the fix minimal and do not rewrite unrelated functions. Those tests are not named.
 - patchWithinLimits: keep the diff small; do not rename the contract or delete interface functions.
 
 Your previous patched_contract:

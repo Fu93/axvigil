@@ -18,6 +18,7 @@ from pathlib import Path
 from .circuit import CircuitBreaker
 from .config import Settings
 from .quota import MAX_REWARD_ATTEMPTS, pool_for_difficulty
+from .registry import AgentRegistry, RegistryUnavailable, rpc_registry_from_env
 from .signer import AuthSigner
 from .store import (
     AlreadyAuthorized,
@@ -42,10 +43,19 @@ def _ensure_paths(settings: Settings) -> None:
 
 
 class Platform:
-    def __init__(self, settings: Settings, store: Store, signer: AuthSigner | None):
+    def __init__(
+        self, settings: Settings, store: Store, signer: AuthSigner | None,
+        registry: AgentRegistry | None = None,
+    ):
         self.s = settings
         self.store = store
         self.signer = signer
+        self.dev_skip_ownership = bool(settings.dev_skip_ownership)
+        # An injected registry (the test double) wins. Otherwise use chain RPC
+        # when AGENT_REGISTRY and RPC_URL are set.
+        self.registry = registry if registry is not None else rpc_registry_from_env(
+            settings.agent_registry, settings.rpc_url,
+        )
         self.breaker = CircuitBreaker(store)
         _ensure_paths(settings)
         from variantgen.render import Mother  # noqa: E402
@@ -78,6 +88,7 @@ class Platform:
             "sessionTtlSeconds": self.s.session_ttl_s,
             "maxRewardAttempts": MAX_REWARD_ATTEMPTS,
             "maxMintsPerAgent": MAX_REWARD_ATTEMPTS,
+            "ownershipCheck": self.ownership_mode(),
             "pools": {
                 "0": "BASIC (uniform)",
                 "1": "ADVANCED (better odds)",
@@ -100,9 +111,40 @@ class Platform:
         meta = json.loads((out / "challenge.json").read_text())
         return out, meta
 
+    def ownership_mode(self) -> str:
+        if self.dev_skip_ownership:
+            return "dev-skip"
+        if self.registry is None:
+            return "unconfigured"
+        return "enforced"
+
+    def require_owner(self, agent_id: int, address: str) -> None:
+        """The wallet must currently own `agentId` in the Agent ID registry.
+
+        Skipped only when AXVIGIL_DEV_SKIP_OWNERSHIP is set (local dev). A missing
+        registry in any other mode is a configuration error, not a free pass.
+        """
+        if self.dev_skip_ownership:
+            return
+        if self.registry is None:
+            raise ProtocolError(
+                503,
+                "Agent ID ownership check is not configured. Set AGENT_REGISTRY and RPC_URL. "
+                "AXVIGIL_DEV_SKIP_OWNERSHIP=1 disables the check for local dev only.",
+            )
+        try:
+            owner = self.registry.owner_of(int(agent_id))
+        except RegistryUnavailable as exc:
+            raise ProtocolError(503, f"Agent ID registry unavailable: {exc}") from exc
+        if owner is None or owner.lower() != address.lower():
+            raise ProtocolError(403, "authenticated wallet does not own this Agent ID")
+
     def start(self, *, address: str, agent_id: int, vuln_class: int | None = None,
               difficulty: int | None = None, mother_id: str | None = None,
               practice: bool = False) -> dict:
+        # Before a reward attempt is spent, and again for practice so a stranger
+        # cannot open a session in someone else's name.
+        self.require_owner(agent_id, address)
         reward = not practice
         if reward:
             # The caller does not pick the challenge. Any of basic / advanced / legendary
@@ -181,12 +223,17 @@ class Platform:
 
     # ---- grading ----
     def submit(self, *, session_id: str, address: str, patch: str, poc: str) -> dict:
-        sess = self._owned_session(session_id, address)
-        if sess["status"] != "open":
-            raise ProtocolError(409, f"session already {sess['status']}")
-        if time.time() > sess["expires_at"]:
-            self.store.finish_session(session_id, passed=False, solve_seconds=-1, submission_hash="")
+        # One grader run per session. The open -> grading transition is atomic,
+        # so a second submit cannot start another forge run while the first grades.
+        code, sess = self.store.claim_for_grading(session_id, address, time.time())
+        if code == "missing" or sess is None:
+            raise ProtocolError(404, "unknown session")
+        if code == "forbidden":
+            raise ProtocolError(403, "session belongs to another agent")
+        if code == "expired":
             raise ProtocolError(408, "session expired")
+        if code != "ok":
+            raise ProtocolError(409, f"session already {sess['status']}")
 
         from axvigil_verifier.grader import grade
         out = self.s.challenge_cache_dir / sess["challenge_id"]
@@ -202,12 +249,22 @@ class Platform:
             (tmp / "poc" / "Poc.t.sol").write_text(poc)
             res = grade(out, tmp, seed=sess["seed"], forge_bin=self.s.forge_bin,
                         solc=self.s.solc_bin, timeout_s=self.s.grade_timeout_s)
+        except Exception:
+            # The attempt was already claimed. Close it so it cannot be graded again.
+            self.store.finish_grading(
+                session_id, passed=False,
+                solve_seconds=int(time.time() - sess["started_at"]), submission_hash="",
+            )
+            raise
         finally:
             shutil.rmtree(tmp, ignore_errors=True)
 
         solve_seconds = int(time.time() - sess["started_at"])
-        self.store.finish_session(session_id, passed=res.passed,
-                                  solve_seconds=solve_seconds, submission_hash=res.submissionHash)
+        if not self.store.finish_grading(
+            session_id, passed=res.passed, solve_seconds=solve_seconds,
+            submission_hash=res.submissionHash,
+        ):
+            raise ProtocolError(409, "session already graded")
         # Practice passes must not move the leaderboard or the leak breaker.
         if sess["reward"]:
             self.store.record_solve({
@@ -225,6 +282,7 @@ class Platform:
     # ---- reward ----
     def authorize(self, *, session_id: str, address: str, to: str | None, action: str) -> dict:
         sess = self._owned_session(session_id, address)
+        self.require_owner(sess["agent_id"], address)
         if action != "mint":
             raise ProtocolError(
                 400,

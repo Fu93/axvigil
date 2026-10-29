@@ -12,7 +12,7 @@ from pathlib import Path
 
 import pytest
 
-from axvigil_verifier.grader import grade
+from axvigil_verifier.grader import HIDDEN_FAIL_HINT, grade
 from axvigil_verifier.keccak import submission_hash
 from axvigil_verifier.toolchain import discover_solc, forge_executable
 
@@ -162,6 +162,26 @@ PARTIAL = VULN.replace(
     'require(amount > 0, "nothing to withdraw");',
     'require(amount > 0, "nothing to withdraw");\n        require(msg.sender != address(0xBEEF), "blocked");',
 )
+
+
+def test_hidden_failure_hints_without_naming_tests(tmp_path):
+    # Credits only half the deposit. The contract still compiles and the public
+    # functions remain, but honest accounting in the hidden tests no longer holds.
+    patched = VULN.replace(
+        "balanceOf[msg.sender] += msg.value;",
+        "balanceOf[msg.sender] += msg.value / 2;",
+    )
+    sub = _write_submission(tmp_path, patched, GOOD_POC)
+    res = _grade(sub)
+    assert res.hiddenTestsPass is False, res.log
+    assert HIDDEN_FAIL_HINT in res.log
+    hidden = (CH / "test" / "Hidden.t.sol").read_text()
+    for line in hidden.splitlines():
+        stripped = line.strip()
+        if stripped.startswith("function test_"):
+            name = stripped.split("(")[0].removeprefix("function ")
+            assert name not in res.log
+            assert name + "()" not in res.log
 
 
 def test_decoy_test_cannot_hide_a_live_exploit(tmp_path):

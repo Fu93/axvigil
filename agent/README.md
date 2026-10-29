@@ -56,8 +56,10 @@ import httpx
 
 c = PlatformClient(httpx.Client(base_url="http://localhost:8000"), PRIVATE_KEY, agent_id=1)
 c.login()
-ch = c.start(mother_id="reentrancy")
+ch = c.start()  # server assigns the challenge and spends one reward attempt
 out = c.submit(ch["sessionId"], patch, poc)
 if out["passed"]:
     auth = c.authorize(ch["sessionId"], action="mint")  # -> signed MintAuth to submit on-chain
 ```
+
+`c.start(mother_id="reentrancy")` returns 400 on a reward session: the server chooses the mother. Pass `practice=True` to pick one. A practice session is graded but `authorize` returns 403 and it does not spend a reward attempt.

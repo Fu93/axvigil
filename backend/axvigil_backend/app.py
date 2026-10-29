@@ -89,8 +89,6 @@ class SubmitRequest(BaseModel):
     to: str
     patch: str
     poc: str
-    pool: int = Field(default=0, ge=0, le=2)
-    seed: int = 0
     solveSeconds: Optional[int] = None
 
 
@@ -100,8 +98,10 @@ def submit(req: SubmitRequest) -> dict:
         meta = challenge_meta(settings, req.challengeId)
     except FileNotFoundError:
         raise HTTPException(404, f"unknown challenge: {req.challengeId}")
+    # The client does not choose the seed. Grading uses the challenge's own seed.
+    seed = int(meta.get("seed", 0))
     try:
-        res = grade_submission(settings, challenge_id=req.challengeId, seed=req.seed,
+        res = grade_submission(settings, challenge_id=req.challengeId, seed=seed,
                                target_file=meta["targetFile"], patch=req.patch, poc=req.poc,
                                solve_seconds=req.solveSeconds)
     except Exception as e:
@@ -151,6 +151,10 @@ def v1_auth_login(req: LoginRequest, request: Request) -> dict:
         raise HTTPException(401, "bad signature")
     if recovered.lower() != req.address.lower():
         raise HTTPException(401, "signature does not match address")
+    try:
+        platform.require_owner(req.agentId, recovered)
+    except ProtocolError as e:
+        raise HTTPException(e.status, e.detail)
     store.upsert_agent(recovered, req.agentId)
     token = tokens.issue(recovered, req.agentId)
     return {"token": token, "expiresInSeconds": tokens.ttl_s,

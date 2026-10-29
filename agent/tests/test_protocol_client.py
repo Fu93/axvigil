@@ -29,7 +29,8 @@ for p in ("backend", "agent", "variantgen"):
     sys.path.insert(0, str(REPO / p))
 
 from fastapi.testclient import TestClient  # noqa: E402
-from axvigil_backend.app import app  # noqa: E402
+from axvigil_backend.app import app, platform  # noqa: E402
+from axvigil_backend.registry import MemoryRegistry  # noqa: E402
 from axvigil_agent.protocol_client import PlatformClient  # noqa: E402
 
 sys.path.insert(0, str(REPO / "verifier"))
@@ -39,6 +40,10 @@ _forge = forge_executable()
 _solc = discover_solc()
 
 AGENT_PK = "0x5de4111afa1a4b94908f83103eb1f1706367c2e68ca870fc3fb9a804cdab365a"
+_owners = MemoryRegistry()
+_owners.set_owner(1, __import__("eth_account").Account.from_key(AGENT_PK).address)
+platform.registry = _owners
+platform.dev_skip_ownership = False
 
 
 def _client() -> PlatformClient:
