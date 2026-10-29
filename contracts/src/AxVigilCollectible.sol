@@ -26,16 +26,22 @@ import {IAxVigilSkill} from "./interfaces/IAxVigilSkill.sol";
 ///
 /// Rarity
 ///  - Public tiers are drawn WITHOUT replacement (production 5444/1555/622/152).
-///  - HIDDEN (4) is reserved and is not part of the random draw. `maxSupply` still counts it;
-///    `drawableSupply` is what `mint` / `revealTokens` can assign.
+///  - HIDDEN (4) is drawable only from pool 2 (legendary difficulty), and only by a
+///    fixed roll of HIDDEN_CHANCE_BPS / 10_000 (0.25%). That chance does not depend on
+///    how many public pieces remain, so it cannot drift up as other tiers deplete.
+///    Pools 0 and 1 never roll Hidden. Hidden is not in the weighted ladder.
+///  - `mint` stops at `drawableSupply` (the public tiers). A Hidden hit occupies one of
+///    those mint slots, so one public piece stays unminted. Hidden that is never rolled
+///    stays unminted. Reveal does not force Hidden, and does not revert, if the public
+///    ladder is empty.
 ///  - Staged release: LEGENDARY is released in 4 equal stages across `drawableSupply`
 ///    (stage k releases legendaryTotal*(k+1)/4). The first stage is open from token #1.
 ///  - Three pools, bound to the signed difficulty (the contract rejects a mismatch):
-///      BASIC difficulty 0 -> pool 0, uniform weights
-///      ADVANCED difficulty 1 -> pool 1, multipliers [1, 2, 4, 8]
-///      LEGENDARY difficulty 2 -> pool 2, multipliers [1, 3, 8, 16]
-///    Weights multiply the remaining count, so a higher pool is a better chance at the
-///    rarer public tiers, never a guarantee, and never a path to HIDDEN.
+///      BASIC difficulty 0 -> pool 0, uniform weights, no Hidden
+///      ADVANCED difficulty 1 -> pool 1, multipliers [1, 2, 4, 8], no Hidden
+///      LEGENDARY difficulty 2 -> pool 2, multipliers [1, 3, 8, 16], plus the fixed Hidden roll
+///    Weights multiply the remaining public count, so a higher pool is a better chance at
+///    the rarer public tiers, never a guarantee.
 ///
 /// Limits: max 2 collectibles per Agent ID (lifetime, bound to tokenId not wallet). Each mint
 /// records exactly one skill solve, so the skill record stays 1:1 with mints. There is no
@@ -65,6 +71,13 @@ contract AxVigilCollectible is ERC721, Ownable2Step, Pausable, EIP712 {
     uint8 public constant TIER_LEGENDARY = 3;
     uint8 public constant TIER_HIDDEN = 4;
     uint256 public constant STAGES = 4;
+
+    /// @notice Fixed Hidden chance for one pool-2 draw: 25 / 10_000 = 0.25%.
+    ///         Must stay strictly below MAX_HIDDEN_CHANCE_BPS (30 = 0.30%).
+    ///         This is not a weight, so it does not rise as other tiers are drawn.
+    uint16 public constant HIDDEN_CHANCE_BPS = 25;
+    uint16 public constant MAX_HIDDEN_CHANCE_BPS = 30;
+    uint256 public constant HIDDEN_CHANCE_DENOM = 10_000;
 
     /// @dev Art id layout: tier * 100_000 + vulnClass * 10_000 + index within (tier, vulnClass).
     uint256 private constant ART_TIER_MUL = 100_000;
@@ -111,7 +124,7 @@ contract AxVigilCollectible is ERC721, Ownable2Step, Pausable, EIP712 {
     /// @notice Configured supply = sum of tier pools, including the reserved HIDDEN pieces.
     ///         Immutable: cannot be increased.
     uint256 public immutable maxSupply;
-    /// @notice How many tokens `mint` can create. HIDDEN is excluded from the random draw.
+    /// @notice Mint cap = the four public tiers. Hidden is rolled inside those mints, not on top of them.
     uint256 public immutable drawableSupply;
 
     uint256 private immutable _tier0;
@@ -215,9 +228,10 @@ contract AxVigilCollectible is ERC721, Ownable2Step, Pausable, EIP712 {
         for (uint256 i; i < NUM_TIERS; ++i) {
             total += tierCounts[i];
         }
-        // HIDDEN is reserved and never drawn, so the random mint must still be large enough
-        // for four legendary stages on its own.
+        // Mint closes at the public tiers. Hidden is a side roll inside that supply, so the
+        // public ladder must still be large enough for four legendary stages on its own.
         uint256 drawable = total - tierCounts[4];
+        if (HIDDEN_CHANCE_BPS >= MAX_HIDDEN_CHANCE_BPS) revert InvalidParams();
         if (drawable < STAGES || total > 10_000) revert InvalidParams(); // art id layout needs < 10k per bucket
 
         // Staged legendary release must never leave the drawable pool empty before the next stage.
@@ -392,7 +406,10 @@ contract AxVigilCollectible is ERC721, Ownable2Step, Pausable, EIP712 {
             if (!b.revealed) break;
 
             uint256 rand = uint256(keccak256(abi.encode(b.seed, t.entropy)));
-            uint8 tier = _drawTier(id - 1, t.pool, rand);
+            (bool drawn, uint8 tier) = _drawTier(id - 1, t.pool, rand);
+            // Public tiers exhausted and the fixed Hidden roll missed (or this pool cannot
+            // draw Hidden). Stop. Do not force Hidden and do not revert.
+            if (!drawn) break;
 
             uint256 index = artCount[tier][t.vulnClass]++;
             uint32 artId = uint32(uint256(tier) * ART_TIER_MUL + uint256(t.vulnClass) * ART_CLASS_MUL + index);
@@ -410,31 +427,46 @@ contract AxVigilCollectible is ERC721, Ownable2Step, Pausable, EIP712 {
         nextToReveal = id;
     }
 
-    /// @dev Weighted draw over what is currently released and not yet drawn.
-    ///      HIDDEN's weight is always 0, so it is never selected.
+    /// @notice Whether this randomness would roll Hidden for `pool`, ignoring remaining supply.
+    ///         Pool 2 only. Exactly HIDDEN_CHANCE_BPS of every 10_000 residues hit.
+    function hiddenRollHits(uint256 rand, uint8 pool) public pure returns (bool) {
+        if (pool != POOL_LEGENDARY) return false;
+        return (rand % HIDDEN_CHANCE_DENOM) < HIDDEN_CHANCE_BPS;
+    }
+
+    /// @dev Pool 2 may take a Hidden piece first, at a fixed chance, then the public ladder.
+    ///      Returns false when no public tier is left and Hidden was not rolled. That does
+    ///      not assign Hidden (the chance must not become 100% at the end of supply).
     ///      BASIC:     weight = remaining count (uniform without replacement).
     ///      ADVANCED:  weight = remaining * [1, 2, 4, 8] for COMMON..LEGENDARY.
-    ///      LEGENDARY: weight = remaining * [1, 3, 8, 16].
-    function _drawTier(uint256 drawIndex, uint8 pool, uint256 rand) internal returns (uint8) {
+    ///      LEGENDARY: weight = remaining * [1, 3, 8, 16]. Hidden weight is always 0.
+    function _drawTier(uint256 drawIndex, uint8 pool, uint256 rand) internal returns (bool ok, uint8 tier) {
+        if (pool == POOL_LEGENDARY && _drawn[TIER_HIDDEN] < _tier4 && hiddenRollHits(rand, pool)) {
+            _drawn[TIER_HIDDEN] += 1;
+            return (true, TIER_HIDDEN);
+        }
+
         uint256 stage = (drawIndex * STAGES) / drawableSupply; // 0..3
         uint256[5] memory w;
         uint256 total;
         for (uint256 t; t < NUM_TIERS; ++t) {
-            uint256 avail = _released(t, stage) - _drawn[t];
+            uint256 released = _released(t, stage);
+            // Hidden's release is 0. Once any Hidden piece has been rolled, a bare
+            // subtraction would underflow. Those pieces are not in this ladder.
+            uint256 avail = _drawn[t] >= released ? 0 : released - _drawn[t];
             w[t] = avail * _weightMultiplier(pool, t);
             total += w[t];
         }
-        // total > 0 is guaranteed by the constructor's staged-release check: HIDDEN is
-        // excluded and legendary stages cannot lock the rest of the drawable supply.
+        if (total == 0) return (false, 0);
         uint256 r = rand % total;
         for (uint256 t; t < NUM_TIERS; ++t) {
             if (r < w[t]) {
                 _drawn[t] += 1;
-                return uint8(t);
+                return (true, uint8(t));
             }
             r -= w[t];
         }
-        revert(); // unreachable
+        return (false, 0); // unreachable while total > 0
     }
 
     /// @notice Weight multiplier for `tier` in `pool`. HIDDEN is 0 in every pool.
@@ -457,8 +489,8 @@ contract AxVigilCollectible is ERC721, Ownable2Step, Pausable, EIP712 {
         return 16;
     }
 
-    /// @notice How many of `tier` are released into the random draw at `stage` (0..3).
-    ///         HIDDEN is never released into the draw.
+    /// @notice How many of `tier` are in the weighted ladder at `stage` (0..3).
+    ///         HIDDEN is not in that ladder; pool 2 rolls it separately.
     function _released(uint256 tier, uint256 stage) internal view returns (uint256) {
         if (tier == TIER_HIDDEN) return 0;
         uint256 n = tierTotal(tier);
@@ -549,13 +581,20 @@ contract AxVigilCollectible is ERC721, Ownable2Step, Pausable, EIP712 {
         return _drawn[tier];
     }
 
-    /// @notice Released-but-undrawn count of each tier for the next draw.
+    /// @notice Pieces of Hidden still unrollled. Not part of the weighted ladder.
+    function hiddenRemaining() external view returns (uint256) {
+        return _tier4 - _drawn[TIER_HIDDEN];
+    }
+
+    /// @notice Released-but-undrawn count of each tier in the weighted ladder.
+    ///         Hidden's entry stays 0; use `hiddenRemaining` for the side roll.
     function availableNow() external view returns (uint256[5] memory avail) {
         uint256 drawIndex = nextToReveal - 1;
         if (drawIndex >= drawableSupply) return avail;
         uint256 stage = (drawIndex * STAGES) / drawableSupply;
         for (uint256 t; t < NUM_TIERS; ++t) {
-            avail[t] = _released(t, stage) - _drawn[t];
+            uint256 released = _released(t, stage);
+            avail[t] = _drawn[t] >= released ? 0 : released - _drawn[t];
         }
     }
 

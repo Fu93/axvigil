@@ -32,9 +32,9 @@ Agent ID: SPACE ID .ai Agent ID registry on BSC mainnet 0x60B9262456dE011F7d15a5
 - Max 2 collectibles per Agent ID tokenId, lifetime. Quota bound to tokenId, not wallet.
 - Mints and skill solves are 1:1. `mint` is the only way a solve is recorded. There is no mint-free `recordSolve` entry point. One `submissionHash` can mint once. A third mint reverts.
 - Reward challenges are server-assigned. Opening a reward session consumes one of two lifetime attempts even if it is abandoned. The pool signed in `MintAuth` must equal `difficulty` (0 basic / 1 advanced / 2 legendary).
-- Random rarity draw covers Common, Rare, Epic, and Legendary only (5444/1555/622/152). Hidden (4) is reserved and is not drawn. Higher pools raise the weight of rarer public tiers (`[1,1,1,1]`, `[1,2,4,8]`, `[1,3,8,16]`) and never guarantee a tier.
-- Total supply 7,777; tiers Common 5,444 / Rare 1,555 / Epic 622 / Legendary 152 / Hidden 4, drawn without replacement.
-- Hidden released 1 per 25% of supply minted; Legendary released in 4 equal stages.
+- Public rarity draw is Common, Rare, Epic, and Legendary (5444/1555/622/152), without replacement. Higher pools raise the weight of rarer public tiers (`[1,1,1,1]`, `[1,2,4,8]`, `[1,3,8,16]`) and never guarantee a tier.
+- Hidden (4) is drawable only from pool 2, by a fixed roll of 25/10000 (0.25%), strictly below 0.30%. The chance does not depend on remaining counts. Pools 0 and 1 never draw it. `mint` stops at the 7,773 public pieces; a Hidden hit uses one of those slots, and any Hidden that is not rolled stays unminted.
+- Total supply configured as 7,777 = those tiers. Legendary is released in 4 equal stages across the public supply. Hidden is not stage-gated.
 - Hourly mint cap; pausable; rotatable signer; supply cannot increase.
 - Hackathon randomness: commit-reveal (no VRF).
 - Skill record: non-transferable (ERC-5192 locked), bound to Agent ID tokenId, revocable by admin, records counts per vulnClass and max difficulty; tokenURI on-chain SVG that grows with each new vuln class.

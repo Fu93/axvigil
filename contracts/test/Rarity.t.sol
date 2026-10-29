@@ -37,29 +37,40 @@ contract RarityTest is AxVigilBase {
         assertEq(nft.nextToReveal(), supply + 1, "all revealed");
     }
 
-    /// @dev Walk tokens in draw order and check counts + staged legendary release.
-    ///      HIDDEN is reserved: none of it is drawn, and the other tiers fill exactly.
+    /// @dev Full mint of the public supply. Quotas are ceilings. Hidden may appear only on
+    ///      pool 2, and only within its quota. A Hidden hit leaves one public piece unminted.
     function _checkDistribution() internal view {
         uint256 supply = nft.drawableSupply();
         uint256[5] memory seen;
+        uint256 pool2;
+        uint256 hiddenOnPool2;
         for (uint256 id = 1; id <= supply; ++id) {
-            uint8 tier = nft.tierOf(id);
-            seen[tier] += 1;
-            assertLt(tier, 4, "hidden must not be drawn");
+            AxVigilCollectible.TokenData memory td = nft.tokenData(id);
+            assertTrue(td.revealed, "mint cap keeps every token revealable");
+            seen[td.tier] += 1;
+            if (td.pool != nft.POOL_LEGENDARY()) {
+                assertLt(td.tier, 4, "pools 0 and 1 never draw hidden");
+            } else {
+                pool2 += 1;
+                if (td.tier == 4) hiddenOnPool2 += 1;
+            }
             uint256 stage = ((id - 1) * 4) / supply;
             assertLe(seen[3], (nft.tierTotal(3) * (stage + 1)) / 4, "legendary released too early");
         }
         uint256 sum;
-        for (uint256 t; t < 4; ++t) {
-            assertEq(seen[t], nft.tierTotal(t), "tier count exact");
-            assertEq(nft.drawnOf(t), nft.tierTotal(t), "drawn counter exact");
+        for (uint256 t; t < 5; ++t) {
+            assertLe(seen[t], nft.tierTotal(t), "quota exceeded");
+            assertEq(nft.drawnOf(t), seen[t], "drawn counter");
             sum += seen[t];
         }
-        assertEq(seen[4], 0);
-        assertEq(nft.drawnOf(4), 0, "hidden quota is not consumed by the draw");
         assertEq(sum, supply);
         assertEq(nft.totalMinted(), supply);
-        assertLt(nft.totalMinted(), nft.maxSupply());
+        assertEq(hiddenOnPool2, seen[4]);
+        // When the pool-2 sample is large enough that even all 4 Hidden pieces are under 0.30%,
+        // the realized rate must be too. The per-draw probability is checked separately and does not drift.
+        if (pool2 > 0 && nft.tierTotal(4) * 10_000 < pool2 * nft.MAX_HIDDEN_CHANCE_BPS()) {
+            assertLt(hiddenOnPool2 * 10_000, pool2 * nft.MAX_HIDDEN_CHANCE_BPS(), "pool 2 hidden rate");
+        }
     }
 
     function _assertSoldOut() internal {
@@ -82,27 +93,35 @@ contract RarityTest is AxVigilBase {
         _assertSoldOut();
     }
 
-    /// Commons plus staged legendary, with hidden reserved: the draw still fills the public quotas
-    /// and never touches hidden, including when every token uses the strongest pool.
+    /// Commons plus staged legendary. Hidden may be rolled only when the token's pool is 2.
     function testFuzz_stagedReleaseUnderLegendaryPressure(uint256 fuzzSeed) public {
         _deploy([uint256(10), 0, 0, 4, 4], BIG_CAP);
         _mintAndRevealAll(fuzzSeed, type(uint256).max, 5);
         _checkDistribution();
     }
 
-    /// @dev Legendary is staged across the drawable supply. Hidden is configured but never drawn.
-    function test_stagedReleaseLeavesHiddenUndrawn() public {
-        // 8 legendary drawable, 4 hidden reserved. Stage 0 releases 8/4 = 2 legendary.
+    /// @dev Pool 0 cannot roll Hidden, so a legendary-only public supply reveals as legendary.
+    function test_pool0NeverDrawsHidden() public {
         _deploy([uint256(0), 0, 0, 8, 4], BIG_CAP);
         assertEq(nft.drawableSupply(), 8);
         assertEq(nft.maxSupply(), 12);
         uint256[5] memory av = nft.availableNow();
         assertEq(av[3], 2, "first legendary stage");
-        assertEq(av[4], 0, "hidden weight is zero");
-        _mintAndRevealAll(1, 0, 8);
-        _checkDistribution();
+        assertEq(av[4], 0, "hidden is not in the weighted ladder");
+        uint256 agent;
+        for (uint256 i; i < 8; ++i) {
+            if (i % 2 == 0) agent = registry.mint(alice);
+            vm.roll(block.number + 1);
+            _mint(alice, agent, 0, 0, 0);
+        }
+        vm.prank(owner);
+        nft.revealSeed(1, SEED);
+        nft.revealTokens(8);
+        assertEq(nft.drawnOf(4), 0);
+        assertEq(nft.drawnOf(3), 8);
         assertEq(nft.tierOf(1), 3);
         assertEq(nft.tierOf(8), 3);
+        assertEq(nft.hiddenRemaining(), 4, "unrolled hidden stays unminted");
     }
 
     /// Same entropy, three pools. Higher pools pull more non-common tiers, and none is certain.
@@ -123,12 +142,13 @@ contract RarityTest is AxVigilBase {
             uint256 n;
             for (uint256 id = 1; id <= 100; ++id) {
                 uint8 tier = nft.tierOf(id);
-                assertLt(tier, 4, "hidden stays out");
-                if (tier > 0) n++;
+                if (run < 2) assertLt(tier, 4, "basic and advanced never draw hidden");
+                if (tier > 0 && tier < 4) n++;
             }
             rare[run] = n;
             assertLt(n, 100, "a higher pool is not a guarantee");
-            assertEq(nft.drawnOf(4), 0);
+            if (run < 2) assertEq(nft.drawnOf(4), 0);
+            else assertLe(nft.drawnOf(4), 4);
         }
         assertGe(rare[1], rare[0], "advanced beats basic");
         assertGt(rare[2], rare[1], "legendary beats advanced");
@@ -173,7 +193,26 @@ contract RarityTest is AxVigilBase {
         assertEq(legBps[2], 38_743);
     }
 
-    /// Full production config: 7,773 drawable tokens, 4 hidden reserved. Heavy.
+    /// The Hidden roll is a fixed residue check. It does not look at remaining counts.
+    function test_hiddenChanceIsFixedAndBelowPointThreePercent() public {
+        _deploy(_production(), BIG_CAP);
+        assertEq(nft.HIDDEN_CHANCE_BPS(), 25);
+        assertLt(nft.HIDDEN_CHANCE_BPS(), nft.MAX_HIDDEN_CHANCE_BPS());
+        assertEq(nft.MAX_HIDDEN_CHANCE_BPS(), 30);
+        uint256 hits2;
+        uint256 hitsOther;
+        for (uint256 i; i < nft.HIDDEN_CHANCE_DENOM(); ++i) {
+            if (nft.hiddenRollHits(i, nft.POOL_LEGENDARY())) hits2 += 1;
+            if (nft.hiddenRollHits(i, nft.POOL_BASIC())) hitsOther += 1;
+            if (nft.hiddenRollHits(i, nft.POOL_ADVANCED())) hitsOther += 1;
+        }
+        assertEq(hits2, 25, "exactly 0.25% of residues");
+        assertEq(hitsOther, 0, "pools 0 and 1 never hit");
+        // Same predicate at the top of the uint256 range: still only the low residue matters.
+        assertEq(nft.hiddenRollHits(type(uint256).max, 2), (type(uint256).max % 10_000) < 25);
+    }
+
+    /// Full production config: 7,773 public mints. Hidden may replace a few of them. Heavy.
     function test_productionFullSupply() public {
         _deploy(_production(), BIG_CAP);
         _mintAndRevealAll(42, uint256(keccak256("pools")), 500);
