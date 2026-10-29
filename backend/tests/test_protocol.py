@@ -31,8 +31,9 @@ sys.path.insert(0, str(REPO / "variantgen"))
 
 from fastapi.testclient import TestClient  # noqa: E402
 from eth_account import Account  # noqa: E402
-from axvigil_backend.app import app  # noqa: E402
+from axvigil_backend.app import app, platform  # noqa: E402
 from axvigil_backend import auth as authmod  # noqa: E402
+from axvigil_backend.registry import MemoryRegistry  # noqa: E402
 
 client = TestClient(app)
 
@@ -41,6 +42,10 @@ _solc = os.environ.get("SOLC") or shutil.which("solc")
 
 AGENT_PK = "0x5de4111afa1a4b94908f83103eb1f1706367c2e68ca870fc3fb9a804cdab365a"
 AGENT_ADDR = Account.from_key(AGENT_PK).address
+_owners = MemoryRegistry()
+_owners.set_owner(1, AGENT_ADDR)
+platform.registry = _owners
+platform.dev_skip_ownership = False
 
 
 def _login(agent_id: int = 1) -> str:

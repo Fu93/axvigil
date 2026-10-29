@@ -229,6 +229,58 @@ class Store:
             ).fetchone()
             return dict(row) if row else None
 
+    def claim_for_grading(self, session_id: str, address: str, now: float) -> tuple[str, Optional[dict]]:
+        """Move an open session to 'grading' in one locked transaction.
+
+        Returns (code, session). code is ok, missing, forbidden, expired, or closed.
+        A second caller sees status grading and gets closed, so it cannot start
+        another grade of the same session.
+        """
+        with self._lock:
+            row = self._conn.execute(
+                "SELECT * FROM sessions WHERE session_id=?", (session_id,)
+            ).fetchone()
+            if row is None:
+                return "missing", None
+            sess = dict(row)
+            if sess["address"].lower() != address.lower():
+                return "forbidden", sess
+            if sess["status"] == "open" and float(sess["expires_at"]) < now:
+                self._conn.execute(
+                    "UPDATE sessions SET status='expired', submitted_at=? "
+                    "WHERE session_id=? AND status='open'",
+                    (now, session_id),
+                )
+                self._conn.commit()
+                sess["status"] = "expired"
+                return "expired", sess
+            if sess["status"] != "open":
+                return "closed", sess
+            cur = self._conn.execute(
+                "UPDATE sessions SET status='grading' WHERE session_id=? AND status='open'",
+                (session_id,),
+            )
+            self._conn.commit()
+            if cur.rowcount != 1:
+                again = self._conn.execute(
+                    "SELECT * FROM sessions WHERE session_id=?", (session_id,)
+                ).fetchone()
+                return "closed", dict(again) if again else sess
+            sess["status"] = "grading"
+            return "ok", sess
+
+    def finish_grading(self, session_id: str, *, passed: bool, solve_seconds: int,
+                       submission_hash: str) -> bool:
+        """Persist the single grade. Only a session currently in 'grading' matches."""
+        with self._lock:
+            cur = self._conn.execute(
+                "UPDATE sessions SET status=?, submitted_at=?, solve_seconds=?, submission_hash=? "
+                "WHERE session_id=? AND status='grading'",
+                ("solved" if passed else "failed", time.time(), solve_seconds, submission_hash, session_id),
+            )
+            self._conn.commit()
+            return cur.rowcount == 1
+
     def finish_session(self, session_id: str, *, passed: bool, solve_seconds: int,
                        submission_hash: str) -> None:
         with self._lock:

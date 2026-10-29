@@ -48,9 +48,14 @@ class Settings:
     session_ttl_s: int
     start_rate_per_min: float
     submit_rate_per_min: float
+    agent_registry: str | None = None
+    rpc_url: str | None = None
+    # Local dev only. Production must leave this false and set AGENT_REGISTRY + RPC_URL.
+    dev_skip_ownership: bool = False
 
     @classmethod
     def from_env(cls) -> "Settings":
+        skip = os.environ.get("AXVIGIL_DEV_SKIP_OWNERSHIP", "").strip().lower() in ("1", "true", "yes")
         return cls(
             signer_key=os.environ.get("SIGNER_KEY"),
             chain_id=int(os.environ.get("CHAIN_ID", "97")),
@@ -69,6 +74,9 @@ class Settings:
             session_ttl_s=int(os.environ.get("SESSION_TTL_S", "1800")),
             start_rate_per_min=float(os.environ.get("START_RATE_PER_MIN", "12")),
             submit_rate_per_min=float(os.environ.get("SUBMIT_RATE_PER_MIN", "30")),
+            agent_registry=os.environ.get("AGENT_REGISTRY") or None,
+            rpc_url=os.environ.get("RPC_URL") or os.environ.get("BSC_TESTNET_RPC") or None,
+            dev_skip_ownership=skip,
         )
 
     @property

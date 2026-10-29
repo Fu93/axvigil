@@ -18,6 +18,7 @@ sys.path.insert(0, str(REPO / "variantgen"))
 
 from axvigil_backend.config import Settings
 from axvigil_backend.protocol import Platform, ProtocolError
+from axvigil_backend.registry import MemoryRegistry
 from axvigil_backend.signer import AuthSigner
 from axvigil_backend.store import Store
 
@@ -27,7 +28,7 @@ WALLET_A = "0x00000000000000000000000000000000000000aA"
 WALLET_B = "0x00000000000000000000000000000000000000bB"
 
 
-def _platform(tmp_path) -> tuple[Platform, Store]:
+def _platform(tmp_path) -> tuple[Platform, Store, MemoryRegistry]:
     settings = Settings(
         signer_key=SIGNER,
         chain_id=97,
@@ -49,7 +50,12 @@ def _platform(tmp_path) -> tuple[Platform, Store]:
     )
     store = Store(":memory:")
     signer = AuthSigner(SIGNER, 97, CONTRACT)
-    return Platform(settings, store, signer), store
+    registry = MemoryRegistry()
+    return Platform(settings, store, signer, registry=registry), store, registry
+
+
+def _grant(reg: MemoryRegistry, agent_id: int, address: str = WALLET_A) -> None:
+    reg.set_owner(agent_id, address)
 
 
 def _solve(store: Store, session_id: str, submission_hash: str) -> None:
@@ -57,13 +63,14 @@ def _solve(store: Store, session_id: str, submission_hash: str) -> None:
 
 
 def test_reward_mothers_cover_every_difficulty(tmp_path):
-    platform, _store = _platform(tmp_path)
+    platform, _store, _reg = _platform(tmp_path)
     diffs = {m.meta["difficulty"] for m in platform.mothers.values()}
     assert diffs == {0, 1, 2}
 
 
 def test_reward_start_rejects_caller_choice(tmp_path):
-    platform, _store = _platform(tmp_path)
+    platform, _store, reg = _platform(tmp_path)
+    _grant(reg, 1)
     with pytest.raises(ProtocolError) as exc:
         platform.start(address=WALLET_A, agent_id=1, mother_id="reentrancy")
     assert exc.value.status == 400
@@ -73,9 +80,12 @@ def test_reward_start_rejects_caller_choice(tmp_path):
 
 
 def test_opened_reward_session_counts_and_abandon_does_not_refund(tmp_path):
-    platform, store = _platform(tmp_path)
+    platform, store, reg = _platform(tmp_path)
+    _grant(reg, 7, WALLET_A)
     first = platform.start(address=WALLET_A, agent_id=7)
-    second = platform.start(address=WALLET_B, agent_id=7)  # another wallet, same Agent ID
+    # The Agent ID moved to another wallet. The cap still follows the id.
+    _grant(reg, 7, WALLET_B)
+    second = platform.start(address=WALLET_B, agent_id=7)
     assert first["reward"] is True and second["reward"] is True
     assert first["pool"] == first["difficulty"]
     assert second["pool"] == second["difficulty"]
@@ -86,19 +96,20 @@ def test_opened_reward_session_counts_and_abandon_does_not_refund(tmp_path):
     # Abandon both (leave them open / fail them). The slots stay spent.
     store.finish_session(first["sessionId"], passed=False, solve_seconds=1, submission_hash="0x" + "11" * 32)
     with pytest.raises(ProtocolError) as exc:
-        platform.start(address=WALLET_A, agent_id=7)
+        platform.start(address=WALLET_B, agent_id=7)
     assert exc.value.status == 409
     assert store.reward_attempt_count(7) == 2
 
     # Practice does not consume a slot and honors the caller's mother.
-    practice = platform.start(address=WALLET_A, agent_id=7, practice=True, mother_id="signature-replay")
+    practice = platform.start(address=WALLET_B, agent_id=7, practice=True, mother_id="signature-replay")
     assert practice["practice"] is True and practice["reward"] is False
     assert practice["challengeId"].startswith("signature-replay-")
     assert store.reward_attempt_count(7) == 2
 
 
 def test_parallel_opens_cannot_exceed_two(tmp_path):
-    platform, store = _platform(tmp_path)
+    platform, store, reg = _platform(tmp_path)
+    _grant(reg, 3)
     barrier = threading.Barrier(8)
     outcomes: list[str] = []
     lock = threading.Lock()
@@ -124,7 +135,8 @@ def test_parallel_opens_cannot_exceed_two(tmp_path):
 
 
 def test_one_mint_authorization_per_solve_and_pool_matches_difficulty(tmp_path):
-    platform, store = _platform(tmp_path)
+    platform, store, reg = _platform(tmp_path)
+    _grant(reg, 4)
     sessions = []
     for i in range(2):
         started = platform.start(address=WALLET_A, agent_id=4)
@@ -154,7 +166,8 @@ def test_one_mint_authorization_per_solve_and_pool_matches_difficulty(tmp_path):
 
 
 def test_same_submission_hash_cannot_authorize_twice(tmp_path):
-    platform, store = _platform(tmp_path)
+    platform, store, reg = _platform(tmp_path)
+    _grant(reg, 5)
     a = platform.start(address=WALLET_A, agent_id=5)
     b = platform.start(address=WALLET_A, agent_id=5)
     shared = "0x" + "44" * 32
@@ -168,7 +181,8 @@ def test_same_submission_hash_cannot_authorize_twice(tmp_path):
 
 
 def test_parallel_authorizations_stay_one_per_session(tmp_path):
-    platform, store = _platform(tmp_path)
+    platform, store, reg = _platform(tmp_path)
+    _grant(reg, 6)
     started = platform.start(address=WALLET_A, agent_id=6)
     # Second attempt so the agent is at the cap, but only one session is solved.
     platform.start(address=WALLET_A, agent_id=6)
@@ -197,10 +211,70 @@ def test_parallel_authorizations_stay_one_per_session(tmp_path):
     assert store.mint_authorization_count(6) == 1
 
 
+def test_parallel_submits_grade_once(tmp_path, monkeypatch):
+    platform, store, reg = _platform(tmp_path)
+    _grant(reg, 8)
+    started = platform.start(address=WALLET_A, agent_id=8, practice=True, mother_id="reentrancy")
+    calls: list[int] = []
+    entered = threading.Event()
+    release = threading.Event()
+
+    def slow_grade(*_args, **_kwargs):
+        calls.append(1)
+        entered.set()
+        assert release.wait(3), "grader was not released"
+
+        class Result:
+            passed = False
+            submissionHash = "0x" + "22" * 32
+
+            def to_json(self):
+                return {"passed": False, "submissionHash": self.submissionHash, "log": "graded once"}
+
+        return Result()
+
+    import axvigil_verifier.grader as grader
+    monkeypatch.setattr(grader, "grade", slow_grade)
+
+    outcomes: list[object] = []
+    lock = threading.Lock()
+
+    def go():
+        try:
+            platform.submit(
+                session_id=started["sessionId"], address=WALLET_A, patch="patch", poc="poc",
+            )
+            with lock:
+                outcomes.append("ok")
+        except ProtocolError as exc:
+            with lock:
+                outcomes.append(exc.status)
+
+    first = threading.Thread(target=go)
+    second = threading.Thread(target=go)
+    first.start()
+    assert entered.wait(3), "first submit never reached the grader"
+    second.start()
+    second.join(3)
+    release.set()
+    first.join(3)
+    assert calls == [1]
+    assert outcomes.count("ok") == 1
+    assert outcomes.count(409) == 1
+    sess = store.get_session(started["sessionId"])
+    assert sess is not None and sess["status"] == "failed"
+    # The session is closed. Another submit cannot grade it again.
+    with pytest.raises(ProtocolError) as exc:
+        platform.submit(session_id=started["sessionId"], address=WALLET_A, patch="patch", poc="poc")
+    assert exc.value.status == 409
+    assert calls == [1]
+
+
 def test_server_deals_every_difficulty(tmp_path):
-    platform, _store = _platform(tmp_path)
+    platform, _store, reg = _platform(tmp_path)
     seen = set()
     for agent_id in range(20, 60):
+        _grant(reg, agent_id)
         started = platform.start(address=WALLET_A, agent_id=agent_id)
         seen.add(started["difficulty"])
         assert started["pool"] == started["difficulty"]

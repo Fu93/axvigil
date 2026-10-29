@@ -27,6 +27,10 @@ from .forge_runner import run_test, RunResult
 from .keccak import submission_hash
 from .model import GradeResult
 
+# Shown when hidden tests fail. Names the failure mode without naming the tests
+# or the intended fix, so a retry can shrink an over-wide patch.
+HIDDEN_FAIL_HINT = "patch changed intended behaviour; keep the fix minimal"
+
 
 class ChallengeError(Exception):
     pass
@@ -122,10 +126,14 @@ def grade(
             log.append(f"{label}: compile failed")
         elif label == "hiddenTestsPass":
             # Hidden test names are the challenge's answer key. The agent sees
-            # this log on retry, so report only the counts.
-            log.append(
-                f"{label}: {sum(r.tests.values())}/{len(r.tests)} tests passed"
-            )
+            # this log on retry, so report only the counts, plus a hint when the
+            # patch broke intended behaviour.
+            passed_n = sum(r.tests.values())
+            total_n = len(r.tests)
+            line = f"{label}: {passed_n}/{total_n} tests passed"
+            if passed_n != total_n:
+                line += ". " + HIDDEN_FAIL_HINT
+            log.append(line)
         else:
             log.append(f"{label}: {sum(r.tests.values())}/{len(r.tests)} tests passed {r.tests}")
         return r
