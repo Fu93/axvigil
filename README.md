@@ -135,15 +135,19 @@ For BSC testnet deployment, first run [`scripts/bsc_preflight.sh`](scripts/bsc_p
 
 ## BSC testnet deployment (chain 97)
 
-The current testnet deployment runs the hardened contracts from PR #4 (2 mints per Agent ID, pool bound to difficulty, and — in that bytecode — Hidden is not drawn, `drawableSupply` 7773). It reuses the demo `MockAgentID` registry and a 50 mint-per-hour cap. Batch 1 is committed and a smoke-test mint (token `1`, Agent ID `1`) succeeded. The contracts in this repo now also roll Hidden at a fixed 0.25% on pool 2 only; that change is not on testnet until the next redeploy.
+The current testnet deployment runs the contracts from PR #8: 2 mints per Agent ID, pool bound to difficulty, and Hidden drawable only from pool 2 at a fixed 0.25% (`HIDDEN_CHANCE_BPS` 25, cap 30). There are 7,773 public pieces plus up to 4 Hidden (`maxSupply` 7777). It reuses the demo `MockAgentID` registry and a 50 mint-per-hour cap. Batch 1 is committed and a smoke-test mint (token `1`, Agent ID `1`, a pool-2 legendary solve) succeeded.
 
 | Contract | Address | Explorer |
 |---|---|---|
 | MockAgentID (reused) | `0x7Aa441477f0246353bdAe504cF0F9B3027D6d45e` | [view](https://testnet.bscscan.com/address/0x7Aa441477f0246353bdAe504cF0F9B3027D6d45e) |
-| AxVigilSkill | `0xF572376A24467F5a70D0063448e5386BB842cD30` | [view](https://testnet.bscscan.com/address/0xF572376A24467F5a70D0063448e5386BB842cD30) |
-| AxVigilCollectible | `0x7dd86cB7d4e2d7E0b731FB86D53Bd12D02751685` | [view](https://testnet.bscscan.com/address/0x7dd86cB7d4e2d7E0b731FB86D53Bd12D02751685) |
+| AxVigilSkill | `0x337743Da5894B58039743f46f689337991cECD18` | [view](https://testnet.bscscan.com/address/0x337743Da5894B58039743f46f689337991cECD18) |
+| AxVigilCollectible | `0x06580BFc1626f7DD3d7B841FD304e6f2B23e4658` | [view](https://testnet.bscscan.com/address/0x06580BFc1626f7DD3d7B841FD304e6f2B23e4658) |
 
-### Previous deployment (pre-PR #4, superseded)
+### Previous deployment (PR #4, superseded)
+
+PR #4 contracts (Hidden never drawn): AxVigilSkill `0xF572376A24467F5a70D0063448e5386BB842cD30`, AxVigilCollectible [`0x7dd86cB7d4e2d7E0b731FB86D53Bd12D02751685`](https://testnet.bscscan.com/address/0x7dd86cB7d4e2d7E0b731FB86D53Bd12D02751685). Its smoke-test token `1` is unrevealed. Full record under `previous` in the manifest.
+
+### Original deployment (pre-PR #4, superseded)
 
 The first public testnet deployment (now superseded) is below. The deployment uses the demo-only `MockAgentID` registry and a 50 mint-per-hour cap. No seed batch was committed yet, so the owner must commit a seed before a mint can be demonstrated.
 
