@@ -112,7 +112,17 @@ For BSC testnet deployment, first run [`scripts/bsc_preflight.sh`](scripts/bsc_p
 
 ## BSC testnet deployment (chain 97)
 
-The first public testnet deployment is live. The deployment uses the demo-only `MockAgentID` registry and a 50 mint-per-hour cap. No seed batch was committed yet, so the owner must commit a seed before a mint can be demonstrated.
+The current testnet deployment runs the hardened contracts from PR #4 (2 mints per Agent ID, pool bound to difficulty, HIDDEN never drawn, `drawableSupply` 7773). It reuses the demo `MockAgentID` registry and a 50 mint-per-hour cap. Batch 1 is committed and a smoke-test mint (token `1`, Agent ID `1`) succeeded.
+
+| Contract | Address | Explorer |
+|---|---|---|
+| MockAgentID (reused) | `0x7Aa441477f0246353bdAe504cF0F9B3027D6d45e` | [view](https://testnet.bscscan.com/address/0x7Aa441477f0246353bdAe504cF0F9B3027D6d45e) |
+| AxVigilSkill | `0xF572376A24467F5a70D0063448e5386BB842cD30` | [view](https://testnet.bscscan.com/address/0xF572376A24467F5a70D0063448e5386BB842cD30) |
+| AxVigilCollectible | `0x7dd86cB7d4e2d7E0b731FB86D53Bd12D02751685` | [view](https://testnet.bscscan.com/address/0x7dd86cB7d4e2d7E0b731FB86D53Bd12D02751685) |
+
+### Previous deployment (pre-PR #4, superseded)
+
+The first public testnet deployment (now superseded) is below. The deployment uses the demo-only `MockAgentID` registry and a 50 mint-per-hour cap. No seed batch was committed yet, so the owner must commit a seed before a mint can be demonstrated.
 
 | Contract | Address | Explorer |
 |---|---|---|
