@@ -8,7 +8,9 @@ sandbox. **Zero third-party dependencies** (keccak-256 is vendored).
 ## Use
 
 ```bash
-export FORGE=$(which forge); export SOLC=$(which solc)      # or a pinned solc-0.8.28
+# forge is required. It downloads solc; run `cd ../contracts && forge build` once,
+# online, before the first grade. Set SOLC only to pin a binary.
+export FORGE=$(which forge)
 
 # grade a challenge's own reference solution:
 python -m axvigil_verifier selfcheck --challenge ../challenges/reentrancy-vault

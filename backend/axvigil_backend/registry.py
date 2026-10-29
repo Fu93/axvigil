@@ -16,6 +16,9 @@ from eth_utils import keccak, to_checksum_address
 # ownerOf(uint256)
 OWNER_OF_SELECTOR = keccak(text="ownerOf(uint256)")[:4]
 
+# Public RPCs (publicnode, dRPC) reject Python's default urllib User-Agent with 403.
+USER_AGENT = "axvigil-backend/1.0"
+
 
 class RegistryUnavailable(Exception):
     """The ownership lookup could not be completed (RPC down, bad response)."""
@@ -43,11 +46,29 @@ def _post_json(url: str, payload: dict, timeout: float = 10.0) -> dict:
     req = urllib.request.Request(
         url,
         data=json.dumps(payload).encode("utf-8"),
-        headers={"Content-Type": "application/json"},
+        headers={
+            "Content-Type": "application/json",
+            "User-Agent": USER_AGENT,
+        },
         method="POST",
     )
     with urllib.request.urlopen(req, timeout=timeout) as resp:
         return json.loads(resp.read().decode("utf-8"))
+
+
+def _rpc_error_means_missing_token(error: object) -> bool:
+    """An eth_call revert means ownerOf found no token. Rate limits are not that."""
+    message = ""
+    code = None
+    if isinstance(error, dict):
+        message = str(error.get("message", ""))
+        code = error.get("code")
+    else:
+        message = str(error)
+    low = message.lower()
+    if code == 3 or "execution reverted" in low:
+        return True
+    return "nonexistent token" in low or "owner query for nonexistent" in low
 
 
 class RpcRegistry:
@@ -73,8 +94,14 @@ class RpcRegistry:
         if not isinstance(body, dict):
             raise RegistryUnavailable("RPC response was not an object")
         if body.get("error"):
-            # A revert from ownerOf means the token does not exist.
-            return None
+            error = body["error"]
+            if _rpc_error_means_missing_token(error):
+                return None
+            # Rate limits, HTTP-shaped JSON-RPC failures, and other upstream errors.
+            # These are not "this wallet does not own the Agent ID".
+            raise RegistryUnavailable(
+                "Agent ID registry RPC failed (rate limit or upstream error). Try again shortly."
+            )
         raw = body.get("result")
         if not isinstance(raw, str) or raw in ("0x", "0x0"):
             return None

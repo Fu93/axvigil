@@ -19,10 +19,15 @@ Agent protocol (v1): the server issues challenges, so agents never see the mothe
 
 from __future__ import annotations
 
+import logging
 from typing import Literal, Optional
 
 from fastapi import Depends, FastAPI, Header, HTTPException, Request
+from fastapi.exceptions import RequestValidationError
+from fastapi.responses import JSONResponse
 from pydantic import BaseModel, Field
+
+logger = logging.getLogger("axvigil")
 
 from . import auth as authmod
 from .config import Settings
@@ -50,16 +55,36 @@ _login_bucket = TokenBucket(1.0, burst=10)
 # --------------------------------------------------------------------------- auth
 def require_agent(authorization: str = Header(default="")) -> dict:
     if not authorization.lower().startswith("bearer "):
-        raise HTTPException(401, "missing bearer token")
+        raise HTTPException(
+            401,
+            "Missing bearer token. Log in with POST /v1/auth/login and send Authorization: Bearer <token>.",
+        )
     payload = tokens.verify(authorization.split(" ", 1)[1].strip())
     if not payload:
-        raise HTTPException(401, "invalid or expired token")
+        raise HTTPException(401, "Invalid or expired session token. Log in again with POST /v1/auth/login.")
     return payload
 
 
-def _rl(bucket: TokenBucket, key: str) -> None:
+def _rl(bucket: TokenBucket, key: str, extra: str = "") -> None:
     if not bucket.allow(key):
-        raise HTTPException(429, f"rate limited; retry in ~{bucket.retry_after(key):.1f}s")
+        retry = max(1, int(bucket.retry_after(key) + 0.999))
+        detail = f"Too many requests. Wait about {retry} seconds and try again."
+        if extra:
+            detail = f"{detail} {extra}"
+        raise HTTPException(429, detail, headers={"Retry-After": str(retry)})
+
+
+@app.exception_handler(RequestValidationError)
+async def _validation_error(_request: Request, exc: RequestValidationError) -> JSONResponse:
+    """422 without echoing the submitted body (oversized patches must not bounce back)."""
+    errors = []
+    for err in exc.errors():
+        loc = [str(part) for part in err.get("loc", []) if part != "body"]
+        errors.append({"field": ".".join(loc) or "body", "message": err.get("msg", "invalid value")})
+    return JSONResponse(
+        status_code=422,
+        content={"detail": "The request body is invalid.", "errors": errors},
+    )
 
 
 def _client_ip(req: Request) -> str:
@@ -87,8 +112,8 @@ class SubmitRequest(BaseModel):
     challengeId: str
     agentId: int = Field(ge=0)
     to: str
-    patch: str
-    poc: str
+    patch: str = Field(max_length=64_000)
+    poc: str = Field(max_length=64_000)
     solveSeconds: Optional[int] = None
 
 
@@ -104,8 +129,12 @@ def submit(req: SubmitRequest) -> dict:
         res = grade_submission(settings, challenge_id=req.challengeId, seed=seed,
                                target_file=meta["targetFile"], patch=req.patch, poc=req.poc,
                                solve_seconds=req.solveSeconds)
-    except Exception as e:
-        raise HTTPException(500, f"grading failed: {e}")
+    except Exception:
+        logger.exception("legacy grading failed")
+        raise HTTPException(
+            500,
+            "Grading failed. Install Foundry, run `cd contracts && forge build` once, and retry.",
+        )
     result = res.to_json()
     # Direct grading does not deal a server-chosen challenge and does not sign.
     # Mint authorizations come only from /v1/authorize on a reward session.
@@ -143,7 +172,11 @@ class LoginRequest(BaseModel):
 def v1_auth_login(req: LoginRequest, request: Request) -> dict:
     _rl(_login_bucket, _client_ip(request))
     if not store.consume_nonce(req.nonce, req.address):
-        raise HTTPException(401, "invalid or expired nonce")
+        raise HTTPException(
+            401,
+            "That login nonce is invalid, expired, or already used. "
+            "Request a new one with GET /v1/auth/challenge. Each nonce works once.",
+        )
     msg = authmod.login_message(req.address, req.agentId, req.nonce, settings.chain_id)
     try:
         recovered = authmod.recover_login(msg, req.signature)
@@ -170,7 +203,7 @@ class StartRequest(BaseModel):
 
 @app.post("/v1/start")
 def v1_start(req: StartRequest, agent: dict = Depends(require_agent)) -> dict:
-    _rl(_start_bucket, agent["addr"])
+    _rl(_start_bucket, agent["addr"], platform.quota_message(agent["agentId"]))
     try:
         return platform.start(address=agent["addr"], agent_id=agent["agentId"],
                               vuln_class=req.vulnClass, difficulty=req.difficulty,
@@ -188,21 +221,25 @@ def v1_get_fragment(sessionId: str, index: int, agent: dict = Depends(require_ag
 
 
 class PlaySubmit(BaseModel):
-    sessionId: str
-    patch: str
-    poc: str
+    sessionId: str = Field(min_length=1, max_length=128)
+    patch: str = Field(max_length=64_000)
+    poc: str = Field(max_length=64_000)
 
 
 @app.post("/v1/submit")
 def v1_submit(req: PlaySubmit, agent: dict = Depends(require_agent)) -> dict:
-    _rl(_submit_bucket, agent["addr"])
+    _rl(_submit_bucket, agent["addr"], platform.quota_message(agent["agentId"]))
     try:
         return platform.submit(session_id=req.sessionId, address=agent["addr"],
                                patch=req.patch, poc=req.poc)
     except ProtocolError as e:
         raise HTTPException(e.status, e.detail)
-    except Exception as e:
-        raise HTTPException(500, f"grading failed: {e}")
+    except Exception:
+        logger.exception("v1 grading failed")
+        raise HTTPException(
+            500,
+            "Grading failed before a result was produced.",
+        )
 
 
 class AuthorizeRequest(BaseModel):

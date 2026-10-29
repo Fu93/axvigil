@@ -87,7 +87,11 @@ def main(argv: list[str] | None = None) -> int:
     if args.oracle:
         client = _oracle_client(challenge_dir)
     else:
-        client = MetaModelClient()
+        try:
+            client = MetaModelClient()
+        except RuntimeError as exc:
+            print(str(exc), file=sys.stderr)
+            return 2
 
     outcome = solve(
         client, challenge_dir, seed=args.seed, max_iters=args.max_iters,

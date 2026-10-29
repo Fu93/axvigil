@@ -18,6 +18,7 @@ import tempfile
 from pathlib import Path
 import sys
 
+from .forge_runner import environment_failure
 from .grader import grade
 from .keccak import submission_hash
 
@@ -80,7 +81,12 @@ def _cmd_grade(args) -> int:
     finally:
         if cleanup is not None:
             shutil.rmtree(cleanup, ignore_errors=True)
-    print(json.dumps(res.to_json(), indent=2 if args.pretty else None))
+    payload = json.dumps(res.to_json(), indent=2 if args.pretty else None)
+    if environment_failure(res.log):
+        print(res.log, file=sys.stderr)
+        print(payload)
+        return 2
+    print(payload)
     return 0 if res.passed else 1
 
 
@@ -103,6 +109,10 @@ def _cmd_selfcheck(args) -> int:
         args.challenge, sol,
         seed=args.seed, forge_bin=_default_forge(), solc=_default_solc(), timeout_s=args.timeout,
     )
+    if environment_failure(res.log):
+        print(res.log, file=sys.stderr)
+        print(json.dumps(res.to_json(), indent=2))
+        return 2
     print(json.dumps(res.to_json(), indent=2))
     return 0 if res.passed else 1
 

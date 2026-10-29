@@ -15,11 +15,17 @@ cross-checked against the contract in `contracts/test/EIP712Digest.t.sol`.
 ## Platform API (v1)
 
 ```bash
-cd backend && pip install -r requirements.txt
-cp .env.example .env            # SESSION_SECRET, and SIGNER_KEY + VERIFYING_CONTRACT after deploy
-set -a && . ./.env && set +a    # forge + solc reachable (PATH or FORGE/SOLC)
-uvicorn axvigil_backend.app:app --port 8000
+python3 -m pip install -r backend/requirements.txt   # from the repo root; includes httpx2
+cd contracts && forge build                          # once, online, so grading can stay offline
+cd ../backend
+cp .env.example .env            # SESSION_SECRET; SIGNER_KEY + VERIFYING_CONTRACT after deploy
+set -a && . ./.env && set +a
+python3 -m uvicorn axvigil_backend.app:app --host 0.0.0.0 --port 8000
 ```
+
+A zero `VERIFYING_CONTRACT` does not enable signing. On Windows, run this under WSL2.
+
+`AGENT_REGISTRY` and `RPC_URL` turn on the ownership check. The defaults, also wired through `docker-compose.yml`, are `RPC_URL=https://bsc-testnet.bnbchain.org` and `AGENT_REGISTRY=0x7Aa441477f0246353bdAe504cF0F9B3027D6d45e` (the testnet MockAgentID). For a local anvil, point both at that chain's registry. Registry calls send an explicit `User-Agent`; a rate-limit or other JSON-RPC failure is **503**, and an `ownerOf` revert is **403**.
 
 | Verb | Endpoint | Auth | Does |
 |---|---|---|---|

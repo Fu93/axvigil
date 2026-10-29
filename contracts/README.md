@@ -160,7 +160,7 @@ PRIVATE_KEY=<any test key> SIGNER=0x...dEaD forge script script/Deploy.s.sol --c
   happen in the registry. Indexers should read `ownerOf`.
 - Revoking a skill record does not burn collectibles already minted, which are tradeable assets.
   It does block further mints for that Agent ID.
-- `submissionHash` is signed and emitted but not checked for uniqueness on-chain. Uniqueness
-  rests on the nonce plus the backend.
+- `submissionHash` is signed, emitted, and rejected on a second use (`SubmissionUsed`).
+  A solved challenge can drive one mint.
 - Art `index` within a bucket is sequential in reveal order. Randomness lives in the tier draw,
   not in which image within a bucket.

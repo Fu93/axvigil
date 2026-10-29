@@ -2,7 +2,13 @@
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-export PATH="${HOME}/.foundry/bin:${PATH}"
+export PATH="${HOME}/.foundry/bin:${HOME}/.local/bin:${PATH}"
+# shellcheck source=preflight.sh
+source "$ROOT/scripts/preflight.sh"
+preflight_python
+preflight_forge
+command -v anvil >/dev/null 2>&1 || { echo "anvil is not on PATH (it ships with Foundry)." >&2; exit 2; }
+command -v cast >/dev/null 2>&1 || { echo "cast is not on PATH (it ships with Foundry)." >&2; exit 2; }
 RPC_URL="${RPC_URL:-http://127.0.0.1:8545}"
 PORT="${RPC_URL##*:}"
 # Anvil's first deterministic account; valid only on this local chain.

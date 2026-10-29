@@ -6,19 +6,22 @@ verifier, and — if any check fails — feeds the grader log back to the model 
 retries. This propose → grade → feed-back → retry loop is the demo's centrepiece.
 
 ```bash
-# Real run against the Meta Model API:
-export META_API_KEY=...            # required
+# From the repo root (the package is not installed globally):
+# META_API_KEY is the name this repo reads. MODEL_API_KEY is accepted as an alias
+# when META_API_KEY is unset (some Meta quickstarts export that name).
+export META_API_KEY=...            # or MODEL_API_KEY
 export META_MODEL=muse-spark-1.1   # optional (default)
 export META_BASE_URL=https://api.meta.ai/v1   # optional
-python -m axvigil_agent solve --challenge ../challenges/reentrancy-vault --max-iters 4
+PYTHONPATH=agent:verifier python -m axvigil_agent solve --challenge challenges/reentrancy-vault --max-iters 4
 
 # Offline dry-run of the loop (no key, no network): submits the still-vulnerable
 # contract first, then the reference fix, to show the fail -> feedback -> pass path.
-python -m axvigil_agent solve --challenge ../challenges/reentrancy-vault --oracle --json
+PYTHONPATH=agent:verifier python -m axvigil_agent solve --challenge challenges/reentrancy-vault --oracle --json
 ```
 
-`forge` and a Solidity compiler must be reachable (PATH or `FORGE`/`SOLC`). Exit code
-is `0` if solved, `1` otherwise.
+`forge` must be on PATH (or `FORGE`). Forge downloads solc; set `SOLC` only to pin a
+binary. Run `cd contracts && forge build` once online before the first grade. Exit code
+is `0` if solved, `1` if the patch failed, `2` if forge or the API key is missing.
 
 ## What the model is asked for
 
