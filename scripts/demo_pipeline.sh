@@ -17,7 +17,7 @@ TMP_DIR="$(mktemp -d)"
 trap 'rm -rf "$TMP_DIR"' EXIT
 
 cd "$ROOT"
-python3 -m verifier.reentrancy_grader \
+PYTHONPATH="$ROOT/verifier" python3 -m axvigil_verifier grade \
   --challenge challenges/reentrancy-001 \
   --patch challenges/reentrancy-001/submissions/sample.patch \
   --poc challenges/reentrancy-001/submissions/sample_poc.t.sol \

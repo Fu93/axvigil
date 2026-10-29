@@ -1,1 +1,1 @@
-pycryptodome>=3.20,<4
+# axvigil_verifier vendors keccak-256; no third-party deps required.

@@ -32,7 +32,7 @@ The current public prototype implements the smart-contract credential layer:
 The platform layers are now integrated on top of the credential layer:
 
 - `mothers/` + `variantgen/`: the anti-memorization engine. Three母題 (reentrancy, price-manipulation, access-control); a seed renders a fresh, structurally-unique variant each time (renamed identifiers, distractor functions, reordering), so an agent must fix the bug class, not recall a public answer. Each mother ships 20/20 unique, self-verified variants.
-- `verifier/axvigil_verifier/`: the canonical grader for variant challenges, run in a hardened sandbox (ffi off, no network, wall-clock + POSIX resource limits). The deployed `reentrancy-001` demo keeps using `verifier/reentrancy_grader.py`.
+- `verifier/axvigil_verifier/`: the single canonical grader, run in a hardened sandbox (ffi off, no network, wall-clock + POSIX resource limits). Grades both the seed-variant challenges and the patch-based `reentrancy-001` demo (`grade --patch`); zero third-party dependencies.
 - `backend/axvigil_backend/`: the platform API — agents `login` with a wallet signature, `start` a server-issued variant (source only), `submit` to be graded in a session, and `authorize` a grade-then-signed reward. SQLite persistence, per-agent rate limits, an answer-leak circuit breaker and a difficulty-weighted leaderboard. `backend/mint_auth.py` remains the single-file signer for the deployed demo.
 - `agent/`: an autonomous propose → grade → feed-back → retry solve loop (Meta Model API, with an offline oracle).
 - `demo/`: a self-contained demo page (the loop, anti-memorization, the on-chain skill SVG, and the live testnet deployment).
@@ -73,15 +73,15 @@ See [`contracts/README.md`](contracts/README.md) for the contract interface, dep
 
 ## Run the first verifier demo
 
-The repository now includes a complete reentrancy vertical slice. With Foundry and the Python dependency installed:
+The repository includes a complete reentrancy vertical slice. The single canonical grader
+(`axvigil_verifier`, zero third-party deps) grades the deployed `reentrancy-001` demo
+directly from its patch:
 
 ```bash
-pip install -r verifier/requirements.txt
-python -m verifier.reentrancy_grader \
+PYTHONPATH=verifier python -m axvigil_verifier grade \
   --challenge challenges/reentrancy-001 \
   --patch challenges/reentrancy-001/submissions/sample.patch \
-  --poc challenges/reentrancy-001/submissions/sample_poc.t.sol \
-  --json
+  --poc challenges/reentrancy-001/submissions/sample_poc.t.sol
 ```
 
 The verifier requires the PoC to pass against the vulnerable baseline, fail after the patch, and leave the hidden tests passing.

@@ -38,6 +38,40 @@ _SKILL_TYPES = {
     ]
 }
 
+# Public aliases — the single source of truth for the EIP-712 MintAuth encoding,
+# reused by the mint_auth CLI so there is only one definition in the repo.
+MINT_AUTH_TYPES = _MINT_TYPES
+SKILL_AUTH_TYPES = _SKILL_TYPES
+DOMAIN_NAME = "AxVigil"
+DOMAIN_VERSION = "1"
+
+
+def domain(chain_id: int, verifying_contract: str) -> dict:
+    return {
+        "name": DOMAIN_NAME,
+        "version": DOMAIN_VERSION,
+        "chainId": int(chain_id),
+        "verifyingContract": to_checksum_address(verifying_contract),
+    }
+
+
+def mint_typed_data(chain_id: int, verifying_contract: str, message: dict) -> dict:
+    """Full EIP-712 typed-data dict for a MintAuth (for encode_typed_data full_message)."""
+    return {
+        "types": {
+            "EIP712Domain": [
+                {"name": "name", "type": "string"},
+                {"name": "version", "type": "string"},
+                {"name": "chainId", "type": "uint256"},
+                {"name": "verifyingContract", "type": "address"},
+            ],
+            **MINT_AUTH_TYPES,
+        },
+        "primaryType": "MintAuth",
+        "domain": domain(chain_id, verifying_contract),
+        "message": message,
+    }
+
 
 @dataclass
 class SignedAuth:

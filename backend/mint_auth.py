@@ -16,40 +16,12 @@ from typing import Any
 from eth_account import Account
 from eth_account.messages import encode_typed_data
 
-MINT_AUTH_TYPES = {
-    "MintAuth": [
-        {"name": "agentId", "type": "uint256"},
-        {"name": "to", "type": "address"},
-        {"name": "vulnClass", "type": "uint8"},
-        {"name": "difficulty", "type": "uint8"},
-        {"name": "pool", "type": "uint8"},
-        {"name": "submissionHash", "type": "bytes32"},
-        {"name": "nonce", "type": "uint256"},
-        {"name": "deadline", "type": "uint256"},
-    ]
-}
+# Single source of truth for the MintAuth EIP-712 encoding lives in the signer module.
+from backend.axvigil_backend.signer import mint_typed_data
 
 
 def build_typed_data(*, chain_id: int, verifying_contract: str, auth: dict[str, Any]) -> dict[str, Any]:
-    return {
-        "types": {
-            "EIP712Domain": [
-                {"name": "name", "type": "string"},
-                {"name": "version", "type": "string"},
-                {"name": "chainId", "type": "uint256"},
-                {"name": "verifyingContract", "type": "address"},
-            ],
-            **MINT_AUTH_TYPES,
-        },
-        "primaryType": "MintAuth",
-        "domain": {
-            "name": "AxVigil",
-            "version": "1",
-            "chainId": chain_id,
-            "verifyingContract": verifying_contract,
-        },
-        "message": auth,
-    }
+    return mint_typed_data(chain_id, verifying_contract, auth)
 
 
 def sign_authorization(private_key: str, typed_data: dict[str, Any]) -> tuple[str, str]:

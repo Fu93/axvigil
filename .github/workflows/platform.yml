@@ -7,16 +7,20 @@ on:
       - 'verifier/**'
       - 'variantgen/**'
       - 'mothers/**'
+      - 'challenges/**'
       - 'backend/**'
       - 'contracts/**'
+      - 'SPEC.md'
       - '.github/workflows/platform.yml'
   pull_request:
     paths:
       - 'verifier/**'
       - 'variantgen/**'
       - 'mothers/**'
+      - 'challenges/**'
       - 'backend/**'
       - 'contracts/**'
+      - 'SPEC.md'
       - '.github/workflows/platform.yml'
 
 permissions:
@@ -24,7 +28,7 @@ permissions:
 
 jobs:
   python-suites:
-    name: verifier package · variantgen · backend protocol
+    name: verifier · variantgen · backend · mint-auth bridge · sample grade
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -48,5 +52,13 @@ jobs:
         run: PYTHONPATH=. python -m pytest -q
         working-directory: variantgen
       - name: backend protocol tests
-        run: PYTHONPATH=. python -m pytest -q
+        run: PYTHONPATH=. python -m pytest tests/ -q
         working-directory: backend
+      - name: mint-auth bridge test
+        run: python -m pytest backend/test_mint_auth.py -q
+      - name: grade the deployed reentrancy-001 sample
+        run: |
+          PYTHONPATH=verifier python -m axvigil_verifier grade \
+            --challenge challenges/reentrancy-001 \
+            --patch challenges/reentrancy-001/submissions/sample.patch \
+            --poc challenges/reentrancy-001/submissions/sample_poc.t.sol

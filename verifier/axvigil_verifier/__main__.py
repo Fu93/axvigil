@@ -13,11 +13,40 @@ import argparse
 import json
 import os
 import shutil
-import sys
+import subprocess
+import tempfile
 from pathlib import Path
+import sys
 
 from .grader import grade
 from .keccak import submission_hash
+
+
+def _apply_patch_to_submission(challenge_dir: Path, patch_path: Path, poc_path: Path) -> Path:
+    """Build a dir-based submission from a unified-diff patch + a PoC file.
+
+    Applies the patch to the challenge's targetFile with `git apply` and lays the
+    result out as patched/<targetFile> + poc/Poc.t.sol so the normal grader runs.
+    """
+    meta = json.loads((challenge_dir / "challenge.json").read_text())
+    target = meta["targetFile"]
+    tmp = Path(tempfile.mkdtemp(prefix="axv-patch-"))
+    (tmp / "src").mkdir()
+    shutil.copy(challenge_dir / "src" / target, tmp / "src" / target)
+    # git apply strips a/ b/ prefixes with -p1; run inside tmp so paths resolve.
+    proc = subprocess.run(
+        ["git", "apply", "-p1", "--whitespace=nowarn", str(patch_path.resolve())],
+        cwd=tmp, capture_output=True, text=True,
+    )
+    if proc.returncode != 0:
+        shutil.rmtree(tmp, ignore_errors=True)
+        raise SystemExit(f"patch did not apply: {proc.stderr.strip()}")
+    sub = tmp / "submission"
+    (sub / "patched").mkdir(parents=True)
+    (sub / "poc").mkdir(parents=True)
+    shutil.copy(tmp / "src" / target, sub / "patched" / target)
+    shutil.copy(poc_path, sub / "poc" / "Poc.t.sol")
+    return sub
 
 
 def _default_solc() -> str | None:
@@ -29,11 +58,27 @@ def _default_forge() -> str:
 
 
 def _cmd_grade(args) -> int:
-    res = grade(
-        args.challenge, args.submission,
-        seed=args.seed, solve_seconds=args.solve_seconds,
-        forge_bin=_default_forge(), solc=_default_solc(), timeout_s=args.timeout,
-    )
+    cleanup = None
+    if args.patch:
+        if not args.poc:
+            print("--patch requires --poc", file=sys.stderr)
+            return 2
+        submission = _apply_patch_to_submission(Path(args.challenge), Path(args.patch), Path(args.poc))
+        cleanup = submission.parent
+    elif args.submission:
+        submission = args.submission
+    else:
+        print("provide either --submission <dir> or --patch <file> --poc <file>", file=sys.stderr)
+        return 2
+    try:
+        res = grade(
+            args.challenge, submission,
+            seed=args.seed, solve_seconds=args.solve_seconds,
+            forge_bin=_default_forge(), solc=_default_solc(), timeout_s=args.timeout,
+        )
+    finally:
+        if cleanup is not None:
+            shutil.rmtree(cleanup, ignore_errors=True)
     print(json.dumps(res.to_json(), indent=2 if args.pretty else None))
     return 0 if res.passed else 1
 
@@ -68,10 +113,13 @@ def main(argv: list[str] | None = None) -> int:
 
     g = sub.add_parser("grade", help="grade a submission against a challenge")
     g.add_argument("--challenge", required=True)
-    g.add_argument("--submission", required=True)
+    g.add_argument("--submission", help="submission dir (patched/ + poc/)")
+    g.add_argument("--patch", help="unified-diff patch of the target file (alternative to --submission)")
+    g.add_argument("--poc", help="PoC test file (required with --patch)")
     g.add_argument("--seed", type=int, default=0)
     g.add_argument("--solve-seconds", type=int, default=None, dest="solve_seconds")
     g.add_argument("--pretty", action="store_true")
+    g.add_argument("--json", action="store_true", help="accepted for compatibility; output is always JSON")
     g.set_defaults(func=_cmd_grade)
 
     h = sub.add_parser("hash", help="compute a submissionHash")

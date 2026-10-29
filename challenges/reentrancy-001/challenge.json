@@ -1,0 +1,13 @@
+{
+  "challengeId": "reentrancy-001",
+  "vulnClass": 0,
+  "difficulty": 0,
+  "targetFile": "Vault.sol",
+  "contractName": "Vault",
+  "requiredFunctions": ["deposit", "withdrawAll"],
+  "hiddenTests": "Hidden.t.sol",
+  "pragma": "0.8.24",
+  "limits": { "maxChangedLines": 120, "maxBytes": 24000 },
+  "title": "Reentrant Vault (deployed demo)",
+  "summary": "The deployed live-demo challenge. State is cleared after the external call; fix with checks-effects-interactions."
+}

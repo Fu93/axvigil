@@ -1,18 +1,11 @@
 # AxVigil verifier
 
-Two graders live here, sharing the SPEC result shape:
+One canonical grader: **`axvigil_verifier/`** (`python -m axvigil_verifier`). It grades any
+challenge — the seed-variant challenges from [`../mothers/`](../mothers/) /
+[`../variantgen/`](../variantgen/) and the patch-based `reentrancy-001` demo — in a hardened
+sandbox. **Zero third-party dependencies** (keccak-256 is vendored).
 
-- **`axvigil_verifier/`** — the canonical, general grader (`python -m axvigil_verifier`).
-  Grades any challenge directory (`src/`, `test/Hidden.t.sol`, a submission's
-  `patched/` + `poc/`), powers the seed-variant challenges in [`../mothers/`](../mothers/)
-  and [`../variantgen/`](../variantgen/), and runs submitted code in a hardened sandbox.
-  Zero third-party deps (keccak-256 is vendored).
-- **`reentrancy_grader.py`** — the single-file, patch-based grader used by the deployed
-  `reentrancy-001` live demo and the `scripts/*.sh` / `*Demo.s.sol` flows
-  (`python -m verifier.reentrancy_grader`). Kept for reproducibility of the on-chain
-  demo; needs `pycryptodome` (see `requirements.txt`).
-
-## Canonical grader
+## Use
 
 ```bash
 export FORGE=$(which forge); export SOLC=$(which solc)      # or a pinned solc-0.8.28
@@ -20,8 +13,12 @@ export FORGE=$(which forge); export SOLC=$(which solc)      # or a pinned solc-0
 # grade a challenge's own reference solution:
 python -m axvigil_verifier selfcheck --challenge ../challenges/reentrancy-vault
 
-# grade a submission:
+# grade a dir-based submission (patched/ + poc/):
 python -m axvigil_verifier grade --challenge <dir> --submission <dir> --pretty
+
+# grade a patch-based submission (a unified diff of the target + a PoC):
+python -m axvigil_verifier grade --challenge ../challenges/reentrancy-001 \
+  --patch .../sample.patch --poc .../sample_poc.t.sol
 
 # compute a submissionHash:
 python -m axvigil_verifier hash --challenge-id <id> --seed 0 --patch p.sol --poc Poc.t.sol
@@ -49,9 +46,11 @@ group. `tests/test_sandbox.py` proves `vm.ffi` and `vm.readFile` are refused.
 
 ## submissionHash
 
-`axvigil_verifier` binds the solve with a length-prefixed canonical hash
-`keccak256("AXV1" ‖ challengeId ‖ seed ‖ patch ‖ poc)` (details in `keccak.py`), so
-different variants of a mother hash differently. The legacy `reentrancy_grader.py`
-uses its own `keccak256("AXVIGIL\n" ‖ patch ‖ "---POC---" ‖ poc)` scheme, which is what
-the deployed `reentrancy-001` demo recorded. Both are opaque to the contract, which
-only dedups the value.
+A length-prefixed canonical hash binds the solve:
+`keccak256("AXV1" ‖ challengeId ‖ seed ‖ patched-source ‖ poc)` (details in `keccak.py`),
+so different variants of a mother hash differently and the hash is independent of patch
+formatting. The contract treats the value as opaque and only dedups it.
+
+> The originally deployed `reentrancy-001` demo recorded its `submissionHash` with an
+> earlier `AXVIGIL`-prefixed scheme (see `deployments/bsc-testnet-97.json`). The grader is
+> now unified on the `AXV1` scheme above; a re-run or re-deploy uses the new value.
