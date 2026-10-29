@@ -68,17 +68,21 @@ If the skill record has been revoked, the whole mint reverts.
 (tier, vulnClass) bucket, up to `tierTotal(tier)` images and metadata files named by artId.
 `setProvenanceHash(h)` commits to the hash of the whole generated set and can be called once.
 
-**Tiers** `0 COMMON 5444, 1 RARE 1555, 2 EPIC 622, 3 LEGENDARY 152, 4 HIDDEN 4` (constructor params; `maxSupply` is immutable and is their sum).
+**Tiers** `0 COMMON 5444, 1 RARE 1555, 2 EPIC 622, 3 LEGENDARY 152, 4 HIDDEN 4` (constructor params; `maxSupply` is immutable and is their sum). `drawableSupply` is `maxSupply - hidden` (7,773 in production). `mint` stops there. Hidden is not assigned by `revealTokens`.
 
-**Staged release.** Draw index `i` (0-based, equal to tokenId-1) sits in stage `i*4/maxSupply` (0..3).
-LEGENDARY and HIDDEN have `total*(stage+1)/4` released, so Legendary goes 38 → 76 → 114 → 152
-and Hidden goes 1 → 2 → 3 → 4. The first stage is open from token #1. This is our reading of
-"1 per 25%": with exactly 4 Hidden, waiting until 25% for the first would make the last one
-unreachable. The constructor rejects any config where a stage could run out of released tokens.
+**Staged release.** Draw index `i` sits in stage `i*4/drawableSupply` (0..3). LEGENDARY has `total*(stage+1)/4` released, so it goes 38 → 76 → 114 → 152 across the drawable supply. Hidden is not released into the draw. The constructor rejects a config where a legendary stage could empty the drawable pool.
 
-**Pools.** NORMAL weights each tier by its remaining released count, which is a uniform draw
-without replacement. PREMIUM multiplies those weights by `[1,2,4,8,8]` for
-COMMON..HIDDEN. That gives better odds, never a guarantee, and it never exceeds a pool or a stage.
+**Pools.** The pool is the difficulty, and `mint` reverts with `PoolDifficultyMismatch` if they differ.
+
+| Difficulty | Pool | Multipliers (Common, Rare, Epic, Legendary) | Hidden |
+|---|---|---|---|
+| 0 BASIC | 0 | 1, 1, 1, 1 | 0 |
+| 1 ADVANCED | 1 | 1, 2, 4, 8 | 0 |
+| 2 LEGENDARY | 2 | 1, 3, 8, 16 | 0 |
+
+Weights multiply the remaining released count, so a higher pool is a better chance at rarer public tiers, never a guarantee, and never a way to draw Hidden. At the first production draw the legendary-tier share is about 0.50% / 2.68% / 3.87% across the three pools (`contracts/test/Rarity.t.sol`). Quotas are exact at the end of the draw: every public tier is filled, Hidden drawn stays 0.
+
+**Skill record.** `mint` calls `skill.recordSolve` once. There is no second entry point, so `totalSolves` equals the number of successful mints for that Agent ID and cannot pass 2.
 
 **Skill record (`AxVigilSkill`):**
 - `tokenId == agentId`, and `ownerOf` returns `agentRegistry.ownerOf(agentId)`.

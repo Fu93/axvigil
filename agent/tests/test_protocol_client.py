@@ -32,8 +32,11 @@ from fastapi.testclient import TestClient  # noqa: E402
 from axvigil_backend.app import app  # noqa: E402
 from axvigil_agent.protocol_client import PlatformClient  # noqa: E402
 
-_forge = os.environ.get("FORGE") or shutil.which("forge")
-_solc = os.environ.get("SOLC") or shutil.which("solc")
+sys.path.insert(0, str(REPO / "verifier"))
+from axvigil_verifier.toolchain import discover_solc, forge_executable  # noqa: E402
+
+_forge = forge_executable()
+_solc = discover_solc()
 
 AGENT_PK = "0x5de4111afa1a4b94908f83103eb1f1706367c2e68ca870fc3fb9a804cdab365a"
 
@@ -50,14 +53,17 @@ def test_client_info_and_login():
     assert token and c.token == token
 
 
-@pytest.mark.skipif(not (_forge and _solc), reason="forge/solc not available")
 def test_client_plays_a_full_challenge():
+    if not _forge:
+        pytest.fail("forge is required. Install foundry; solc is discovered from svm if needed.")
     from variantgen.render import Mother, render_challenge
 
     c = _client()
     c.login()
 
-    ch = c.start(mother_id="reentrancy")
+    # Choosing the mother is practice mode. Reward challenges are server-assigned
+    # and an opened one would consume one of the two lifetime attempts.
+    ch = c.start(mother_id="reentrancy", practice=True)
     assert "source" in ch and "solution" not in ch           # agent never gets the solution
     assert c.fetch_source(ch) == ch["source"]                 # fragments reassemble
     seed = int(re.search(r"-(\d+)$", ch["challengeId"]).group(1))
@@ -74,12 +80,15 @@ def test_client_plays_a_full_challenge():
     out = c.submit(ch["sessionId"], patch, poc)
     assert out["passed"] is True, out["result"]["log"]
     assert out["result"]["solveSeconds"] is not None
-    assert out["authorizable"] is True
+    assert out["authorizable"] is False
 
-    az = c.authorize(ch["sessionId"], action="mint")
-    assert az["auth"]["submissionHash"] == out["result"]["submissionHash"]
-    assert az["signature"].startswith("0x") and len(az["signature"]) == 132
-
+    # Practice sessions are graded but not reward-bearing, and they do not
+    # consume one of the two lifetime reward attempts.
+    from axvigil_agent.protocol_client import PlatformError
+    with pytest.raises(PlatformError) as exc:
+        c.authorize(ch["sessionId"], action="mint")
+    assert exc.value.status == 403
     st = c.status()
-    assert st["solved"] >= 1 and st["score"] >= 1
-    assert any(row["agentId"] == 1 for row in c.leaderboard())
+    assert st["rewardAttempts"] == 0
+    assert st["mintAuthorizations"] == 0
+    assert st["solved"] == 0

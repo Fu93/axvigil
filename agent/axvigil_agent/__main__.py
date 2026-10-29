@@ -21,7 +21,11 @@ from .solver import solve
 
 
 def _default_solc() -> str | None:
-    return os.environ.get("SOLC") or shutil.which("solc")
+    verifier = Path(__file__).resolve().parents[2] / "verifier"
+    if str(verifier) not in sys.path:
+        sys.path.insert(0, str(verifier))
+    from axvigil_verifier.toolchain import discover_solc
+    return discover_solc()
 
 
 def _default_forge() -> str:
@@ -47,6 +51,23 @@ def _oracle_client(challenge_dir: Path) -> ScriptedClient:
         "patched_contract": fix, "poc_test": poc,
     })
     return ScriptedClient([first, second])
+
+
+def _outcome_payload(outcome) -> dict:
+    return {
+        "challengeId": outcome.challenge_id,
+        "solved": outcome.solved,
+        "solveSeconds": outcome.solve_seconds,
+        "iterations": [
+            {"index": it.index, "passed": it.passed, "checks": it.checks,
+             "analysis": it.analysis, "log": it.log,
+             "submissionHash": it.submission_hash}
+            for it in outcome.iterations
+        ],
+        "result": outcome.final_result,
+        "finalPatch": outcome.final_patch,
+        "finalPoc": outcome.final_poc,
+    }
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -75,17 +96,7 @@ def main(argv: list[str] | None = None) -> int:
     )
 
     if args.json:
-        print(json.dumps({
-            "challengeId": outcome.challenge_id,
-            "solved": outcome.solved,
-            "solveSeconds": outcome.solve_seconds,
-            "iterations": [
-                {"index": it.index, "passed": it.passed, "checks": it.checks,
-                 "submissionHash": it.submission_hash}
-                for it in outcome.iterations
-            ],
-            "result": outcome.final_result,
-        }, indent=2))
+        print(json.dumps(_outcome_payload(outcome), indent=2))
     else:
         print(f"\nchallenge: {outcome.challenge_id}")
         print(f"solved:    {outcome.solved} in {len(outcome.iterations)} iteration(s), {outcome.solve_seconds}s")

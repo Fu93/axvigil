@@ -4,10 +4,29 @@ from __future__ import annotations
 
 import os
 import shutil
+import sys
 from dataclasses import dataclass
 from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
+
+
+def _discover_solc() -> str | None:
+    """SOLC env, PATH, or Foundry's svm cache. None lets forge use its own solver."""
+    env = os.environ.get("SOLC")
+    if env:
+        return env
+    found = shutil.which("solc")
+    if found:
+        return found
+    verifier = REPO_ROOT / "verifier"
+    if str(verifier) not in sys.path:
+        sys.path.insert(0, str(verifier))
+    try:
+        from axvigil_verifier.toolchain import discover_solc
+    except Exception:
+        return None
+    return discover_solc()
 
 
 @dataclass
@@ -44,7 +63,7 @@ class Settings:
             db_path=os.environ.get("DB_PATH", str(REPO_ROOT / "backend" / "axvigil.db")),
             session_secret=os.environ.get("SESSION_SECRET", "dev-only-insecure-secret-change-me"),
             forge_bin=os.environ.get("FORGE") or (shutil.which("forge") or "forge"),
-            solc_bin=os.environ.get("SOLC") or shutil.which("solc"),
+            solc_bin=_discover_solc(),
             grade_timeout_s=int(os.environ.get("GRADE_TIMEOUT_S", "120")),
             auth_ttl_s=int(os.environ.get("AUTH_TTL_S", "3600")),
             session_ttl_s=int(os.environ.get("SESSION_TTL_S", "1800")),

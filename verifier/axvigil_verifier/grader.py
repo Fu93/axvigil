@@ -120,6 +120,12 @@ def grade(
             log.append(f"{label}: TIMEOUT after {timeout_s}s")
         elif not r.compiled:
             log.append(f"{label}: compile failed")
+        elif label == "hiddenTestsPass":
+            # Hidden test names are the challenge's answer key. The agent sees
+            # this log on retry, so report only the counts.
+            log.append(
+                f"{label}: {sum(r.tests.values())}/{len(r.tests)} tests passed"
+            )
         else:
             log.append(f"{label}: {sum(r.tests.values())}/{len(r.tests)} tests passed {r.tests}")
         return r
@@ -130,7 +136,12 @@ def grade(
 
     # 2. The same PoC FAILS on the PATCHED contract (and the patch compiles).
     r2 = _run("pocFailsAfterPatch", patched_sources, {poc_name: poc_text}, f"test/{poc_name}")
-    poc_fails_after_patch = r2.compiled and not r2.timed_out and not r2.all_passed
+    # Every PoC test must fail after the patch. "At least one failed" let a
+    # submission keep the exploit working and add a decoy test that the patch
+    # breaks, which still counted as closing the bug.
+    poc_fails_after_patch = (
+        r2.compiled and not r2.timed_out and bool(r2.tests) and not r2.any_passed
+    )
 
     # 3. Hidden functional tests pass on the PATCHED contract.
     r3 = _run("hiddenTestsPass", patched_sources, {hidden_name: hidden_test}, f"test/{hidden_name}")

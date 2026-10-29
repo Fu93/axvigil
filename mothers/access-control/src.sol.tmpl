@@ -4,8 +4,7 @@ pragma solidity 0.8.28;
 /// @notice AxVigil challenge target (sandbox, BSC testnet only). Deliberately
 ///         vulnerable for an AI agent to find and fix. Do not deploy to mainnet.
 ///
-/// A treasury that anyone can deposit into. A privileged sweep moves the entire
-/// balance to an address — but the owner check is missing.
+/// A treasury that anyone can deposit into. One function sweeps the balance to an address.
 contract Czz {
     address public vzzOwner;
     mapping(address => uint256) public vzzBal;
@@ -24,9 +23,8 @@ contract Czz {
         emit Deposited(msg.sender, msg.value);
     }
 // @@SHUF@@
-    /// @notice Send the whole treasury balance to `to`. Intended to be owner-only.
+    /// @notice Send the whole treasury balance to `to`.
     function fzzAdmin(address to) external {
-        // VULNERABLE: no owner check — anyone can drain the treasury.
         uint256 bal = address(this).balance;
         (bool lzzOk,) = to.call{value: bal}("");
         require(lzzOk, "sweep failed");

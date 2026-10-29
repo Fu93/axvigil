@@ -75,11 +75,20 @@ def fix_price_twap(src: str, ctx: dict) -> str:
 
 def fix_sig_replay(src: str, ctx: dict) -> str:
     """Mark each voucher digest as spent after the signature check, so a signed
-    voucher can't be replayed. Inserts the guard right after the ecrecover require."""
+    voucher can't be replayed. The vulnerable source does not mention a spent-flag;
+    the fix adds the mapping and the guard, and nothing else."""
     ids = _ids(ctx)
     used = ids["vzzUsed"]
     digest = ids["lzzDigest"]
     signer = ids["vzzSigner"]
+
+    if re.search(rf"\b{re.escape(used)}\b", src) is None:
+        anchor = re.compile(rf"(^[ \t]*address public {re.escape(signer)};\n)", re.M)
+        state = anchor.search(src)
+        if not state:
+            raise ValueError("sig-replay fix: could not locate the signer state variable")
+        mapping_line = f"    mapping(bytes32 => bool) public {used};\n"
+        src = src[: state.end()] + mapping_line + src[state.end():]
 
     pat = re.compile(
         rf"([ \t]*require\(ecrecover\({re.escape(digest)}, v, r, s\) == {re.escape(signer)}, \"[^\"]*\"\);\n)"

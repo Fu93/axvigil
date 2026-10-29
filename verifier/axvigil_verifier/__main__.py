@@ -50,7 +50,8 @@ def _apply_patch_to_submission(challenge_dir: Path, patch_path: Path, poc_path: 
 
 
 def _default_solc() -> str | None:
-    return os.environ.get("SOLC") or (shutil.which("solc") or None)
+    from .toolchain import discover_solc
+    return discover_solc()
 
 
 def _default_forge() -> str:

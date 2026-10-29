@@ -1,8 +1,8 @@
 """Variant generator tests.
 
 The fast tests (no forge) check determinism, uniqueness and that the reference
-fix is a small, interface-preserving diff. The forge-gated test grades a couple
-of rendered variants per mother end-to-end; it skips if forge/solc are absent.
+fix is a small, interface-preserving diff. The forge test grades a couple of
+rendered variants per mother end-to-end and fails if forge is not installed.
 """
 
 from __future__ import annotations
@@ -21,8 +21,12 @@ from variantgen.__main__ import _unique_variants
 REPO_ROOT = Path(__file__).resolve().parents[2]
 MOTHERS = [p for p in sorted((REPO_ROOT / "mothers").iterdir()) if (p / "mother.json").is_file()]
 
-_forge = os.environ.get("FORGE") or shutil.which("forge")
-_solc = os.environ.get("SOLC") or shutil.which("solc")
+import sys
+sys.path.insert(0, str(REPO_ROOT / "verifier"))
+from axvigil_verifier.toolchain import discover_solc, forge_executable  # noqa: E402
+
+_forge = forge_executable()
+_solc = discover_solc()
 
 
 @pytest.mark.parametrize("mdir", MOTHERS, ids=lambda p: p.name)
@@ -71,9 +75,10 @@ def test_identifiers_are_renamed_across_seeds(tmp_path):
     assert len(names) >= 3, "contract name should vary across seeds"
 
 
-@pytest.mark.skipif(not (_forge and _solc), reason="forge/solc not available")
 @pytest.mark.parametrize("mdir", MOTHERS, ids=lambda p: p.name)
 def test_rendered_variants_grade_as_solved(mdir, tmp_path):
+    if not _forge:
+        pytest.fail("forge is required. Install foundry; solc is discovered from svm if needed.")
     import sys
     sys.path.insert(0, str(REPO_ROOT / "verifier"))
     from axvigil_verifier.grader import grade

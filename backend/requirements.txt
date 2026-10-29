@@ -2,3 +2,5 @@ fastapi>=0.110
 uvicorn[standard]>=0.29
 eth-account>=0.13,<1
 pydantic>=2
+# Starlette's TestClient imports httpx. Pin it so backend tests don't fail at import.
+httpx>=0.27,<1

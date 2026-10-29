@@ -25,15 +25,22 @@ import {IAxVigilSkill} from "./interfaces/IAxVigilSkill.sol";
 ///     then anyone calls `revealTokens(n)` which draws tiers in tokenId order.
 ///
 /// Rarity
-///  - Fixed tier pools drawn WITHOUT replacement (production 5444/1555/622/152/4 = 7,777).
-///  - Staged release: LEGENDARY and HIDDEN are released in 4 equal stages, one stage per 25% of
-///    supply drawn (stage k releases total*(k+1)/4). For HIDDEN=4 that is 1 per 25%.
-///    The first stage is open from token #1, so the last HIDDEN is reachable at 75%.
-///  - PREMIUM pool (hard + fast solve): rare tiers get a higher weight among what remains.
-///    Weights multiply the remaining count, so it is a better chance, never a guarantee.
+///  - Public tiers are drawn WITHOUT replacement (production 5444/1555/622/152).
+///  - HIDDEN (4) is reserved and is not part of the random draw. `maxSupply` still counts it;
+///    `drawableSupply` is what `mint` / `revealTokens` can assign.
+///  - Staged release: LEGENDARY is released in 4 equal stages across `drawableSupply`
+///    (stage k releases legendaryTotal*(k+1)/4). The first stage is open from token #1.
+///  - Three pools, bound to the signed difficulty (the contract rejects a mismatch):
+///      BASIC difficulty 0 -> pool 0, uniform weights
+///      ADVANCED difficulty 1 -> pool 1, multipliers [1, 2, 4, 8]
+///      LEGENDARY difficulty 2 -> pool 2, multipliers [1, 3, 8, 16]
+///    Weights multiply the remaining count, so a higher pool is a better chance at the
+///    rarer public tiers, never a guarantee, and never a path to HIDDEN.
 ///
-/// Limits: max 2 per Agent ID (lifetime, bound to tokenId not wallet), hourly mint cap,
-/// pausable, rotatable signer, supply fixed in the constructor with no way to increase it.
+/// Limits: max 2 collectibles per Agent ID (lifetime, bound to tokenId not wallet). Each mint
+/// records exactly one skill solve, so the skill record stays 1:1 with mints. There is no
+/// mint-free solve path. Hourly mint cap, pausable, rotatable signer, supply fixed in the
+/// constructor with no way to increase it.
 contract AxVigilCollectible is ERC721, Ownable2Step, Pausable, EIP712 {
     using Strings for uint256;
 
@@ -45,18 +52,15 @@ contract AxVigilCollectible is ERC721, Ownable2Step, Pausable, EIP712 {
         "MintAuth(uint256 agentId,address to,uint8 vulnClass,uint8 difficulty,uint8 pool,bytes32 submissionHash,uint256 nonce,uint256 deadline)"
     );
 
-    /// @dev Records a verified solve on the skill record WITHOUT minting a collectible.
-    ///      Lets an agent's skill record grow past the 2-collectible cap (e.g. all 3 classes).
-    bytes32 public constant SKILL_AUTH_TYPEHASH = keccak256(
-        "SkillAuth(uint256 agentId,uint8 vulnClass,uint8 difficulty,bytes32 submissionHash,uint256 nonce,uint256 deadline)"
-    );
-
     uint256 public constant MAX_PER_AGENT = 2;
     uint8 public constant NUM_TIERS = 5; // 0 COMMON, 1 RARE, 2 EPIC, 3 LEGENDARY, 4 HIDDEN
     uint8 public constant NUM_CLASSES = 3; // 0 REENTRANCY, 1 PRICE_MANIPULATION, 2 ACCESS_CONTROL
     uint8 public constant NUM_DIFFICULTIES = 3; // 0 BASIC, 1 ADVANCED, 2 LEGENDARY
-    uint8 public constant POOL_NORMAL = 0;
-    uint8 public constant POOL_PREMIUM = 1;
+    uint8 public constant NUM_POOLS = 3;
+    /// @notice Pool is the difficulty: 0 BASIC, 1 ADVANCED, 2 LEGENDARY.
+    uint8 public constant POOL_BASIC = 0;
+    uint8 public constant POOL_ADVANCED = 1;
+    uint8 public constant POOL_LEGENDARY = 2;
 
     uint8 public constant TIER_LEGENDARY = 3;
     uint8 public constant TIER_HIDDEN = 4;
@@ -76,15 +80,6 @@ contract AxVigilCollectible is ERC721, Ownable2Step, Pausable, EIP712 {
         uint8 vulnClass;
         uint8 difficulty;
         uint8 pool;
-        bytes32 submissionHash;
-        uint256 nonce;
-        uint256 deadline;
-    }
-
-    struct SkillAuth {
-        uint256 agentId;
-        uint8 vulnClass;
-        uint8 difficulty;
         bytes32 submissionHash;
         uint256 nonce;
         uint256 deadline;
@@ -113,8 +108,11 @@ contract AxVigilCollectible is ERC721, Ownable2Step, Pausable, EIP712 {
 
     IAgentRegistry public immutable agentRegistry;
     IAxVigilSkill public immutable skill;
-    /// @notice Hard supply cap = sum of tier pools. Immutable: cannot be increased.
+    /// @notice Configured supply = sum of tier pools, including the reserved HIDDEN pieces.
+    ///         Immutable: cannot be increased.
     uint256 public immutable maxSupply;
+    /// @notice How many tokens `mint` can create. HIDDEN is excluded from the random draw.
+    uint256 public immutable drawableSupply;
 
     uint256 private immutable _tier0;
     uint256 private immutable _tier1;
@@ -171,9 +169,6 @@ contract AxVigilCollectible is ERC721, Ownable2Step, Pausable, EIP712 {
         uint256 nonce
     );
     event TokenRevealed(uint256 indexed tokenId, uint8 tier, uint32 artId);
-    event SkillRecorded(
-        uint256 indexed agentId, uint8 vulnClass, uint8 difficulty, bytes32 submissionHash, uint256 nonce
-    );
     event SeedCommitted(uint32 indexed batchId, bytes32 seedHash);
     event SeedRevealed(uint32 indexed batchId, bytes32 seed);
     event SignerUpdated(address indexed oldSigner, address indexed newSigner);
@@ -191,6 +186,7 @@ contract AxVigilCollectible is ERC721, Ownable2Step, Pausable, EIP712 {
     error HourlyCapReached();
     error NoOpenBatch();
     error InvalidParams();
+    error PoolDifficultyMismatch(uint8 difficulty, uint8 pool);
     error BadSeed();
     error AlreadyRevealed();
     error ProvenanceAlreadySet();
@@ -219,20 +215,23 @@ contract AxVigilCollectible is ERC721, Ownable2Step, Pausable, EIP712 {
         for (uint256 i; i < NUM_TIERS; ++i) {
             total += tierCounts[i];
         }
-        if (total < STAGES || total > 10_000) revert InvalidParams(); // art id layout needs < 10k per bucket
+        // HIDDEN is reserved and never drawn, so the random mint must still be large enough
+        // for four legendary stages on its own.
+        uint256 drawable = total - tierCounts[4];
+        if (drawable < STAGES || total > 10_000) revert InvalidParams(); // art id layout needs < 10k per bucket
 
-        // Staged release must never leave the released pool empty before the next stage opens.
+        // Staged legendary release must never leave the drawable pool empty before the next stage.
         // At the last index of stage k, tokens left (incl. this one) must exceed what is still locked.
         for (uint256 k; k < STAGES; ++k) {
-            uint256 nextStageStart = _ceilDiv((k + 1) * total, STAGES); // first index of stage k+1
-            uint256 locked_ = (tierCounts[3] - (tierCounts[3] * (k + 1)) / STAGES)
-                + (tierCounts[4] - (tierCounts[4] * (k + 1)) / STAGES);
-            if (total - nextStageStart + 1 <= locked_) revert InvalidParams();
+            uint256 nextStageStart = _ceilDiv((k + 1) * drawable, STAGES); // first index of stage k+1
+            uint256 lockedLegendary = tierCounts[3] - (tierCounts[3] * (k + 1)) / STAGES;
+            if (drawable - nextStageStart + 1 <= lockedLegendary) revert InvalidParams();
         }
 
         agentRegistry = registry;
         skill = skill_;
         maxSupply = total;
+        drawableSupply = drawable;
         _tier0 = tierCounts[0];
         _tier1 = tierCounts[1];
         _tier2 = tierCounts[2];
@@ -295,7 +294,7 @@ contract AxVigilCollectible is ERC721, Ownable2Step, Pausable, EIP712 {
         if (block.timestamp > auth.deadline) revert Expired();
         if (nonceUsed[auth.nonce]) revert NonceUsed();
         if (submissionUsed[auth.submissionHash]) revert SubmissionUsed();
-        if (auth.vulnClass >= NUM_CLASSES || auth.difficulty >= NUM_DIFFICULTIES || auth.pool > POOL_PREMIUM) {
+        if (auth.vulnClass >= NUM_CLASSES || auth.difficulty >= NUM_DIFFICULTIES || auth.pool >= NUM_POOLS) {
             revert InvalidParams();
         }
         if (auth.to == address(0)) revert ZeroAddress();
@@ -303,13 +302,19 @@ contract AxVigilCollectible is ERC721, Ownable2Step, Pausable, EIP712 {
         (address recovered, ECDSA.RecoverError err,) = ECDSA.tryRecover(hashMintAuth(auth), signature);
         if (err != ECDSA.RecoverError.NoError || recovered != signer) revert InvalidSignature();
 
+        // The signed pool is the difficulty. Checked after the signature so a mutated
+        // field is an invalid signature, and a backend that signs a mismatch is rejected too.
+        if (auth.pool != poolForDifficulty(auth.difficulty)) {
+            revert PoolDifficultyMismatch(auth.difficulty, auth.pool);
+        }
+
         if (agentRegistry.ownerOf(auth.agentId) != msg.sender) revert NotAgentOwner();
     }
 
     /// @dev Per-agent quota, supply cap, hourly cap, open batch. Returns the open batch id.
     function _checkLimits(uint256 agentId) internal view returns (uint32 batchId) {
         if (mintedPerAgent[agentId] >= MAX_PER_AGENT) revert AgentQuotaReached();
-        if (totalMinted >= maxSupply) revert SoldOut();
+        if (totalMinted >= drawableSupply) revert SoldOut();
         if (mintedInHour[block.timestamp / 1 hours] >= hourlyCap) revert HourlyCapReached();
         batchId = currentBatch;
         if (batchId == 0) revert NoOpenBatch();
@@ -342,45 +347,11 @@ contract AxVigilCollectible is ERC721, Ownable2Step, Pausable, EIP712 {
         return _domainSeparatorV4();
     }
 
-    // ---------------------------------------------------------------------
-    // Skill-only record (no collectible, no quota)
-    // ---------------------------------------------------------------------
-
-    /// @notice Record a verified solve on the agent's skill record without minting a collectible.
-    /// @dev Collectibles are capped at MAX_PER_AGENT, but the skill record is a resume that should
-    ///      grow with every verified solve (so all three class emblems can light up). This path
-    ///      shares the signer, nonce space and submissionHash dedup with `mint`, so a given solve
-    ///      drives at most one on-chain action. Caller must own `auth.agentId` in the registry.
-    function recordSolve(SkillAuth calldata auth, bytes calldata signature) external whenNotPaused {
-        if (block.timestamp > auth.deadline) revert Expired();
-        if (nonceUsed[auth.nonce]) revert NonceUsed();
-        if (submissionUsed[auth.submissionHash]) revert SubmissionUsed();
-        if (auth.vulnClass >= NUM_CLASSES || auth.difficulty >= NUM_DIFFICULTIES) revert InvalidParams();
-
-        (address recovered, ECDSA.RecoverError err,) = ECDSA.tryRecover(hashSkillAuth(auth), signature);
-        if (err != ECDSA.RecoverError.NoError || recovered != signer) revert InvalidSignature();
-        if (agentRegistry.ownerOf(auth.agentId) != msg.sender) revert NotAgentOwner();
-
-        // --- effects ---
-        nonceUsed[auth.nonce] = true;
-        submissionUsed[auth.submissionHash] = true;
-
-        // --- interactions ---
-        // Reverts (rolling back the effects above) if the record was revoked.
-        skill.recordSolve(auth.agentId, auth.vulnClass, auth.difficulty);
-
-        emit SkillRecorded(auth.agentId, auth.vulnClass, auth.difficulty, auth.submissionHash, auth.nonce);
-    }
-
-    /// @notice EIP-712 digest of a SkillAuth.
-    function hashSkillAuth(SkillAuth calldata a) public view returns (bytes32) {
-        return _hashTypedDataV4(
-            keccak256(
-                abi.encode(
-                    SKILL_AUTH_TYPEHASH, a.agentId, a.vulnClass, a.difficulty, a.submissionHash, a.nonce, a.deadline
-                )
-            )
-        );
+    /// @notice The only pool a solve of `difficulty` may enter. Equal to the difficulty
+    ///         (0 BASIC, 1 ADVANCED, 2 LEGENDARY) so a signature cannot separate them.
+    function poolForDifficulty(uint8 difficulty) public pure returns (uint8) {
+        if (difficulty >= NUM_DIFFICULTIES) revert InvalidParams();
+        return difficulty;
     }
 
     // ---------------------------------------------------------------------
@@ -440,10 +411,12 @@ contract AxVigilCollectible is ERC721, Ownable2Step, Pausable, EIP712 {
     }
 
     /// @dev Weighted draw over what is currently released and not yet drawn.
-    ///      NORMAL: weight = remaining count (uniform without replacement).
-    ///      PREMIUM: weight = remaining count * multiplier [1,2,4,8,8].
+    ///      HIDDEN's weight is always 0, so it is never selected.
+    ///      BASIC:     weight = remaining count (uniform without replacement).
+    ///      ADVANCED:  weight = remaining * [1, 2, 4, 8] for COMMON..LEGENDARY.
+    ///      LEGENDARY: weight = remaining * [1, 3, 8, 16].
     function _drawTier(uint256 drawIndex, uint8 pool, uint256 rand) internal returns (uint8) {
-        uint256 stage = (drawIndex * STAGES) / maxSupply; // 0..3
+        uint256 stage = (drawIndex * STAGES) / drawableSupply; // 0..3
         uint256[5] memory w;
         uint256 total;
         for (uint256 t; t < NUM_TIERS; ++t) {
@@ -451,7 +424,8 @@ contract AxVigilCollectible is ERC721, Ownable2Step, Pausable, EIP712 {
             w[t] = avail * _weightMultiplier(pool, t);
             total += w[t];
         }
-        // total > 0 is guaranteed by the constructor's staged-release check.
+        // total > 0 is guaranteed by the constructor's staged-release check: HIDDEN is
+        // excluded and legendary stages cannot lock the rest of the drawable supply.
         uint256 r = rand % total;
         for (uint256 t; t < NUM_TIERS; ++t) {
             if (r < w[t]) {
@@ -463,16 +437,30 @@ contract AxVigilCollectible is ERC721, Ownable2Step, Pausable, EIP712 {
         revert(); // unreachable
     }
 
-    function _weightMultiplier(uint8 pool, uint256 tier) internal pure returns (uint256) {
-        if (pool != POOL_PREMIUM) return 1;
-        if (tier == 0) return 1;
-        if (tier == 1) return 2;
-        if (tier == 2) return 4;
-        return 8; // LEGENDARY, HIDDEN
+    /// @notice Weight multiplier for `tier` in `pool`. HIDDEN is 0 in every pool.
+    function weightMultiplier(uint8 pool, uint256 tier) external pure returns (uint256) {
+        if (pool >= NUM_POOLS || tier >= NUM_TIERS) revert InvalidParams();
+        return _weightMultiplier(pool, tier);
     }
 
-    /// @notice How many of `tier` are released into the pool at `stage` (0..3).
+    function _weightMultiplier(uint8 pool, uint256 tier) internal pure returns (uint256) {
+        if (tier == TIER_HIDDEN) return 0;
+        if (pool == POOL_BASIC || tier == 0) return 1;
+        if (pool == POOL_ADVANCED) {
+            if (tier == 1) return 2;
+            if (tier == 2) return 4;
+            return 8; // LEGENDARY
+        }
+        // POOL_LEGENDARY
+        if (tier == 1) return 3;
+        if (tier == 2) return 8;
+        return 16;
+    }
+
+    /// @notice How many of `tier` are released into the random draw at `stage` (0..3).
+    ///         HIDDEN is never released into the draw.
     function _released(uint256 tier, uint256 stage) internal view returns (uint256) {
+        if (tier == TIER_HIDDEN) return 0;
         uint256 n = tierTotal(tier);
         if (tier < TIER_LEGENDARY) return n;
         return (n * (stage + 1)) / STAGES;
@@ -564,8 +552,8 @@ contract AxVigilCollectible is ERC721, Ownable2Step, Pausable, EIP712 {
     /// @notice Released-but-undrawn count of each tier for the next draw.
     function availableNow() external view returns (uint256[5] memory avail) {
         uint256 drawIndex = nextToReveal - 1;
-        if (drawIndex >= maxSupply) return avail;
-        uint256 stage = (drawIndex * STAGES) / maxSupply;
+        if (drawIndex >= drawableSupply) return avail;
+        uint256 stage = (drawIndex * STAGES) / drawableSupply;
         for (uint256 t; t < NUM_TIERS; ++t) {
             avail[t] = _released(t, stage) - _drawn[t];
         }

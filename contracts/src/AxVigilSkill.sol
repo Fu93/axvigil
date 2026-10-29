@@ -87,7 +87,9 @@ contract AxVigilSkill is IERC5192, IERC165, IAxVigilSkill, AccessControl {
     // ---------------------------------------------------------------------
 
     /// @notice Record a verified solve for `agentId`. Creates the record on first solve.
-    /// @dev Only the Collectible contract (MINTER_ROLE) calls this, inside its signed mint.
+    /// @dev Only the Collectible contract (MINTER_ROLE) calls this, and only from `mint`.
+    ///      One mint writes one solve, so a production skill record cannot grow past the
+    ///      two-collectible cap or record a solve that has no collectible.
     function recordSolve(uint256 agentId, uint8 vulnClass, uint8 difficulty) external override onlyRole(MINTER_ROLE) {
         if (vulnClass >= NUM_CLASSES) revert InvalidVulnClass(vulnClass);
         if (difficulty >= NUM_DIFFICULTIES) revert InvalidDifficulty(difficulty);

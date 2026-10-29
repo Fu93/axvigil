@@ -64,10 +64,12 @@ class PlatformClient:
         return self.token
 
     def start(self, *, vuln_class: int | None = None, difficulty: int | None = None,
-              mother_id: str | None = None) -> dict:
+              mother_id: str | None = None, practice: bool = False) -> dict:
         body = {k: v for k, v in
                 {"vulnClass": vuln_class, "difficulty": difficulty, "motherId": mother_id}.items()
                 if v is not None}
+        if practice:
+            body["practice"] = True
         return self._post("/v1/start", json=body)
 
     def get_fragment(self, session_id: str, index: int) -> dict:

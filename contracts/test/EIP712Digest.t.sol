@@ -32,18 +32,4 @@ contract EIP712DigestTest is AxVigilBase {
         console2.log("MINT_DIGEST");
         console2.logBytes32(nft.hashMintAuth(a));
     }
-
-    function test_logSkillAuthDigest() public view {
-        AxVigilCollectible.SkillAuth memory a = AxVigilCollectible.SkillAuth({
-            agentId: 7,
-            vulnClass: 2,
-            difficulty: 2,
-            submissionHash: 0x3333333333333333333333333333333333333333333333333333333333333333,
-            nonce: 456,
-            deadline: 1893456000
-        });
-        console2.log("VERIFYING_CONTRACT", address(nft));
-        console2.log("SKILL_DIGEST");
-        console2.logBytes32(nft.hashSkillAuth(a));
-    }
 }

@@ -34,7 +34,7 @@ contract VerifierMintIntegrationTest is AxVigilBase {
             to: alice,
             vulnClass: 0, // REENTRANCY, from verifier challenge reentrancy-001
             difficulty: 1,
-            pool: 0,
+            pool: 1,
             submissionHash: VERIFIED_REENTRANCY_SUBMISSION,
             nonce: 9001,
             deadline: block.timestamp + 1 hours
@@ -42,7 +42,7 @@ contract VerifierMintIntegrationTest is AxVigilBase {
         bytes memory signature = _sign(auth, signerPk);
 
         vm.expectEmit(true, true, true, true, address(nft));
-        emit Minted(1, agentA, alice, 0, 1, 0, 1, VERIFIED_REENTRANCY_SUBMISSION, 9001);
+        emit Minted(1, agentA, alice, 0, 1, 1, 1, VERIFIED_REENTRANCY_SUBMISSION, 9001);
         vm.prank(alice);
         uint256 tokenId = nft.mint(auth, signature);
 
@@ -60,7 +60,7 @@ contract VerifierMintIntegrationTest is AxVigilBase {
             to: alice,
             vulnClass: 0,
             difficulty: 1,
-            pool: 0,
+            pool: 1,
             submissionHash: VERIFIED_REENTRANCY_SUBMISSION,
             nonce: 9002,
             deadline: block.timestamp + 1 hours

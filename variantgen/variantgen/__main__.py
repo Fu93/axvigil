@@ -31,7 +31,9 @@ def _ensure_verifier_on_path() -> None:
 
 
 def _default_solc():
-    return os.environ.get("SOLC") or shutil.which("solc")
+    _ensure_verifier_on_path()
+    from axvigil_verifier.toolchain import discover_solc
+    return discover_solc()
 
 
 def _default_forge():

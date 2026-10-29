@@ -110,8 +110,11 @@ def solve(
         vuln_class_name=VULN_CLASS_NAMES.get(int(meta["vulnClass"]), "unknown"),
         pragma=meta.get("pragma", "0.8.28"), source=source,
         required_functions=meta.get("requiredFunctions", []),
+        limits=meta.get("limits") or {},
     )
 
+    first_user = user
+    limits = meta.get("limits") or {}
     outcome = SolveOutcome(challenge_id=meta["challengeId"], solved=False)
     start = time.time()
     prev_patch = prev_poc = ""
@@ -119,15 +122,21 @@ def solve(
     for i in range(max_iters):
         emit(f"[iter {i}] asking model…")
         raw = client.complete(SYSTEM, user)
+        if not isinstance(raw, str):
+            raw = ""
         try:
             obj = extract_json(raw)
             patch = obj["patched_contract"]
             poc = obj["poc_test"]
             analysis = obj.get("analysis", "")
-        except (ValueError, KeyError) as e:
+        except (ValueError, KeyError, TypeError) as e:
             emit(f"[iter {i}] unparseable response ({e}); retrying")
-            user = f"Your last response could not be parsed as the required JSON ({e}). " \
-                   f"Return ONLY the JSON object with keys analysis, patched_contract, poc_test."
+            # The client is stateless, so the retry must keep the challenge source.
+            user = (
+                f"Your last response could not be parsed as the required JSON ({e}). "
+                "Return ONLY the JSON object with keys analysis, patched_contract, poc_test.\n\n"
+                + first_user
+            )
             continue
 
         emit(f"[iter {i}] grading…")
@@ -151,7 +160,10 @@ def solve(
             outcome.final_result = res.to_json()
             break
 
-        user = build_retry_prompt(prev_patch=patch, prev_poc=poc, result_log=res.log, checks=checks)
+        user = build_retry_prompt(
+            prev_patch=patch, prev_poc=poc, result_log=res.log, checks=checks,
+            source=source, limits=limits,
+        )
 
     outcome.solve_seconds = int(time.time() - start)
     if outcome.final_result:

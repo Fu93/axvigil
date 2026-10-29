@@ -17,8 +17,15 @@ from pathlib import Path
 
 from .circuit import CircuitBreaker
 from .config import Settings
+from .quota import MAX_REWARD_ATTEMPTS, pool_for_difficulty
 from .signer import AuthSigner
-from .store import Store
+from .store import (
+    AlreadyAuthorized,
+    DuplicateSubmission,
+    NotRewardSession,
+    QuotaExceeded,
+    Store,
+)
 
 
 class ProtocolError(Exception):
@@ -69,6 +76,13 @@ class Platform:
             "signer": self.signer.address if self.signer else None,
             "canAuthorize": self.signer is not None,
             "sessionTtlSeconds": self.s.session_ttl_s,
+            "maxRewardAttempts": MAX_REWARD_ATTEMPTS,
+            "maxMintsPerAgent": MAX_REWARD_ATTEMPTS,
+            "pools": {
+                "0": "BASIC (uniform)",
+                "1": "ADVANCED (better odds)",
+                "2": "LEGENDARY (best odds)",
+            },
             "difficulties": {"0": "BASIC", "1": "ADVANCED", "2": "LEGENDARY"},
             "vulnClasses": {"0": "REENTRANCY", "1": "PRICE_MANIPULATION", "2": "ACCESS_CONTROL"},
             "mothers": mothers,
@@ -87,18 +101,30 @@ class Platform:
         return out, meta
 
     def start(self, *, address: str, agent_id: int, vuln_class: int | None = None,
-              difficulty: int | None = None, mother_id: str | None = None) -> dict:
-        # choose a mother
-        candidates = list(self.mothers.values())
-        if mother_id:
-            if mother_id not in self.mothers:
-                raise ProtocolError(404, f"unknown mother: {mother_id}")
-            candidates = [self.mothers[mother_id]]
-        if vuln_class is not None:
-            candidates = [m for m in candidates if m.meta["vulnClass"] == vuln_class]
-        if difficulty is not None:
-            candidates = [m for m in candidates if m.meta["difficulty"] == difficulty]
-        candidates = [m for m in candidates if not self.breaker.is_open(m.mother_id)]
+              difficulty: int | None = None, mother_id: str | None = None,
+              practice: bool = False) -> dict:
+        reward = not practice
+        if reward:
+            # The caller does not pick the challenge. Any of basic / advanced / legendary
+            # can come up: each available mother is equally likely.
+            if vuln_class is not None or difficulty is not None or mother_id is not None:
+                raise ProtocolError(
+                    400,
+                    "reward challenges are assigned by the server; "
+                    "pass practice=true to choose a mother or difficulty",
+                )
+            candidates = [m for m in self.mothers.values() if not self.breaker.is_open(m.mother_id)]
+        else:
+            candidates = list(self.mothers.values())
+            if mother_id:
+                if mother_id not in self.mothers:
+                    raise ProtocolError(404, f"unknown mother: {mother_id}")
+                candidates = [self.mothers[mother_id]]
+            if vuln_class is not None:
+                candidates = [m for m in candidates if m.meta["vulnClass"] == vuln_class]
+            if difficulty is not None:
+                candidates = [m for m in candidates if m.meta["difficulty"] == difficulty]
+            candidates = [m for m in candidates if not self.breaker.is_open(m.mother_id)]
         if not candidates:
             raise ProtocolError(409, "no challenge available (filtered out or issuance paused)")
 
@@ -109,17 +135,24 @@ class Platform:
 
         now = time.time()
         session_id = uuid.uuid4().hex
-        self.store.create_session({
-            "session_id": session_id, "address": address, "agent_id": agent_id,
-            "mother_id": mother.mother_id, "seed": seed, "challenge_id": meta["challengeId"],
-            "vuln_class": meta["vulnClass"], "difficulty": meta["difficulty"],
-            "started_at": now, "expires_at": now + self.s.session_ttl_s,
-        })
+        try:
+            self.store.create_session({
+                "session_id": session_id, "address": address, "agent_id": agent_id,
+                "mother_id": mother.mother_id, "seed": seed, "challenge_id": meta["challengeId"],
+                "vuln_class": meta["vulnClass"], "difficulty": meta["difficulty"],
+                "started_at": now, "expires_at": now + self.s.session_ttl_s,
+                "reward": reward,
+            })
+        except QuotaExceeded as e:
+            raise ProtocolError(409, str(e)) from e
         return {
             "sessionId": session_id,
+            "reward": reward,
+            "practice": not reward,
             "challengeId": meta["challengeId"],
             "vulnClass": meta["vulnClass"],
             "difficulty": meta["difficulty"],
+            "pool": pool_for_difficulty(meta["difficulty"]) if reward else None,
             "targetFile": meta["targetFile"],
             "contractName": meta["contractName"],
             "requiredFunctions": meta["requiredFunctions"],
@@ -175,21 +208,30 @@ class Platform:
         solve_seconds = int(time.time() - sess["started_at"])
         self.store.finish_session(session_id, passed=res.passed,
                                   solve_seconds=solve_seconds, submission_hash=res.submissionHash)
-        self.store.record_solve({
-            "session_id": session_id, "address": address, "agent_id": sess["agent_id"],
-            "mother_id": sess["mother_id"], "challenge_id": sess["challenge_id"],
-            "vuln_class": sess["vuln_class"], "difficulty": sess["difficulty"],
-            "passed": 1 if res.passed else 0, "solve_seconds": solve_seconds,
-            "submission_hash": res.submissionHash,
-        })
+        # Practice passes must not move the leaderboard or the leak breaker.
+        if sess["reward"]:
+            self.store.record_solve({
+                "session_id": session_id, "address": address, "agent_id": sess["agent_id"],
+                "mother_id": sess["mother_id"], "challenge_id": sess["challenge_id"],
+                "vuln_class": sess["vuln_class"], "difficulty": sess["difficulty"],
+                "passed": 1 if res.passed else 0, "solve_seconds": solve_seconds,
+                "submission_hash": res.submissionHash,
+            })
         result = res.to_json()
         result["solveSeconds"] = solve_seconds
         return {"passed": res.passed, "result": result,
-                "authorizable": res.passed and self.signer is not None}
+                "authorizable": bool(res.passed and sess["reward"] and self.signer is not None)}
 
     # ---- reward ----
     def authorize(self, *, session_id: str, address: str, to: str | None, action: str) -> dict:
         sess = self._owned_session(session_id, address)
+        if action != "mint":
+            raise ProtocolError(
+                400,
+                "only mint authorizations are issued; each passed solve pairs with one collectible",
+            )
+        if not sess["reward"]:
+            raise ProtocolError(403, "practice sessions are not reward-bearing")
         if sess["status"] != "solved":
             raise ProtocolError(409, "session is not in a solved state")
         if sess["authorized"]:
@@ -198,27 +240,36 @@ class Platform:
             raise ProtocolError(503, "signing not configured")
 
         sub = sess["submission_hash"]
-        if action == "mint":
-            signed = self.signer.sign_mint(
-                agent_id=sess["agent_id"], to=to or address, vuln_class=sess["vuln_class"],
-                difficulty=sess["difficulty"], pool=1 if sess["difficulty"] >= 1 else 0,
-                submission_hash=sub, ttl_s=self.s.auth_ttl_s,
+        pool = pool_for_difficulty(sess["difficulty"])
+        signed = self.signer.sign_mint(
+            agent_id=sess["agent_id"], to=to or address, vuln_class=sess["vuln_class"],
+            difficulty=sess["difficulty"], pool=pool,
+            submission_hash=sub, ttl_s=self.s.auth_ttl_s,
+        )
+        try:
+            self.store.commit_mint_authorization(
+                session_id=session_id, agent_id=sess["agent_id"], submission_hash=sub,
+                difficulty=sess["difficulty"], pool=pool, signature=signed.signature,
             )
-        elif action == "skill":
-            signed = self.signer.sign_skill(
-                agent_id=sess["agent_id"], vuln_class=sess["vuln_class"],
-                difficulty=sess["difficulty"], submission_hash=sub, ttl_s=self.s.auth_ttl_s,
-            )
-        else:
-            raise ProtocolError(400, "action must be 'mint' or 'skill'")
-
-        self.store.mark_authorized(session_id)
+        except QuotaExceeded as e:
+            raise ProtocolError(409, str(e)) from e
+        except AlreadyAuthorized as e:
+            raise ProtocolError(409, "already authorized") from e
+        except DuplicateSubmission as e:
+            raise ProtocolError(409, "submissionHash already authorized") from e
+        except NotRewardSession as e:
+            raise ProtocolError(403, "practice sessions are not reward-bearing") from e
         return {"action": signed.kind, "auth": signed.auth, "signature": signed.signature,
                 "signer": signed.signer}
 
     # ---- status ----
     def status(self, agent_id: int) -> dict:
-        return self.store.agent_summary(agent_id)
+        summary = self.store.agent_summary(agent_id)
+        summary["rewardAttempts"] = self.store.reward_attempt_count(agent_id)
+        summary["rewardAttemptCap"] = MAX_REWARD_ATTEMPTS
+        summary["mintAuthorizations"] = self.store.mint_authorization_count(agent_id)
+        summary["mintCap"] = MAX_REWARD_ATTEMPTS
+        return summary
 
     def leaderboard(self, limit: int = 20) -> list[dict]:
         return self.store.leaderboard(limit)

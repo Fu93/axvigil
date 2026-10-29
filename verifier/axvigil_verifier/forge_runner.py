@@ -11,10 +11,13 @@ from __future__ import annotations
 import json
 import os
 import shutil
+import signal
 import subprocess
 import tempfile
 from dataclasses import dataclass, field
 from pathlib import Path
+
+from .toolchain import effective_nproc_limit, uid_thread_count
 
 try:
     import resource  # POSIX only
@@ -22,10 +25,15 @@ except ImportError:  # pragma: no cover - Windows
     resource = None
 
 
-def _rlimit_preexec(cpu_s: int, mem_bytes: int, fsize_bytes: int, nproc: int):
+def _rlimit_preexec(cpu_s: int, mem_bytes: int, fsize_bytes: int, nproc: int | None):
     """Build a preexec_fn that caps the child's CPU, address space, output file
     size and process count. Defence in depth around untrusted submitted code,
-    on top of the wall-clock timeout, ffi=false and no network."""
+    on top of the wall-clock timeout, ffi=false and no network.
+
+    `nproc` is a UID-wide thread cap. None leaves it unset. Callers must pass a
+    value at or above the user's current thread count; a low absolute cap makes
+    forge's tokio runtime die with EAGAIN ("can't spawn worker thread").
+    """
     if resource is None:
         return None
 
@@ -39,7 +47,7 @@ def _rlimit_preexec(cpu_s: int, mem_bytes: int, fsize_bytes: int, nproc: int):
                 pass
         _set(resource.RLIMIT_CPU, cpu_s)
         _set(resource.RLIMIT_FSIZE, fsize_bytes)
-        if hasattr(resource, "RLIMIT_NPROC"):
+        if nproc is not None and hasattr(resource, "RLIMIT_NPROC"):
             _set(resource.RLIMIT_NPROC, nproc)
         # Address space: forge/solc are memory-hungry, so keep this generous and
         # skip it if it would be too low to run the toolchain at all.
@@ -106,7 +114,7 @@ def run_test(
     fuzz_seed: int = 0xA11CE,
     mem_limit_bytes: int = 4 << 30,
     fsize_limit_bytes: int = 256 << 20,
-    nproc_limit: int = 256,
+    nproc_limit: int = int(os.environ.get("AXVIGIL_NPROC_LIMIT", "4096")),
 ) -> RunResult:
     """Compile `sources`+`tests` and run forge tests matching `match_path`.
 
@@ -143,28 +151,51 @@ def run_test(
 
         # CPU limit a little above the wall limit so the timeout fires first in
         # the normal case and the CPU cap only catches a runaway process.
+        # The nproc cap is raised to the live UID thread count so it cannot sit
+        # below the threads this user already has.
+        nproc_soft = effective_nproc_limit(nproc_limit, uid_thread_count())
         preexec = _rlimit_preexec(
             cpu_s=timeout_s + 10, mem_bytes=mem_limit_bytes,
-            fsize_bytes=fsize_limit_bytes, nproc=nproc_limit,
+            fsize_bytes=fsize_limit_bytes, nproc=nproc_soft,
+        )
+        # start_new_session puts forge in its own process group so a timeout
+        # can kill solc grandchildren, not only the forge parent.
+        proc = subprocess.Popen(
+            cmd, cwd=workdir, env=env, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
+            text=True, preexec_fn=preexec, start_new_session=True,
         )
         try:
-            proc = subprocess.run(
-                cmd, cwd=workdir, env=env, capture_output=True, text=True,
-                timeout=timeout_s, preexec_fn=preexec, start_new_session=True,
-            )
+            stdout, stderr = proc.communicate(timeout=timeout_s)
         except subprocess.TimeoutExpired:
+            _kill_process_group(proc)
             return RunResult(compiled=False, timed_out=True, raw="timeout")
 
-        stdout = proc.stdout or ""
+        stdout = stdout or ""
+        # Keep the old attribute name used below. stderr is folded into compile failures.
+        proc_stderr = stderr or ""
         tests_map = _parse_forge_json(stdout)
         # A compile failure yields no JSON test map and a non-zero exit with a
         # "Compiler run failed" / error marker on stderr or stdout.
         compiled = tests_map is not None
         if not compiled:
-            return RunResult(compiled=False, timed_out=False, raw=(proc.stderr or "") + stdout)
+            return RunResult(compiled=False, timed_out=False, raw=proc_stderr + stdout)
         return RunResult(compiled=True, timed_out=False, tests=tests_map, raw=stdout)
     finally:
         shutil.rmtree(workdir, ignore_errors=True)
+
+
+def _kill_process_group(proc: subprocess.Popen) -> None:
+    try:
+        os.killpg(proc.pid, signal.SIGKILL)
+    except (ProcessLookupError, PermissionError, OSError):
+        try:
+            proc.kill()
+        except OSError:
+            pass
+    try:
+        proc.wait(timeout=5)
+    except subprocess.TimeoutExpired:
+        pass
 
 
 def _parse_forge_json(stdout: str) -> dict[str, bool] | None:
