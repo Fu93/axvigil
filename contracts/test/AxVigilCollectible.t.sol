@@ -367,7 +367,7 @@ contract AxVigilCollectibleTest is AxVigilBase {
 
     function test_productionConfig() public view {
         assertEq(nft.maxSupply(), 7777);
-        assertEq(nft.drawableSupply(), 7773, "mint closes at the public tiers");
+        assertEq(nft.drawableSupply(), 7773, "public quota; hidden is extra up to maxSupply");
         assertEq(nft.HIDDEN_CHANCE_BPS(), 25);
         assertLt(nft.HIDDEN_CHANCE_BPS(), nft.MAX_HIDDEN_CHANCE_BPS());
         assertEq(nft.tierTotal(0), 5444);

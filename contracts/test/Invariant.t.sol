@@ -100,9 +100,10 @@ contract AxVigilInvariantTest is Test {
     }
 
     function invariant_supplyNeverExceedsMax() public view {
-        assertLe(nft.totalMinted(), nft.drawableSupply());
+        assertLe(nft.totalMinted(), nft.maxSupply());
+        assertLe(nft.totalMinted() - nft.drawnOf(4), nft.drawableSupply());
         assertEq(nft.maxSupply(), 53);
-        assertEq(nft.drawableSupply(), 49, "mint closes at the public tiers");
+        assertEq(nft.drawableSupply(), 49, "public quota, hidden not included");
         assertLe(nft.drawnOf(4), tiers[4], "hidden quota");
     }
 

@@ -37,8 +37,8 @@ contract RarityTest is AxVigilBase {
         assertEq(nft.nextToReveal(), supply + 1, "all revealed");
     }
 
-    /// @dev Full mint of the public supply. Quotas are ceilings. Hidden may appear only on
-    ///      pool 2, and only within its quota. A Hidden hit leaves one public piece unminted.
+    /// @dev Mints exactly `drawableSupply` tokens and reveals them. Quotas are ceilings.
+    ///      This pass does not top up after Hidden hits; `test_publicQuotasFillWhenHiddenHits` does.
     function _checkDistribution() internal view {
         uint256 supply = nft.drawableSupply();
         uint256[5] memory seen;
@@ -90,7 +90,6 @@ contract RarityTest is AxVigilBase {
         uint256 batchSize = bound(batchRaw, 1, 60);
         _mintAndRevealAll(fuzzSeed, poolBits, batchSize);
         _checkDistribution();
-        _assertSoldOut();
     }
 
     /// Commons plus staged legendary. Hidden may be rolled only when the token's pool is 2.
@@ -212,11 +211,66 @@ contract RarityTest is AxVigilBase {
         assertEq(nft.hiddenRollHits(type(uint256).max, 2), (type(uint256).max % 10_000) < 25);
     }
 
-    /// Full production config: 7,773 public mints. Hidden may replace a few of them. Heavy.
-    function test_productionFullSupply() public {
+    /// Full production drain. Four pool-2 mints are forced to reveal as Hidden, then every
+    /// public piece is still minted. Total is 7,777 and does not go past that. Heavy.
+    function test_publicQuotasFillWhenHiddenHits() public {
         _deploy(_production(), BIG_CAP);
-        _mintAndRevealAll(42, uint256(keccak256("pools")), 500);
-        _checkDistribution();
+        for (uint256 i; i < 4; ++i) {
+            _mintForcedHidden();
+        }
+        vm.prank(owner);
+        nft.revealSeed(1, SEED);
+        nft.revealTokens(4);
+        assertEq(nft.drawnOf(4), 4, "forced rolls revealed as hidden");
+        assertEq(nft.publicAccounted(), 0, "hidden did not consume public quota");
+        assertEq(nft.totalMinted(), 4);
+
+        bytes32 seed2 = keccak256("public-fill");
+        vm.prank(owner);
+        nft.commitSeed(keccak256(abi.encodePacked(seed2)));
+
+        uint256 agent;
+        uint256 guard;
+        while (nft.publicAccounted() < nft.drawableSupply()) {
+            if (agent == 0 || nft.mintedPerAgent(agent) >= 2) agent = registry.mint(alice);
+            _mint(alice, agent, uint8(guard % 3), 0, 0);
+            guard += 1;
+            assertLe(nft.totalMinted(), nft.maxSupply());
+            assertLe(guard, nft.drawableSupply());
+        }
+        assertEq(nft.totalMinted(), 7777);
+        assertEq(nft.publicAccounted(), 7773);
+
+        vm.prank(owner);
+        nft.revealSeed(2, seed2);
+        nft.revealTokens(type(uint256).max);
+        assertEq(nft.nextToReveal(), nft.totalMinted() + 1, "every mint revealed");
+        assertEq(nft.drawnOf(0), 5444);
+        assertEq(nft.drawnOf(1), 1555);
+        assertEq(nft.drawnOf(2), 622);
+        assertEq(nft.drawnOf(3), 152);
+        assertEq(nft.drawnOf(4), 4);
+        assertEq(nft.totalMinted(), 7777);
+        assertEq(nft.publicAccounted(), 7773);
         _assertSoldOut();
+    }
+
+    /// @dev Search prevrandao until the next pool-2 mint will roll Hidden, then mint it.
+    function _mintForcedHidden() internal {
+        uint256 agentId = registry.mint(alice);
+        for (uint256 n = 1; n <= 20_000; ++n) {
+            vm.roll(2_000 + n);
+            vm.prevrandao(bytes32(n));
+            uint256 tokenId = nft.totalMinted() + 1;
+            bytes32 entropy = keccak256(
+                abi.encode(block.number > 0 ? blockhash(block.number - 1) : bytes32(0), block.prevrandao, tokenId, alice)
+            );
+            uint256 rand = uint256(keccak256(abi.encode(SEED, entropy)));
+            if (nft.hiddenRollHits(rand, nft.POOL_LEGENDARY())) {
+                _mint(alice, agentId, 2, 2, 2);
+                return;
+            }
+        }
+        revert("could not force a hidden roll");
     }
 }

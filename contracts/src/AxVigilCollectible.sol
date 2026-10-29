@@ -30,10 +30,11 @@ import {IAxVigilSkill} from "./interfaces/IAxVigilSkill.sol";
 ///    fixed roll of HIDDEN_CHANCE_BPS / 10_000 (0.25%). That chance does not depend on
 ///    how many public pieces remain, so it cannot drift up as other tiers deplete.
 ///    Pools 0 and 1 never roll Hidden. Hidden is not in the weighted ladder.
-///  - `mint` stops at `drawableSupply` (the public tiers). A Hidden hit occupies one of
-///    those mint slots, so one public piece stays unminted. Hidden that is never rolled
-///    stays unminted. Reveal does not force Hidden, and does not revert, if the public
-///    ladder is empty.
+///  - The collection is the 7,773 public pieces plus up to 4 Hidden (7,777). `mint`
+///    closes when every public tier is exhausted, not when `totalMinted` hits 7,773.
+///    A revealed Hidden piece does not consume a public slot, so all 7,773 public
+///    pieces stay mintable. Hidden that is never rolled stays unminted. Reveal does
+///    not force Hidden, and does not revert, if the public ladder is empty.
 ///  - Staged release: LEGENDARY is released in 4 equal stages across `drawableSupply`
 ///    (stage k releases legendaryTotal*(k+1)/4). The first stage is open from token #1.
 ///  - Three pools, bound to the signed difficulty (the contract rejects a mismatch):
@@ -124,7 +125,8 @@ contract AxVigilCollectible is ERC721, Ownable2Step, Pausable, EIP712 {
     /// @notice Configured supply = sum of tier pools, including the reserved HIDDEN pieces.
     ///         Immutable: cannot be increased.
     uint256 public immutable maxSupply;
-    /// @notice Mint cap = the four public tiers. Hidden is rolled inside those mints, not on top of them.
+    /// @notice How many public pieces exist (Common+Rare+Epic+Legendary). Hidden does not count
+    ///         against this. `mint` closes once `totalMinted - hiddenDrawn` reaches it.
     uint256 public immutable drawableSupply;
 
     uint256 private immutable _tier0;
@@ -328,7 +330,10 @@ contract AxVigilCollectible is ERC721, Ownable2Step, Pausable, EIP712 {
     /// @dev Per-agent quota, supply cap, hourly cap, open batch. Returns the open batch id.
     function _checkLimits(uint256 agentId) internal view returns (uint32 batchId) {
         if (mintedPerAgent[agentId] >= MAX_PER_AGENT) revert AgentQuotaReached();
-        if (totalMinted >= drawableSupply) revert SoldOut();
+        // Hidden draws do not use up a public piece. Unrevealed mints still reserve one,
+        // because they might reveal as a public tier.
+        if (totalMinted >= maxSupply) revert SoldOut();
+        if (totalMinted - _drawn[TIER_HIDDEN] >= drawableSupply) revert SoldOut();
         if (mintedInHour[block.timestamp / 1 hours] >= hourlyCap) revert HourlyCapReached();
         batchId = currentBatch;
         if (batchId == 0) revert NoOpenBatch();
@@ -446,7 +451,7 @@ contract AxVigilCollectible is ERC721, Ownable2Step, Pausable, EIP712 {
             return (true, TIER_HIDDEN);
         }
 
-        uint256 stage = (drawIndex * STAGES) / drawableSupply; // 0..3
+        uint256 stage = _stage(drawIndex);
         uint256[5] memory w;
         uint256 total;
         for (uint256 t; t < NUM_TIERS; ++t) {
@@ -581,7 +586,13 @@ contract AxVigilCollectible is ERC721, Ownable2Step, Pausable, EIP712 {
         return _drawn[tier];
     }
 
-    /// @notice Pieces of Hidden still unrollled. Not part of the weighted ladder.
+    /// @notice Public pieces already minted or still reserved by an unrevealed token.
+    ///         Revealed Hidden is not included. Mint closes when this reaches `drawableSupply`.
+    function publicAccounted() external view returns (uint256) {
+        return totalMinted - _drawn[TIER_HIDDEN];
+    }
+
+    /// @notice Pieces of Hidden still unrolled. Not part of the weighted ladder.
     function hiddenRemaining() external view returns (uint256) {
         return _tier4 - _drawn[TIER_HIDDEN];
     }
@@ -590,12 +601,19 @@ contract AxVigilCollectible is ERC721, Ownable2Step, Pausable, EIP712 {
     ///         Hidden's entry stays 0; use `hiddenRemaining` for the side roll.
     function availableNow() external view returns (uint256[5] memory avail) {
         uint256 drawIndex = nextToReveal - 1;
-        if (drawIndex >= drawableSupply) return avail;
-        uint256 stage = (drawIndex * STAGES) / drawableSupply;
+        uint256 stage = _stage(drawIndex);
         for (uint256 t; t < NUM_TIERS; ++t) {
             uint256 released = _released(t, stage);
             avail[t] = _drawn[t] >= released ? 0 : released - _drawn[t];
         }
+    }
+
+    /// @dev Legendary stages are indexed by mint order across the public supply.
+    ///      Tokens past `drawableSupply` (the extra Hidden slots) sit in the last stage,
+    ///      when every public piece is released.
+    function _stage(uint256 drawIndex) internal view returns (uint256) {
+        if (drawIndex >= drawableSupply) return STAGES - 1;
+        return (drawIndex * STAGES) / drawableSupply;
     }
 
     function _ceilDiv(uint256 a, uint256 b) private pure returns (uint256) {

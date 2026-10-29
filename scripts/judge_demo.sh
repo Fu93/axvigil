@@ -86,7 +86,7 @@ echo "registry    $REGISTRY"
 echo "collectible $COLLECTIBLE"
 echo "skill       $SKILL"
 echo "agent id    $AGENT_ID"
-echo "max supply  $MAX_SUPPLY  drawable $DRAWABLE (mint closes at public tiers; pool 2 rolls hidden at 0.25%)"
+echo "max supply  $MAX_SUPPLY  public $DRAWABLE (hidden does not consume a public slot; pool 2 rolls it at 0.25%)"
 
 echo ""
 echo "== 3/4 platform API (ownership checked against the local registry) =="
