@@ -1,1 +1,4 @@
+fastapi>=0.110
+uvicorn[standard]>=0.29
 eth-account>=0.13,<1
+pydantic>=2

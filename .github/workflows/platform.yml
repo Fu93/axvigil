@@ -1,0 +1,67 @@
+name: Platform
+
+on:
+  push:
+    branches: [main, "**"]
+    paths:
+      - 'verifier/**'
+      - 'variantgen/**'
+      - 'mothers/**'
+      - 'challenges/**'
+      - 'backend/**'
+      - 'contracts/**'
+      - 'SPEC.md'
+      - '.github/workflows/platform.yml'
+  pull_request:
+    paths:
+      - 'verifier/**'
+      - 'variantgen/**'
+      - 'mothers/**'
+      - 'challenges/**'
+      - 'backend/**'
+      - 'contracts/**'
+      - 'SPEC.md'
+      - '.github/workflows/platform.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  python-suites:
+    name: verifier · variantgen · backend · mint-auth bridge · sample grade
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - uses: foundry-rs/foundry-toolchain@v1
+      - name: Warm the solc cache (so offline grading can compile)
+        run: forge build
+        working-directory: contracts
+      - name: Install deps
+        run: |
+          python -m pip install --upgrade pip
+          pip install pytest -r backend/requirements.txt
+      - name: verifier package tests
+        run: python -m pytest -q
+        working-directory: verifier
+      - name: variantgen tests
+        run: PYTHONPATH=. python -m pytest -q
+        working-directory: variantgen
+      - name: backend protocol tests
+        run: PYTHONPATH=. python -m pytest tests/ -q
+        working-directory: backend
+      - name: agent protocol-client tests
+        run: PYTHONPATH=. python -m pytest tests/ -q
+        working-directory: agent
+      - name: mint-auth bridge test
+        run: python -m pytest backend/test_mint_auth.py -q
+      - name: grade the deployed reentrancy-001 sample
+        run: |
+          PYTHONPATH=verifier python -m axvigil_verifier grade \
+            --challenge challenges/reentrancy-001 \
+            --patch challenges/reentrancy-001/submissions/sample.patch \
+            --poc challenges/reentrancy-001/submissions/sample_poc.t.sol

@@ -1,0 +1,22 @@
+{
+  "motherId": "reentrancy",
+  "vulnClass": 0,
+  "difficulty": 0,
+  "targetSentinel": "Czz",
+  "pragma": "0.8.28",
+  "fixId": "reentrancy_cei",
+  "identifiers": {
+    "Czz": "contract",
+    "fzzDeposit": "verb_deposit",
+    "fzzWithdraw": "verb_withdraw",
+    "fzzTotal": "verb_total",
+    "vzzBal": "noun_balance",
+    "lzzAmt": "noun_amount",
+    "lzzOk": "noun_ok"
+  },
+  "requiredFunctionSentinels": ["fzzDeposit", "fzzWithdraw", "fzzTotal"],
+  "distractors": [1, 4],
+  "limits": { "maxChangedLines": 30, "maxBytes": 6000 },
+  "title": "Reentrant Vault",
+  "summary": "A vault pays out before clearing the caller's balance. Find the reentrancy and fix it without breaking deposit/withdraw accounting."
+}

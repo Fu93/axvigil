@@ -1,0 +1,62 @@
+// SPDX-License-Identifier: MIT
+pragma solidity 0.8.28;
+
+/// @notice AxVigil challenge target (sandbox, BSC testnet only). Deliberately
+///         vulnerable for an AI agent to find and fix. Do not deploy to mainnet.
+///
+/// A lending pool that lets a user borrow `quote` against deposited `base`
+/// collateral. Collateral is valued with a price; a manipulation-resistant
+/// reference price is available but the valuation uses the live spot price.
+contract Czz {
+    uint256 public vzzRb;   // base reserve   (movable by a swap)
+    uint256 public vzzRq;   // quote reserve  (movable by a swap)
+    uint256 public vzzRef;  // reference price, 1e18-scaled (manipulation-resistant)
+
+    mapping(address => uint256) public vzzCol;   // collateral (base units)
+    mapping(address => uint256) public vzzDebt;  // debt (quote units)
+
+    constructor(uint256 base, uint256 quote, uint256 ref) {
+        vzzRb = base;
+        vzzRq = quote;
+        vzzRef = ref;
+    }
+
+// @@SHUF_BEGIN@@
+// @@SHUF@@
+    /// @notice Live spot price = quote per base, 1e18-scaled. Movable within one tx.
+    function fzzSpot() public view returns (uint256) {
+        return vzzRq * 1e18 / vzzRb;
+    }
+// @@SHUF@@
+    /// @notice Manipulation-resistant reference price, 1e18-scaled.
+    function fzzSafe() public view returns (uint256) {
+        return vzzRef;
+    }
+// @@SHUF@@
+    function fzzDeposit(uint256 amount) external {
+        vzzCol[msg.sender] += amount;
+    }
+// @@SHUF@@
+    function fzzBorrow(uint256 amount) external {
+        // VULNERABLE: values collateral at the live spot price, which fzzSwap moves.
+        uint256 price = fzzSpot();
+        uint256 maxDebt = vzzCol[msg.sender] * price / 1e18;
+        require(vzzDebt[msg.sender] + amount <= maxDebt, "undercollateralized");
+        vzzDebt[msg.sender] += amount;
+        vzzRq -= amount;
+    }
+// @@SHUF@@
+    function fzzRepay(uint256 amount) external {
+        require(vzzDebt[msg.sender] >= amount, "repay exceeds debt");
+        vzzDebt[msg.sender] -= amount;
+        vzzRq += amount;
+    }
+// @@SHUF@@
+    /// @notice Moves reserves, and therefore the spot price (models a flash swap).
+    function fzzSwap(uint256 quoteIn, uint256 baseOut) external {
+        require(baseOut < vzzRb, "drains base");
+        vzzRb -= baseOut;
+        vzzRq += quoteIn;
+    }
+// @@SHUF_END@@
+}

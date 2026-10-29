@@ -1,0 +1,27 @@
+{
+  "motherId": "price-manipulation",
+  "vulnClass": 1,
+  "difficulty": 1,
+  "targetSentinel": "Czz",
+  "pragma": "0.8.28",
+  "fixId": "price_twap",
+  "identifiers": {
+    "Czz": "contract",
+    "fzzSpot": "fn_spot",
+    "fzzSafe": "fn_safe",
+    "fzzDeposit": "verb_deposit",
+    "fzzBorrow": "verb_borrow",
+    "fzzRepay": "verb_repay",
+    "fzzSwap": "verb_swap",
+    "vzzCol": "noun_collateral",
+    "vzzDebt": "noun_debt",
+    "vzzRb": "noun_rbase",
+    "vzzRq": "noun_rquote",
+    "vzzRef": "noun_ref"
+  },
+  "requiredFunctionSentinels": ["fzzSpot", "fzzSafe", "fzzDeposit", "fzzBorrow", "fzzRepay", "fzzSwap"],
+  "distractors": [1, 3],
+  "limits": { "maxChangedLines": 20, "maxBytes": 8000 },
+  "title": "Spot-Price Lending Pool",
+  "summary": "Collateral is valued at the instantaneous pool (spot) price, which a single-tx swap can move. Value it with the manipulation-resistant reference price instead."
+}
