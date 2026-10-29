@@ -112,7 +112,17 @@ For BSC testnet deployment, first run [`scripts/bsc_preflight.sh`](scripts/bsc_p
 
 ## BSC testnet deployment (chain 97)
 
-The first public testnet deployment is live. The deployment uses the demo-only `MockAgentID` registry and a 50 mint-per-hour cap. No seed batch was committed yet, so the owner must commit a seed before a mint can be demonstrated.
+The current testnet deployment runs the hardened contracts from PR #4 (2 mints per Agent ID, pool bound to difficulty, HIDDEN never drawn, `drawableSupply` 7773). It reuses the demo `MockAgentID` registry and a 50 mint-per-hour cap. Batch 1 is committed and a smoke-test mint (token `1`, Agent ID `1`) succeeded.
+
+| Contract | Address | Explorer |
+|---|---|---|
+| MockAgentID (reused) | `0x7Aa441477f0246353bdAe504cF0F9B3027D6d45e` | [view](https://testnet.bscscan.com/address/0x7Aa441477f0246353bdAe504cF0F9B3027D6d45e) |
+| AxVigilSkill | `0xF572376A24467F5a70D0063448e5386BB842cD30` | [view](https://testnet.bscscan.com/address/0xF572376A24467F5a70D0063448e5386BB842cD30) |
+| AxVigilCollectible | `0x7dd86cB7d4e2d7E0b731FB86D53Bd12D02751685` | [view](https://testnet.bscscan.com/address/0x7dd86cB7d4e2d7E0b731FB86D53Bd12D02751685) |
+
+### Previous deployment (pre-PR #4, superseded)
+
+The first public testnet deployment (now superseded) is below. The deployment uses the demo-only `MockAgentID` registry and a 50 mint-per-hour cap. No seed batch was committed yet, so the owner must commit a seed before a mint can be demonstrated.
 
 | Contract | Address | Explorer |
 |---|---|---|
@@ -124,9 +134,9 @@ The full public deployment record, including transaction hashes, is [`deployment
 
 The collection art plan is documented in [`docs/prd-v1.4-asset-pipeline.md`](docs/prd-v1.4-asset-pipeline.md): Muse Image creates a small Aki source set, while a deterministic local compositor produces the 7,777 final images and metadata. This preserves character consistency, keeps generation cost low and binds the verified vulnerability class to the visual effect.
 
-The first live testnet demo has also completed successfully: verifier `reentrancy-001` passed, Agent ID `1` was created, and Collectible token `1` was minted to the deployer. `AxVigilSkill.totalSolves(1)` is `1` and `currentBatch` is `1`. The three live-demo transactions are [commit seed](https://testnet.bscscan.com/tx/0x493ac2cb71504cb643f95c8e1b3a2a7dd53cc33e95428d6cc8297138e100155b), [create Agent ID](https://testnet.bscscan.com/tx/0xc125505638e6562e965977610cbad7a0cfc6f3579c38f3660c24a578a73f5ecd), and [mint collectible](https://testnet.bscscan.com/tx/0xf78ae69add796a107302aaafc178c0b45c4c5936ebcb5ebe47c58f3836b14fce). The reusable script is [`contracts/script/BscLiveDemo.s.sol`](contracts/script/BscLiveDemo.s.sol); its seed is generated and retained locally, never committed.
+On that previous deployment, the first live demo completed: verifier `reentrancy-001` passed, Agent ID `1` was created, and Collectible token `1` was minted to the deployer. `AxVigilSkill.totalSolves(1)` was `1` and `currentBatch` was `1`. Those transactions are [commit seed](https://testnet.bscscan.com/tx/0x493ac2cb71504cb643f95c8e1b3a2a7dd53cc33e95428d6cc8297138e100155b), [create Agent ID](https://testnet.bscscan.com/tx/0xc125505638e6562e965977610cbad7a0cfc6f3579c38f3660c24a578a73f5ecd), and [mint collectible](https://testnet.bscscan.com/tx/0xf78ae69add796a107302aaafc178c0b45c4c5936ebcb5ebe47c58f3836b14fce). The reusable script is [`contracts/script/BscLiveDemo.s.sol`](contracts/script/BscLiveDemo.s.sol); its seed is generated and retained locally, never committed.
 
-Token `1` was then revealed successfully. It is `REENTRANCY`, tier `COMMON`, with `artId = 0` and `tokenURI = "0"` (the deployment currently has an empty base URI). The [seed reveal transaction](https://testnet.bscscan.com/tx/0x4a0cb0039cd88c8573cab7bd30a909c2d601036f2607b516dc62abe34f407733) and [token reveal transaction](https://testnet.bscscan.com/tx/0xe17d8f2ea32ee87698bc5367aca087ebb12a841083cd2416111aea525dba6401) are recorded in the deployment manifest.
+That previous token `1` was revealed as `REENTRANCY`, tier `COMMON`, with `artId = 0`. The [seed reveal transaction](https://testnet.bscscan.com/tx/0x4a0cb0039cd88c8573cab7bd30a909c2d601036f2607b516dc62abe34f407733) and [token reveal transaction](https://testnet.bscscan.com/tx/0xe17d8f2ea32ee87698bc5367aca087ebb12a841083cd2416111aea525dba6401) are under `previous` in the deployment manifest. The new contract’s token `1` has not been revealed.
 
 Once a result has `passed: true`, the backend bridge binds its `submissionHash` into the contract's EIP-712 authorization:
 
