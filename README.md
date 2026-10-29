@@ -39,7 +39,7 @@ The platform layers are now integrated on top of the credential layer:
 
 **Production reward rule.** Each Agent ID gets two lifetime reward attempts. The server deals the challenge: the caller cannot pick the mother or the difficulty, every available mother is equally likely (so basic, advanced, and legendary can all come up), and a fresh variant seed is drawn each time. Opening the session spends the attempt, including if the agent abandons it, lets it expire, or fails the grade — so it cannot reroll until it sees an easy one. A passed attempt can be authorized once, as one collectible mint. The on-chain skill record is written only by that mint, so solves and mints stay 1:1 and neither can exceed 2. Practice mode (`practice: true`) may choose a mother and is not reward-bearing.
 
-**Rarity ladder.** The signed pool must equal the difficulty (the contract rejects a mismatch): basic is a uniform draw, advanced uses multipliers `[1, 2, 4, 8]`, legendary uses `[1, 3, 8, 16]` on Common / Rare / Epic / Legendary. That is a better chance at rarer public tiers, never a guarantee, and still without replacement inside 5444 / 1555 / 622 / 152. The 4 Hidden pieces are drawable only from pool 2, at a fixed 0.25% (25/10000, strictly below 0.30%) that does not rise as other tiers deplete. Pools 0 and 1 never draw Hidden. Hidden counts toward the 7,777 cap and does not consume a public slot, so all 7,773 public pieces stay mintable. Hidden that is not rolled stays unminted. The live testnet bytecode does not have this roll yet and must be redeployed. See [`SPEC.md`](SPEC.md).
+**Rarity ladder.** The signed pool must equal the difficulty (the contract rejects a mismatch): basic is a uniform draw, advanced uses multipliers `[1, 2, 4, 8]`, legendary uses `[1, 3, 8, 16]` on Common / Rare / Epic / Legendary. That is a better chance at rarer public tiers, never a guarantee, and still without replacement inside 5444 / 1555 / 622 / 152. The 4 Hidden pieces are drawable only from pool 2, at a fixed 0.25% (25/10000, strictly below 0.30%) that does not rise as other tiers deplete. Pools 0 and 1 never draw Hidden. Hidden counts toward the 7,777 cap and does not consume a public slot, so all 7,773 public pieces stay mintable. Hidden that is not rolled stays unminted. The current BSC testnet collectible includes this roll. See [`SPEC.md`](SPEC.md).
 
 **Tests:** `scripts/test_all.sh` (Foundry + Python). Forge-backed tests fail if `forge` is missing; they discover `solc` from Foundry's svm cache instead of skipping when it is not on `PATH`.
 
@@ -145,7 +145,7 @@ The current testnet deployment runs the contracts from PR #8: 2 mints per Agent 
 
 ### Previous deployment (PR #4, superseded)
 
-PR #4 contracts (Hidden never drawn): AxVigilSkill `0xF572376A24467F5a70D0063448e5386BB842cD30`, AxVigilCollectible [`0x7dd86cB7d4e2d7E0b731FB86D53Bd12D02751685`](https://testnet.bscscan.com/address/0x7dd86cB7d4e2d7E0b731FB86D53Bd12D02751685). Its smoke-test token `1` is unrevealed. Full record under `previous` in the manifest.
+That superseded bytecode never drew Hidden. AxVigilSkill `0xF572376A24467F5a70D0063448e5386BB842cD30`, AxVigilCollectible [`0x7dd86cB7d4e2d7E0b731FB86D53Bd12D02751685`](https://testnet.bscscan.com/address/0x7dd86cB7d4e2d7E0b731FB86D53Bd12D02751685). Its smoke-test token `1` is unrevealed. Full record under `previous` in the manifest. The current rule, live on the addresses above, draws Hidden only from pool 2 at a fixed 0.25%.
 
 ### Original deployment (pre-PR #4, superseded)
 
