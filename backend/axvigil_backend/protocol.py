@@ -8,6 +8,8 @@ nothing to memorize. Grading on submit re-uses the exact rendered variant.
 
 from __future__ import annotations
 
+import logging
+import re
 import secrets
 import shutil
 import sys
@@ -18,6 +20,9 @@ from pathlib import Path
 from .circuit import CircuitBreaker
 from .config import Settings
 from .quota import MAX_REWARD_ATTEMPTS, pool_for_difficulty
+
+logger = logging.getLogger("axvigil")
+_TEST_MAP = re.compile(r"\s*\{[^{}]*\}")
 from .registry import AgentRegistry, RegistryUnavailable, rpc_registry_from_env
 from .signer import AuthSigner
 from .store import (
@@ -137,7 +142,10 @@ class Platform:
         except RegistryUnavailable as exc:
             raise ProtocolError(503, f"Agent ID registry unavailable: {exc}") from exc
         if owner is None or owner.lower() != address.lower():
-            raise ProtocolError(403, "authenticated wallet does not own this Agent ID")
+            raise ProtocolError(
+                403,
+                "The authenticated wallet does not own this Agent ID. " + self.quota_message(agent_id),
+            )
 
     def start(self, *, address: str, agent_id: int, vuln_class: int | None = None,
               difficulty: int | None = None, mother_id: str | None = None,
@@ -152,8 +160,10 @@ class Platform:
             if vuln_class is not None or difficulty is not None or mother_id is not None:
                 raise ProtocolError(
                     400,
-                    "reward challenges are assigned by the server; "
-                    "pass practice=true to choose a mother or difficulty",
+                    "Reward challenges are chosen by the server across all difficulties. "
+                    "Omit motherId, vulnClass, and difficulty. "
+                    "Pass practice=true to choose a mother. "
+                    + self.quota_message(agent_id),
                 )
             candidates = [m for m in self.mothers.values() if not self.breaker.is_open(m.mother_id)]
         else:
@@ -168,7 +178,12 @@ class Platform:
                 candidates = [m for m in candidates if m.meta["difficulty"] == difficulty]
             candidates = [m for m in candidates if not self.breaker.is_open(m.mother_id)]
         if not candidates:
-            raise ProtocolError(409, "no challenge available (filtered out or issuance paused)")
+            raise ProtocolError(
+                409,
+                "No challenge is available. It was filtered out, or the answer-leak circuit breaker "
+                "paused issuance because the recent pass rate was too high. "
+                + self.quota_message(agent_id),
+            )
 
         mother = secrets.choice(candidates)
         seed = secrets.randbelow(1 << 31)
@@ -186,12 +201,18 @@ class Platform:
                 "reward": reward,
             })
         except QuotaExceeded as e:
-            raise ProtocolError(409, str(e)) from e
+            raise ProtocolError(
+                409,
+                "Reward attempt cap reached: 2 of 2 lifetime reward sessions have been opened "
+                "for this Agent ID. Opening a session spends the attempt, including if it expires "
+                "or fails. Practice mode is still available and cannot be minted. "
+                + self.quota_message(agent_id),
+            ) from e
         return {
             "sessionId": session_id,
             "reward": reward,
             "practice": not reward,
-            "challengeId": meta["challengeId"],
+            "challengeId": public_challenge_id(session_id),
             "vulnClass": meta["vulnClass"],
             "difficulty": meta["difficulty"],
             "pool": pool_for_difficulty(meta["difficulty"]) if reward else None,
@@ -208,6 +229,7 @@ class Platform:
             "startedAt": now,
             "expiresAt": now + self.s.session_ttl_s,
             "fragmentCount": _fragment_count(source),
+            "quotaMessage": self.quota_message(agent_id),
         }
 
     def get_fragment(self, session_id: str, index: int, address: str) -> dict:
@@ -223,17 +245,42 @@ class Platform:
 
     # ---- grading ----
     def submit(self, *, session_id: str, address: str, patch: str, poc: str) -> dict:
+        if not patch.strip() or not poc.strip():
+            raise ProtocolError(
+                400,
+                "Both patch and poc must be non-empty Solidity source. No grade was started.",
+            )
         # One grader run per session. The open -> grading transition is atomic,
         # so a second submit cannot start another forge run while the first grades.
         code, sess = self.store.claim_for_grading(session_id, address, time.time())
         if code == "missing" or sess is None:
-            raise ProtocolError(404, "unknown session")
+            raise ProtocolError(404, "Unknown session. Check the sessionId from POST /v1/start.")
         if code == "forbidden":
-            raise ProtocolError(403, "session belongs to another agent")
+            raise ProtocolError(
+                403,
+                "This session belongs to a different wallet. Log in with the wallet that started it.",
+            )
         if code == "expired":
-            raise ProtocolError(408, "session expired")
+            spent = (
+                "The reward attempt was counted when the session opened and is not refunded. "
+                if sess.get("reward") else
+                "Practice sessions do not spend a reward attempt. "
+            )
+            raise ProtocolError(
+                408,
+                "This session expired. " + spent + self.quota_message(sess["agent_id"]),
+            )
         if code != "ok":
-            raise ProtocolError(409, f"session already {sess['status']}")
+            status_name = sess.get("status") or "closed"
+            if status_name == "solved":
+                why = "This session was already submitted and solved. Each session is graded once. "
+            elif status_name == "failed":
+                why = "This session was already submitted and did not pass. Each session is graded once. "
+            elif status_name == "grading":
+                why = "This session is already being graded. Wait for that result. "
+            else:
+                why = f"This session is {status_name} and cannot be submitted again. "
+            raise ProtocolError(409, why + self.quota_message(sess["agent_id"]))
 
         from axvigil_verifier.grader import grade
         out = self.s.challenge_cache_dir / sess["challenge_id"]
@@ -250,14 +297,29 @@ class Platform:
             res = grade(out, tmp, seed=sess["seed"], forge_bin=self.s.forge_bin,
                         solc=self.s.solc_bin, timeout_s=self.s.grade_timeout_s)
         except Exception:
+            logger.exception("grading failed")
             # The attempt was already claimed. Close it so it cannot be graded again.
             self.store.finish_grading(
                 session_id, passed=False,
                 solve_seconds=int(time.time() - sess["started_at"]), submission_hash="",
             )
-            raise
+            raise ProtocolError(
+                500,
+                "Grading failed before a result was produced. "
+                + self.quota_message(sess["agent_id"]),
+            )
         finally:
             shutil.rmtree(tmp, ignore_errors=True)
+
+        from axvigil_verifier.forge_runner import environment_failure
+        if environment_failure(getattr(res, "log", "") or ""):
+            # Not a grade of the patch. Release the claim so the same session can be
+            # submitted again. The reward attempt was already counted when it opened.
+            self.store.release_grading(session_id)
+            raise ProtocolError(
+                503,
+                feedback_summary(res.to_json()) + " " + self.quota_message(sess["agent_id"]),
+            )
 
         solve_seconds = int(time.time() - sess["started_at"])
         if not self.store.finish_grading(
@@ -274,10 +336,15 @@ class Platform:
                 "passed": 1 if res.passed else 0, "solve_seconds": solve_seconds,
                 "submission_hash": res.submissionHash,
             })
-        result = res.to_json()
+        result = redact_public_grade(res.to_json(), public_challenge_id(session_id))
         result["solveSeconds"] = solve_seconds
-        return {"passed": res.passed, "result": result,
-                "authorizable": bool(res.passed and sess["reward"] and self.signer is not None)}
+        return {
+            "passed": res.passed,
+            "result": result,
+            "summary": feedback_summary(result),
+            "authorizable": bool(res.passed and sess["reward"] and self.signer is not None),
+            "quotaMessage": self.quota_message(sess["agent_id"]),
+        }
 
     # ---- reward ----
     def authorize(self, *, session_id: str, address: str, to: str | None, action: str) -> dict:
@@ -289,11 +356,23 @@ class Platform:
                 "only mint authorizations are issued; each passed solve pairs with one collectible",
             )
         if not sess["reward"]:
-            raise ProtocolError(403, "practice sessions are not reward-bearing")
+            raise ProtocolError(
+                403,
+                "Practice sessions are not reward-bearing and cannot be minted. "
+                + self.quota_message(sess["agent_id"]),
+            )
         if sess["status"] != "solved":
-            raise ProtocolError(409, "session is not in a solved state")
+            raise ProtocolError(
+                409,
+                f"This session is not solved (status: {sess['status']}), so there is nothing to authorize. "
+                + self.quota_message(sess["agent_id"]),
+            )
         if sess["authorized"]:
-            raise ProtocolError(409, "already authorized")
+            raise ProtocolError(
+                409,
+                "This solve was already authorized. Each solved challenge can be minted once. "
+                + self.quota_message(sess["agent_id"]),
+            )
         if self.signer is None:
             raise ProtocolError(503, "signing not configured")
 
@@ -310,15 +389,33 @@ class Platform:
                 difficulty=sess["difficulty"], pool=pool, signature=signed.signature,
             )
         except QuotaExceeded as e:
-            raise ProtocolError(409, str(e)) from e
+            raise ProtocolError(
+                409,
+                "Mint cap reached: 2 of 2 lifetime mints used for this Agent ID. "
+                + self.quota_message(sess["agent_id"]),
+            ) from e
         except AlreadyAuthorized as e:
-            raise ProtocolError(409, "already authorized") from e
+            raise ProtocolError(
+                409,
+                "This solve was already authorized. Each solved challenge can be minted once. "
+                + self.quota_message(sess["agent_id"]),
+            ) from e
         except DuplicateSubmission as e:
-            raise ProtocolError(409, "submissionHash already authorized") from e
+            raise ProtocolError(
+                409,
+                "This solution was already minted. Each solved challenge can be minted once. "
+                + self.quota_message(sess["agent_id"]),
+            ) from e
         except NotRewardSession as e:
-            raise ProtocolError(403, "practice sessions are not reward-bearing") from e
-        return {"action": signed.kind, "auth": signed.auth, "signature": signed.signature,
-                "signer": signed.signer}
+            raise ProtocolError(
+                403,
+                "Practice sessions are not reward-bearing and cannot be minted. "
+                + self.quota_message(sess["agent_id"]),
+            ) from e
+        return {
+            "action": signed.kind, "auth": signed.auth, "signature": signed.signature,
+            "signer": signed.signer, "quotaMessage": self.quota_message(sess["agent_id"]),
+        }
 
     # ---- status ----
     def status(self, agent_id: int) -> dict:
@@ -327,12 +424,26 @@ class Platform:
         summary["rewardAttemptCap"] = MAX_REWARD_ATTEMPTS
         summary["mintAuthorizations"] = self.store.mint_authorization_count(agent_id)
         summary["mintCap"] = MAX_REWARD_ATTEMPTS
+        summary["attemptsRemaining"] = max(0, MAX_REWARD_ATTEMPTS - summary["rewardAttempts"])
+        summary["mintsRemaining"] = max(0, MAX_REWARD_ATTEMPTS - summary["mintAuthorizations"])
+        summary["quotaMessage"] = self.quota_message(agent_id)
         return summary
 
     def leaderboard(self, limit: int = 20) -> list[dict]:
         return self.store.leaderboard(limit)
 
     # ---- helpers ----
+    def quota_message(self, agent_id: int) -> str:
+        used = self.store.reward_attempt_count(agent_id)
+        mints = self.store.mint_authorization_count(agent_id)
+        attempts_left = max(0, MAX_REWARD_ATTEMPTS - used)
+        mints_left = max(0, MAX_REWARD_ATTEMPTS - mints)
+        return (
+            f"Reward attempts remaining: {attempts_left} of {MAX_REWARD_ATTEMPTS}. "
+            f"Mints remaining: {mints_left} of {MAX_REWARD_ATTEMPTS}. "
+            "A reward attempt is spent when the session opens."
+        )
+
     def _owned_session(self, session_id: str, address: str) -> dict:
         sess = self.store.get_session(session_id)
         if not sess:
@@ -340,6 +451,47 @@ class Platform:
         if sess["address"].lower() != address.lower():
             raise ProtocolError(403, "session belongs to another agent")
         return sess
+
+
+def public_challenge_id(session_id: str) -> str:
+    """Opaque id. The stored challenge id is `{mother}-{seed}` and must not be shown."""
+    return "ch_" + session_id[:12]
+
+
+def redact_public_grade(result: dict, public_id: str) -> dict:
+    """Drop the seed and any `{testName: bool}` map from a grade payload."""
+    out = {key: value for key, value in result.items() if key != "seed"}
+    out["challengeId"] = public_id
+    log = out.get("log")
+    if isinstance(log, str):
+        out["log"] = _TEST_MAP.sub("", log).strip()
+    return out
+
+
+def feedback_summary(result: dict) -> str:
+    log = result.get("log") or ""
+    lowered = log.lower()
+    if "solidity compiler is not available" in lowered:
+        return (
+            "Grading did not run because the Solidity compiler is not available yet. "
+            "From the repo run `cd contracts && forge build` once while online, then submit again."
+        )
+    if "forge was not found" in lowered:
+        return "Grading did not run because forge is not on PATH. Install Foundry, then submit again."
+    if result.get("passed"):
+        return "All four checks passed."
+    reasons = []
+    if result.get("pocProvesBug") is False:
+        reasons.append("the PoC did not pass on the original contract, so it does not prove the bug")
+    if result.get("pocFailsAfterPatch") is False:
+        reasons.append("the PoC still passed after the patch, so the bug still works")
+    if result.get("hiddenTestsPass") is False:
+        reasons.append("the patch broke required behavior")
+    if result.get("patchWithinLimits") is False:
+        reasons.append("the patch is outside the size limit or drops the contract name or a public function")
+    if not reasons:
+        return "Not solved."
+    return "Not solved: " + "; ".join(reasons) + "."
 
 
 def _fragment_count(source: str, size: int = 800) -> int:

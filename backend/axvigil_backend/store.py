@@ -269,6 +269,23 @@ class Store:
             sess["status"] = "grading"
             return "ok", sess
 
+    def release_grading(self, session_id: str) -> None:
+        """Return a claimed session to open when grading never actually ran."""
+        with self._lock:
+            self._conn.execute(
+                "UPDATE sessions SET status='open' WHERE session_id=? AND status='grading'",
+                (session_id,),
+            )
+            self._conn.commit()
+
+    def set_expiry(self, session_id: str, expires_at: float) -> None:
+        with self._lock:
+            self._conn.execute(
+                "UPDATE sessions SET expires_at=? WHERE session_id=?",
+                (expires_at, session_id),
+            )
+            self._conn.commit()
+
     def finish_grading(self, session_id: str, *, passed: bool, solve_seconds: int,
                        submission_hash: str) -> bool:
         """Persist the single grade. Only a session currently in 'grading' matches."""

@@ -2,10 +2,11 @@
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-export PATH="${HOME}/.foundry/bin:${PATH}"
-
-command -v forge >/dev/null || { echo "forge is required; install Foundry first" >&2; exit 2; }
-command -v python3 >/dev/null || { echo "python3 is required" >&2; exit 2; }
+export PATH="${HOME}/.foundry/bin:${HOME}/.local/bin:${PATH}"
+# shellcheck source=preflight.sh
+source "$ROOT/scripts/preflight.sh"
+preflight_python
+preflight_forge
 
 if [[ -z "${AXVIGIL_SIGNER_PRIVATE_KEY:-}" ]]; then
   # Demo-only key. Never use this key on a public network or with real funds.

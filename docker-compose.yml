@@ -5,7 +5,10 @@
 #   docker compose up --build
 #
 # Without SIGNER_KEY/VERIFYING_CONTRACT the API still grades and runs the protocol;
-# only /v1/authorize (and legacy signing) are disabled.
+# only /v1/authorize is disabled. A zero VERIFYING_CONTRACT does not enable signing.
+#
+# Ownership defaults to the BSC testnet MockAgentID. Override both for a local anvil:
+#   RPC_URL=http://anvil:8545 AGENT_REGISTRY=<MockAgentID address>
 
 services:
   anvil:
@@ -28,6 +31,8 @@ services:
       DB_PATH: "/data/axvigil.db"
       CHALLENGE_CACHE_DIR: "/data/challenges"
       GRADE_TIMEOUT_S: "120"
+      RPC_URL: "${RPC_URL:-https://bsc-testnet.bnbchain.org}"
+      AGENT_REGISTRY: "${AGENT_REGISTRY:-0x7Aa441477f0246353bdAe504cF0F9B3027D6d45e}"
     volumes:
       - axvigil-data:/data
     depends_on:

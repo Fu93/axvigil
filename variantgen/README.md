@@ -47,8 +47,10 @@ count as new. `batch` and `verify-mother` dedup on this fingerprint.
 `verify-mother` renders each unique seed and runs the full verifier against its
 reference solution: `pocProvesBug`, `pocFailsAfterPatch`, `hiddenTestsPass`,
 `patchWithinLimits` must all hold, or the variant is reported as failed. This is the
-PRD's "每個變種發出前自動跑一次參考解，確認仍可解" guarantee. All three shipped mothers
-produce 20/20 unique, solvable variants:
+"check the reference solution before a variant ships" guarantee. The four shipped mothers
+are `reentrancy`, `price-manipulation`, `access-control`, and `signature-replay`
+(see [`../mothers/README.md`](../mothers/README.md)). The first three were recorded at
+20/20 unique, solvable variants:
 
 ```
 reentrancy:         20 rendered, 20 unique fingerprints, 20/20 reference solutions pass

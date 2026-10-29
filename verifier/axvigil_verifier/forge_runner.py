@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import json
 import os
+import re
 import shutil
 import signal
 import subprocess
@@ -196,6 +197,47 @@ def _kill_process_group(proc: subprocess.Popen) -> None:
         proc.wait(timeout=5)
     except subprocess.TimeoutExpired:
         pass
+
+
+def solc_setup_hint(raw: str) -> str | None:
+    """Explain a missing-compiler failure without echoing forge's raw output."""
+    low = (raw or "").lower()
+    if "solc" in low and (
+        "offline mode" in low or "not installed" in low or "can't install" in low or "cannot install" in low
+    ):
+        return (
+            "the Solidity compiler is not available yet. From the repo run "
+            "`cd contracts && forge build` once while online so Foundry can download solc, "
+            "then grade again. Grading itself stays offline"
+        )
+    return None
+
+
+def first_compiler_error(raw: str) -> str | None:
+    """First forge Error line, with filesystem paths removed."""
+    for line in (raw or "").splitlines():
+        text = line.strip()
+        if text.startswith("Error"):
+            text = re.sub(r"(?:[A-Za-z]:)?(?:/|\\)[^\s:]+", "<path>", text)
+            return text[:200]
+    return None
+
+
+def compile_failure_note(raw: str, *, include_error_line: bool) -> str:
+    """Suffix for a `compile failed` log line. Hidden tests omit the compiler line."""
+    hint = solc_setup_hint(raw)
+    if hint:
+        return " — " + hint
+    if not include_error_line:
+        return ""
+    line = first_compiler_error(raw)
+    return f" — {line}" if line else ""
+
+
+def environment_failure(log: str) -> bool:
+    """True when grading never ran (missing forge or solc), not when a patch failed."""
+    low = (log or "").lower()
+    return "solidity compiler is not available" in low or "forge was not found" in low
 
 
 def _parse_forge_json(stdout: str) -> dict[str, bool] | None:

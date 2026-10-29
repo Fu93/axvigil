@@ -103,7 +103,11 @@ def test_opened_reward_session_counts_and_abandon_does_not_refund(tmp_path):
     # Practice does not consume a slot and honors the caller's mother.
     practice = platform.start(address=WALLET_B, agent_id=7, practice=True, mother_id="signature-replay")
     assert practice["practice"] is True and practice["reward"] is False
-    assert practice["challengeId"].startswith("signature-replay-")
+    practice_row = store.get_session(practice["sessionId"])
+    assert practice_row["mother_id"] == "signature-replay"
+    assert practice_row["mother_id"] not in practice["challengeId"]
+    assert str(practice_row["seed"]) not in practice["challengeId"]
+    assert "seed" not in practice
     assert store.reward_attempt_count(7) == 2
 
 

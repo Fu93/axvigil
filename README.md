@@ -31,7 +31,7 @@ The current public prototype implements the smart-contract credential layer:
 
 The platform layers are now integrated on top of the credential layer:
 
-- `mothers/` + `variantgen/`: the anti-memorization engine. Four母題 across three vulnerability classes and all three difficulty tiers — reentrancy, price-manipulation, access-control, plus a legendary signature-replay treasury; a seed renders a fresh, structurally-unique variant each time (renamed identifiers, distractor functions, reordering), so an agent must fix the bug class, not recall a public answer. Each mother ships 20/20 unique, self-verified variants — 80 in all.
+- `mothers/` + `variantgen/`: the anti-memorization engine. Four mother templates (母題) across three vulnerability classes and all three difficulty tiers — reentrancy, price-manipulation, access-control, plus a legendary signature-replay treasury; a seed renders a fresh, structurally-unique variant each time (renamed identifiers, distractor functions, reordering), so an agent must fix the bug class, not recall a public answer. Each mother ships 20/20 unique, self-verified variants — 80 in all.
 - `verifier/axvigil_verifier/`: the single canonical grader, run in a hardened sandbox (ffi off, no network, wall-clock + POSIX resource limits). Grades both the seed-variant challenges and the patch-based `reentrancy-001` demo (`grade --patch`); zero third-party dependencies.
 - `backend/axvigil_backend/`: the platform API — agents `login` with a wallet signature, `start` a server-issued variant (source only), `submit` to be graded in a session, and `authorize` a grade-then-signed reward. SQLite persistence, per-agent rate limits, an answer-leak circuit breaker and a difficulty-weighted leaderboard. `backend/mint_auth.py` remains the single-file signer for the deployed demo.
 - `agent/`: an autonomous propose → grade → feed-back → retry solve loop (Meta Model API, with an offline oracle).
@@ -54,15 +54,38 @@ The platform layers are now integrated on top of the credential layer:
 
 The contract intentionally uses `_mint`, not `_safeMint`, so the mint path has no receiver callback. Skill records follow the Agent ID registry owner and cannot be transferred independently.
 
-## Quick start
+## How a judge runs the demo
 
-Install [Foundry](https://book.getfoundry.sh/getting-started/installation), initialize the submodules, then run:
+From a machine with Foundry and Python 3.10+:
 
 ```bash
+python3 -m pip install -r backend/requirements.txt
+./scripts/judge_demo.sh
+```
+
+The script uses public Anvil keys on a local chain only. It warms solc with `forge build`, runs the offline `--oracle` agent (no `META_API_KEY`), deploys the production quotas, and talks to the API with the local MockAgentID as `AGENT_REGISTRY` so login checks `ownerOf`. Reward start is server-random (`practice: true` is how you pick a mother). The mint uses the three-pool ladder: `pool` equals the solved difficulty. The script then reveals the token and prints `tokenURI` plus the on-chain skill metadata.
+
+Shorter slices: `./scripts/demo_pipeline.sh` and `./scripts/local_anvil_demo.sh`. A live model reads `META_API_KEY`, or `MODEL_API_KEY` when that is the only one set.
+
+## Quick start
+
+Install [Foundry](https://book.getfoundry.sh/getting-started/installation) and Python 3.10+. On Windows, use WSL2: Foundry's supported path is Linux, and the verifier's process limits use the POSIX `resource` module. Initialize the submodules, install the Python packages, warm the compiler once (grading stays offline and will not download solc), then run:
+
+```bash
+python3 -m pip install -r backend/requirements.txt
 git submodule update --init --recursive
 cd contracts
-forge build
+forge build          # downloads solc 0.8.28; do this once while online
 forge test --no-match-test test_productionFullSupply
+```
+
+`forge` is enough of a Solidity compiler. Set `SOLC` only to pin a binary. If a new shell cannot find `forge`, add `$HOME/.foundry/bin` to `PATH`.
+
+The agent package is not installed by pip. From the repo root:
+
+```bash
+PYTHONPATH=agent:verifier python3 -m axvigil_agent solve \
+  --challenge challenges/reentrancy-vault --oracle --json
 ```
 
 The full production-supply distribution test mints and reveals all 7,777 tokens and is intentionally heavier:

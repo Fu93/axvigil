@@ -23,7 +23,7 @@ import json
 import re
 from pathlib import Path
 
-from .forge_runner import run_test, RunResult
+from .forge_runner import compile_failure_note, run_test, RunResult
 from .keccak import submission_hash
 from .model import GradeResult
 
@@ -116,14 +116,24 @@ def grade(
     log: list[str] = []
 
     def _run(label: str, sources: dict[str, str], tests: dict[str, str], match: str) -> RunResult:
-        r = run_test(
-            sources=sources, tests=tests, match_path=match,
-            forge_bin=forge_bin, solc=solc, timeout_s=timeout_s,
-        )
+        try:
+            r = run_test(
+                sources=sources, tests=tests, match_path=match,
+                forge_bin=forge_bin, solc=solc, timeout_s=timeout_s,
+            )
+        except FileNotFoundError:
+            log.append(
+                f"{label}: forge was not found on PATH. Install Foundry "
+                "(https://book.getfoundry.sh/getting-started/installation) and retry."
+            )
+            return RunResult(compiled=False, timed_out=False, raw="forge was not found")
         if r.timed_out:
             log.append(f"{label}: TIMEOUT after {timeout_s}s")
         elif not r.compiled:
-            log.append(f"{label}: compile failed")
+            # Hidden-test compiler output can quote that suite. Keep it generic.
+            # A missing solc is named for every label; it is not a test name.
+            note = compile_failure_note(r.raw, include_error_line=label != "hiddenTestsPass")
+            log.append(f"{label}: compile failed{note}")
         elif label == "hiddenTestsPass":
             # Hidden test names are the challenge's answer key. The agent sees
             # this log on retry, so report only the counts, plus a hint when the

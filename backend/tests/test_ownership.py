@@ -157,3 +157,43 @@ def test_rpc_registry_decodes_owner_of_and_treats_reverts_as_missing():
     broken = RpcRegistry("http://rpc.test", "0x00000000000000000000000000000000000000aa", transport=down)
     with pytest.raises(RegistryUnavailable):
         broken.owner_of(1)
+
+
+def test_rpc_rate_limit_is_unavailable_not_a_missing_token(tmp_path):
+    def transport(_url, _payload):
+        return {"jsonrpc": "2.0", "id": 1, "error": {"code": -32005, "message": "rate limit exceeded"}}
+
+    rpc = RpcRegistry("http://rpc.test", "0x00000000000000000000000000000000000000aa", transport=transport)
+    with pytest.raises(RegistryUnavailable):
+        rpc.owner_of(1)
+    plat = Platform(_settings(tmp_path), Store(":memory:"), None, registry=rpc)
+    with pytest.raises(ProtocolError) as exc:
+        plat.require_owner(1, AGENT)
+    assert exc.value.status == 503
+    assert "does not own" not in exc.value.detail
+
+
+def test_registry_post_sets_an_explicit_user_agent(monkeypatch):
+    import urllib.request
+    from axvigil_backend.registry import USER_AGENT, _post_json
+
+    captured = {}
+
+    class _Resp:
+        def read(self):
+            return b'{"jsonrpc":"2.0","id":1,"result":"0x1"}'
+
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *_args):
+            return False
+
+    def fake_urlopen(req, timeout=10):
+        captured["ua"] = req.get_header("User-agent")
+        return _Resp()
+
+    monkeypatch.setattr(urllib.request, "urlopen", fake_urlopen)
+    _post_json("http://rpc.test", {"jsonrpc": "2.0"})
+    assert captured["ua"] == USER_AGENT
+    assert "python-urllib" not in captured["ua"].lower()

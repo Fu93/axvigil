@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 # Run the full AxVigil test suite (contracts + all Python packages).
-# forge + solc must be reachable (PATH, or FORGE/SOLC env).
+# forge must be on PATH (or FORGE). A separate solc binary is optional; tests
+# discover the compiler in Foundry's svm cache after `cd contracts && forge build`.
 set -euo pipefail
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 export PATH="${HOME}/.foundry/bin:${PATH}"

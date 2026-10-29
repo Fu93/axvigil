@@ -81,4 +81,10 @@ class Settings:
 
     @property
     def can_sign(self) -> bool:
-        return bool(self.signer_key and self.verifying_contract)
+        key = (self.signer_key or "").strip()
+        contract = (self.verifying_contract or "").strip()
+        if not key or not contract:
+            return False
+        body = contract.lower().removeprefix("0x")
+        # A zero placeholder must not turn signing on.
+        return bool(body) and set(body) != {"0"}

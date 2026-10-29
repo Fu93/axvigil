@@ -8,7 +8,6 @@ Skips the forge-dependent part if forge/solc are absent.
 from __future__ import annotations
 
 import os
-import re
 import shutil
 import sys
 import tempfile
@@ -71,7 +70,12 @@ def test_client_plays_a_full_challenge():
     ch = c.start(mother_id="reentrancy", practice=True)
     assert "source" in ch and "solution" not in ch           # agent never gets the solution
     assert c.fetch_source(ch) == ch["source"]                 # fragments reassemble
-    seed = int(re.search(r"-(\d+)$", ch["challengeId"]).group(1))
+    from axvigil_backend.app import store
+    sess = store.get_session(ch["sessionId"])
+    assert "seed" not in ch
+    assert sess["mother_id"] not in ch["challengeId"]
+    assert str(sess["seed"]) not in ch["challengeId"]
+    seed = sess["seed"]
 
     # reconstruct the reference solution for this exact seed (as an oracle agent would)
     tmp = Path(tempfile.mkdtemp(prefix="axv-sol-"))

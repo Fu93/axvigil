@@ -35,12 +35,17 @@ class MetaModelClient:
         model: str | None = None,
         timeout_s: int = 120,
     ):
-        self.api_key = api_key or os.environ.get("META_API_KEY", "")
+        # META_API_KEY is this repo's name. MODEL_API_KEY is accepted because some
+        # Meta quickstarts export that name instead.
+        self.api_key = api_key or os.environ.get("META_API_KEY") or os.environ.get("MODEL_API_KEY") or ""
         self.base_url = (base_url or os.environ.get("META_BASE_URL", "https://api.meta.ai/v1")).rstrip("/")
         self.model = model or os.environ.get("META_MODEL", "muse-spark-1.1")
         self.timeout_s = timeout_s
         if not self.api_key:
-            raise RuntimeError("META_API_KEY not set")
+            raise RuntimeError(
+                "No model API key. Set META_API_KEY (this repo's name) or MODEL_API_KEY "
+                "(accepted alias). For an offline demo, re-run with --oracle."
+            )
 
     def complete(self, system: str, user: str) -> str:
         payload = {
