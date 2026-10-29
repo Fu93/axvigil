@@ -43,7 +43,7 @@ jobs:
 
       - name: Grade sample submission
         run: |
-          python -m verifier.verifier \
+          python -m verifier.reentrancy_grader \
             --challenge challenges/reentrancy-001 \
             --patch challenges/reentrancy-001/submissions/sample.patch \
             --poc challenges/reentrancy-001/submissions/sample_poc.t.sol \

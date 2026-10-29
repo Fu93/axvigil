@@ -1,0 +1,52 @@
+name: Platform
+
+on:
+  push:
+    branches: [main, "**"]
+    paths:
+      - 'verifier/**'
+      - 'variantgen/**'
+      - 'mothers/**'
+      - 'backend/**'
+      - 'contracts/**'
+      - '.github/workflows/platform.yml'
+  pull_request:
+    paths:
+      - 'verifier/**'
+      - 'variantgen/**'
+      - 'mothers/**'
+      - 'backend/**'
+      - 'contracts/**'
+      - '.github/workflows/platform.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  python-suites:
+    name: verifier package · variantgen · backend protocol
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - uses: foundry-rs/foundry-toolchain@v1
+      - name: Warm the solc cache (so offline grading can compile)
+        run: forge build
+        working-directory: contracts
+      - name: Install deps
+        run: |
+          python -m pip install --upgrade pip
+          pip install pytest -r backend/requirements.txt
+      - name: verifier package tests
+        run: python -m pytest -q
+        working-directory: verifier
+      - name: variantgen tests
+        run: PYTHONPATH=. python -m pytest -q
+        working-directory: variantgen
+      - name: backend protocol tests
+        run: PYTHONPATH=. python -m pytest -q
+        working-directory: backend

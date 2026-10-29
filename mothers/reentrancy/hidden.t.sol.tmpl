@@ -1,0 +1,63 @@
+// SPDX-License-Identifier: MIT
+pragma solidity 0.8.28;
+
+import {Test} from "forge-std/Test.sol";
+import {Czz} from "../src/Czz.sol";
+
+contract HiddenTest is Test {
+    Czz internal vault;
+    address internal alice = makeAddr("alice");
+    address internal bob = makeAddr("bob");
+
+    function setUp() public {
+        vault = new Czz();
+        vm.deal(alice, 10 ether);
+        vm.deal(bob, 10 ether);
+    }
+
+    function test_depositCreditsBalance() public {
+        vm.prank(alice);
+        vault.fzzDeposit{value: 3 ether}();
+        assertEq(vault.vzzBal(alice), 3 ether);
+        assertEq(vault.fzzTotal(), 3 ether);
+    }
+
+    function test_withdrawReturnsFundsAndZeroes() public {
+        vm.prank(alice);
+        vault.fzzDeposit{value: 4 ether}();
+        uint256 before = alice.balance;
+        vm.prank(alice);
+        vault.fzzWithdraw();
+        assertEq(alice.balance, before + 4 ether, "funds returned");
+        assertEq(vault.vzzBal(alice), 0, "balance zeroed");
+        assertEq(vault.fzzTotal(), 0);
+    }
+
+    function test_withdrawRevertsWithNothing() public {
+        vm.prank(bob);
+        vm.expectRevert(bytes("nothing to withdraw"));
+        vault.fzzWithdraw();
+    }
+
+    function test_balancesAreIndependent() public {
+        vm.prank(alice);
+        vault.fzzDeposit{value: 2 ether}();
+        vm.prank(bob);
+        vault.fzzDeposit{value: 5 ether}();
+        assertEq(vault.vzzBal(alice), 2 ether);
+        assertEq(vault.vzzBal(bob), 5 ether);
+        vm.prank(alice);
+        vault.fzzWithdraw();
+        assertEq(vault.vzzBal(bob), 5 ether);
+        assertEq(vault.fzzTotal(), 5 ether);
+    }
+
+    function test_redepositAfterWithdraw() public {
+        vm.startPrank(alice);
+        vault.fzzDeposit{value: 1 ether}();
+        vault.fzzWithdraw();
+        vault.fzzDeposit{value: 2 ether}();
+        vm.stopPrank();
+        assertEq(vault.vzzBal(alice), 2 ether);
+    }
+}

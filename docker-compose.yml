@@ -1,0 +1,37 @@
+# Local AxVigil stack: the platform API, plus an optional anvil chain at chainId 97.
+#
+#   SESSION_SECRET=$(openssl rand -hex 32) \
+#   SIGNER_KEY=0x... VERIFYING_CONTRACT=0x... \
+#   docker compose up --build
+#
+# Without SIGNER_KEY/VERIFYING_CONTRACT the API still grades and runs the protocol;
+# only /v1/authorize (and legacy signing) are disabled.
+
+services:
+  anvil:
+    image: ghcr.io/foundry-rs/foundry:latest
+    entrypoint: ["anvil", "--host", "0.0.0.0", "--chain-id", "97"]
+    ports:
+      - "8545:8545"
+
+  backend:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+    ports:
+      - "8000:8000"
+    environment:
+      CHAIN_ID: "97"
+      SESSION_SECRET: "${SESSION_SECRET:-dev-only-insecure-secret-change-me}"
+      SIGNER_KEY: "${SIGNER_KEY:-}"
+      VERIFYING_CONTRACT: "${VERIFYING_CONTRACT:-}"
+      DB_PATH: "/data/axvigil.db"
+      CHALLENGE_CACHE_DIR: "/data/challenges"
+      GRADE_TIMEOUT_S: "120"
+    volumes:
+      - axvigil-data:/data
+    depends_on:
+      - anvil
+
+volumes:
+  axvigil-data:

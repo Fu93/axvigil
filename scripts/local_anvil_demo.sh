@@ -20,7 +20,7 @@ done
 cast chain-id --rpc-url "$RPC_URL" | grep -qx '31337'
 
 cd "$ROOT"
-python3 -m verifier.verifier \
+python3 -m verifier.reentrancy_grader \
   --challenge challenges/reentrancy-001 \
   --patch challenges/reentrancy-001/submissions/sample.patch \
   --poc challenges/reentrancy-001/submissions/sample_poc.t.sol \

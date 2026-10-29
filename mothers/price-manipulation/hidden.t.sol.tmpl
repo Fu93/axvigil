@@ -1,0 +1,47 @@
+// SPDX-License-Identifier: MIT
+pragma solidity 0.8.28;
+
+import {Test} from "forge-std/Test.sol";
+import {Czz} from "../src/Czz.sol";
+
+contract HiddenTest is Test {
+    Czz internal pool;
+
+    function setUp() public {
+        // base=1000, quote=1000, reference price = 1e18 (1:1)
+        pool = new Czz(1000, 1000, 1e18);
+    }
+
+    function test_depositRecordsCollateral() public {
+        pool.fzzDeposit(100);
+        assertEq(pool.vzzCol(address(this)), 100);
+    }
+
+    function test_borrowWithinReferenceLimit() public {
+        pool.fzzDeposit(100);
+        uint256 maxDebt = 100 * pool.fzzSafe() / 1e18; // 100 at the reference price
+        pool.fzzBorrow(maxDebt);
+        assertEq(pool.vzzDebt(address(this)), maxDebt);
+    }
+
+    function test_borrowBeyondReferenceLimitReverts() public {
+        pool.fzzDeposit(100);
+        uint256 maxDebt = 100 * pool.fzzSafe() / 1e18;
+        vm.expectRevert(bytes("undercollateralized"));
+        pool.fzzBorrow(maxDebt + 1);
+    }
+
+    function test_repayReducesDebt() public {
+        pool.fzzDeposit(100);
+        pool.fzzBorrow(50);
+        pool.fzzRepay(20);
+        assertEq(pool.vzzDebt(address(this)), 30);
+    }
+
+    function test_cannotRepayMoreThanDebt() public {
+        pool.fzzDeposit(100);
+        pool.fzzBorrow(10);
+        vm.expectRevert(bytes("repay exceeds debt"));
+        pool.fzzRepay(11);
+    }
+}

@@ -1,2 +1,13 @@
 .work/
 meta.env
+
+# platform additions
+__pycache__/
+*.pyc
+.pytest_cache/
+.env
+backend/axvigil.db
+backend/axvigil.db-*
+/tmp/axvigil-challenges/
+verifier/out/
+variantgen/out/
