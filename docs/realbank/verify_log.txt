@@ -1,0 +1,11 @@
+# python3 scripts/realbank_verify.py   (2026-10-30, strict standard: only the class fix is accepted)
+bridge-phantom-deposit: 20 rendered, 20 unique fingerprints, 20/20 reference solutions pass
+[noop_patch] passed=False proves=True failsAfter=False hidden=False limits=True  expect=False  ok
+[overeager_fix_requires_bool] passed=False proves=True failsAfter=True hidden=False limits=True  expect=False  ok
+[gutted_deposit] passed=False proves=True failsAfter=True hidden=False limits=True  expect=False  ok
+[instance_zero_address_guard] passed=False proves=True failsAfter=True hidden=False limits=True  expect=False  ok
+[instance_unlist_zero] passed=False proves=True failsAfter=True hidden=False limits=True  expect=False  ok
+
+# All five negative controls rejected (expect_pass=False): no-op, over-eager bool-return,
+# gutted deposit, instance_zero_address_guard (require token != address(0)),
+# instance_unlist_zero (un-list address(0)). Gap 1 closed. Exit code 0.

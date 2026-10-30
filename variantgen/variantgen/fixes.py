@@ -104,9 +104,23 @@ def fix_sig_replay(src: str, ctx: dict) -> str:
     return src[: m.end()] + guard + src[m.end():]
 
 
+def fix_bridge_phantom_deposit(src: str, ctx: dict) -> str:
+    """Real incident (Qubit QBridge, Jan 2022). A low-level call to an address with no
+    code "succeeds" with empty return data, so the bridge credits a deposit that never
+    moved any tokens. Refuse codeless tokens in the pull helper (the OpenZeppelin
+    SafeERC20 / Address.functionCall behaviour)."""
+    pull = _ids(ctx)["fzzPull"]
+    m = re.search(rf"(function {re.escape(pull)}\([^)]*\)[^{{]*\{{\n)", src)
+    if not m:
+        raise ValueError("bridge fix: could not locate the pull helper")
+    guard = '        require(token.code.length > 0, "token has no code");\n'
+    return src[: m.end()] + guard + src[m.end():]
+
+
 FIXES = {
     "reentrancy_cei": fix_reentrancy_cei,
     "access_control": fix_access_control,
     "price_twap": fix_price_twap,
     "sig_replay": fix_sig_replay,
+    "bridge_phantom_deposit": fix_bridge_phantom_deposit,
 }

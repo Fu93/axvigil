@@ -1,0 +1,38 @@
+{
+  "motherId": "bridge-phantom-deposit",
+  "vulnClass": 2,
+  "difficulty": 1,
+  "targetSentinel": "Czz",
+  "pragma": "0.8.28",
+  "fixId": "bridge_phantom_deposit",
+  "identifiers": {
+    "Czz": "contract_bridge",
+    "vzzOwner": "noun_owner",
+    "vzzTokenOf": "noun_resource_token",
+    "vzzListed": "noun_listed",
+    "vzzLocked": "noun_balance",
+    "fzzSetResource": "verb_set_resource",
+    "fzzDeposit": "verb_deposit",
+    "fzzDepositNative": "verb_deposit_native",
+    "fzzWithdraw": "verb_withdraw",
+    "fzzPull": "fn_pull",
+    "fzzTotalNative": "verb_total",
+    "lzzOk": "noun_ok"
+  },
+  "requiredFunctionSentinels": ["fzzSetResource", "fzzDeposit", "fzzDepositNative", "fzzWithdraw", "fzzTotalNative"],
+  "distractors": [1, 4],
+  "limits": { "maxChangedLines": 6, "maxBytes": 8000 },
+  "title": "Phantom Bridge Deposit",
+  "summary": "A lock-and-mint bridge credits deposits that later mint on another chain. Native and ERC20 deposits and withdrawals must keep working, including tokens that return no value.",
+  "realWorld": {
+    "incident": "Qubit Finance QBridge, 2022-01-27/28 (Ethereum deposit side, BSC mint side)",
+    "lossReported": "$80M (rekt.news, CertiK)",
+    "sources": [
+      "https://medium.com/@QubitFin/protocol-exploit-report-305c34540fa3",
+      "https://rekt.news/qubit-rekt/",
+      "https://certik.medium.com/qubit-bridge-collapse-exploited-to-the-tune-of-80-million-a7ab9068e1a0",
+      "https://github.com/SunWeb3Sec/DeFiHackLabs/blob/main/src/test/2022-01/Qubit_exp.sol"
+    ],
+    "note": "Re-implemented from the public description; no Qubit code copied."
+  }
+}

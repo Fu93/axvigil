@@ -1,0 +1,79 @@
+// SPDX-License-Identifier: MIT
+pragma solidity 0.8.28;
+
+/// @notice AxVigil challenge target (sandbox, BSC testnet only). Deliberately
+///         vulnerable for an AI agent to find and fix. Do not deploy to mainnet.
+///
+/// The deposit side of a lock-and-mint bridge. Users lock the native coin or a
+/// listed ERC20 here; each Deposit event is what the other chain mints against.
+/// Depositors can withdraw what they locked. The native coin is tracked as
+/// token address(0), which is listed so the native resource is valid.
+contract Czz {
+    address public vzzOwner;
+    bytes32 public constant NATIVE_RESOURCE = keccak256("axvigil.native");
+
+    mapping(bytes32 => address) public vzzTokenOf;
+    mapping(address => bool) public vzzListed;
+    mapping(bytes32 => mapping(address => uint256)) public vzzLocked;
+    uint256 public depositNonce;
+
+    event Deposit(bytes32 indexed resourceID, address indexed depositor, uint256 amount, uint256 nonce);
+    event Withdraw(bytes32 indexed resourceID, address indexed depositor, uint256 amount);
+
+    constructor() {
+        vzzOwner = msg.sender;
+        vzzTokenOf[NATIVE_RESOURCE] = address(0);
+        vzzListed[address(0)] = true;
+    }
+
+// @@SHUF_BEGIN@@
+// @@SHUF@@
+    function fzzSetResource(bytes32 resourceID, address token) external {
+        require(msg.sender == vzzOwner, "not owner");
+        vzzTokenOf[resourceID] = token;
+        vzzListed[token] = true;
+    }
+// @@SHUF@@
+    /// @notice Lock `amount` of the resource's ERC20 token.
+    function fzzDeposit(bytes32 resourceID, uint256 amount) external {
+        address token = vzzTokenOf[resourceID];
+        require(vzzListed[token], "token not listed");
+        require(amount > 0, "zero amount");
+        fzzPull(token, msg.sender, amount);
+        vzzLocked[resourceID][msg.sender] += amount;
+        emit Deposit(resourceID, msg.sender, amount, ++depositNonce);
+    }
+// @@SHUF@@
+    /// @notice Lock the native coin.
+    function fzzDepositNative() external payable {
+        require(msg.value > 0, "zero amount");
+        vzzLocked[NATIVE_RESOURCE][msg.sender] += msg.value;
+        emit Deposit(NATIVE_RESOURCE, msg.sender, msg.value, ++depositNonce);
+    }
+// @@SHUF@@
+    /// @notice Withdraw up to what the caller locked for `resourceID`.
+    function fzzWithdraw(bytes32 resourceID, uint256 amount) external {
+        require(vzzLocked[resourceID][msg.sender] >= amount, "exceeds locked");
+        vzzLocked[resourceID][msg.sender] -= amount;
+        address token = vzzTokenOf[resourceID];
+        if (token == address(0)) {
+            (bool lzzOk,) = msg.sender.call{value: amount}("");
+            require(lzzOk, "native send failed");
+        } else {
+            (bool lzzOk, bytes memory data) = token.call(abi.encodeWithSelector(0xa9059cbb, msg.sender, amount));
+            require(lzzOk && (data.length == 0 || abi.decode(data, (bool))), "transfer failed");
+        }
+        emit Withdraw(resourceID, msg.sender, amount);
+    }
+// @@SHUF@@
+    /// @dev transferFrom that tolerates tokens which return no value.
+    function fzzPull(address token, address from, uint256 amount) internal {
+        (bool lzzOk, bytes memory data) = token.call(abi.encodeWithSelector(0x23b872dd, from, address(this), amount));
+        require(lzzOk && (data.length == 0 || abi.decode(data, (bool))), "transferFrom failed");
+    }
+// @@SHUF@@
+    function fzzTotalNative() external view returns (uint256) {
+        return address(this).balance;
+    }
+// @@SHUF_END@@
+}
