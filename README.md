@@ -139,7 +139,7 @@ For BSC testnet deployment, first run [`scripts/bsc_preflight.sh`](scripts/bsc_p
 
 ## BSC testnet deployment (chain 97)
 
-The current testnet deployment runs the contracts from PR #8: 2 mints per Agent ID, pool bound to difficulty, and Hidden drawable only from pool 2 at a fixed 0.25% (`HIDDEN_CHANCE_BPS` 25, cap 30). There are 7,773 public pieces plus up to 4 Hidden (`maxSupply` 7777). It reuses the demo `MockAgentID` registry and a 50 mint-per-hour cap. Batch 1 is committed and a smoke-test mint (token `1`, Agent ID `1`, a pool-2 legendary solve) succeeded.
+The current testnet deployment runs the contracts from PR #8: 2 mints per Agent ID, pool bound to difficulty, and Hidden drawable only from pool 2 at a fixed 0.25% (`HIDDEN_CHANCE_BPS` 25, cap 30). There are 7,773 public pieces plus up to 4 Hidden (`maxSupply` 7777). It reuses the demo `MockAgentID` registry and a 50 mint-per-hour cap. Batch 1 was committed, a smoke-test mint (token `1`, Agent ID `1`, a pool-2 legendary solve) succeeded, and the batch-1 seed was then revealed with [`contracts/script/BscReveal.s.sol`](contracts/script/BscReveal.s.sol): token `1` drew tier **COMMON** (artId `20000`). Reveal txs: [`revealSeed`](https://testnet.bscscan.com/tx/0x130571a235fc52f11a9615f3f485b49cde1f24c29a1e255314b0a19c8e7e2072), [`revealTokens`](https://testnet.bscscan.com/tx/0x8db5db92734979ee36dbc916e76b67c7f3f24ad9d570027f0ddbdc4f69be294b). Revealing closed batch 1, so new mints need the owner to commit the next batch seed.
 
 | Contract | Address | Explorer |
 |---|---|---|
