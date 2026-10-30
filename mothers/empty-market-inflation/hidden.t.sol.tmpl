@@ -1,0 +1,105 @@
+// SPDX-License-Identifier: MIT
+pragma solidity 0.8.28;
+
+import {Test} from "forge-std/Test.sol";
+import {Czz} from "../src/Czz.sol";
+
+contract MockERC20 {
+    mapping(address => uint256) public balanceOf;
+    mapping(address => mapping(address => uint256)) public allowance;
+    function mint(address to, uint256 a) external { balanceOf[to] += a; }
+    function approve(address s, uint256 a) external returns (bool) { allowance[msg.sender][s] = a; return true; }
+    function transfer(address to, uint256 a) external returns (bool) {
+        balanceOf[msg.sender] -= a; balanceOf[to] += a; return true;
+    }
+    function transferFrom(address f, address to, uint256 a) external returns (bool) {
+        allowance[f][msg.sender] -= a; balanceOf[f] -= a; balanceOf[to] += a; return true;
+    }
+}
+
+contract HiddenTest is Test {
+    Czz internal vault;
+    MockERC20 internal asset;
+    address internal alice = makeAddr("alice");
+    address internal bob = makeAddr("bob");
+    address internal attacker = makeAddr("attacker");
+
+    function setUp() public {
+        asset = new MockERC20();
+        vault = new Czz(address(asset));
+        asset.mint(alice, 1_000 ether);
+        asset.mint(bob, 1_000 ether);
+        asset.mint(attacker, 1 + 1_000 ether);
+        vm.prank(alice);
+        asset.approve(address(vault), type(uint256).max);
+        vm.prank(bob);
+        asset.approve(address(vault), type(uint256).max);
+        vm.prank(attacker);
+        asset.approve(address(vault), type(uint256).max);
+    }
+
+    function test_firstDepositIsOneToOne() public {
+        vm.prank(alice);
+        uint256 shares = vault.fzzDeposit(100 ether);
+        assertEq(shares, 100 ether);
+        assertEq(vault.fzzTotal(), 100 ether);
+    }
+
+    function test_zeroAssetsReverts() public {
+        vm.prank(alice);
+        vm.expectRevert(bytes("zero assets"));
+        vault.fzzDeposit(0);
+    }
+
+    function test_cannotRedeemMoreThanOwned() public {
+        vm.startPrank(alice);
+        vault.fzzDeposit(100 ether);
+        vm.expectRevert(bytes("exceeds shares"));
+        vault.fzzRedeem(100 ether + 1);
+        vm.stopPrank();
+    }
+
+    function test_twoHonestDepositorsAreProportional() public {
+        vm.prank(alice);
+        vault.fzzDeposit(100 ether);
+        vm.prank(bob);
+        vault.fzzDeposit(100 ether);
+        // equal deposits into an undisturbed pool earn equal shares
+        assertEq(vault.vzzShares(alice), vault.vzzShares(bob));
+
+        uint256 bobShares = vault.vzzShares(bob);
+        uint256 bobBefore = asset.balanceOf(bob);
+        vm.prank(bob);
+        vault.fzzRedeem(bobShares);
+        assertEq(asset.balanceOf(bob) - bobBefore, 100 ether, "redeem returns the deposit");
+    }
+
+    /// @notice The economic invariant that the fix must restore: a direct donation to
+    ///         the vault must not let an early depositor seize a later depositor's funds.
+    ///         A patch that only blocks zero-share deposits (e.g. require(shares > 0))
+    ///         still lets the inflated price round a real deposit down to a sliver, so
+    ///         the honest depositor cannot get their money back — it must NOT pass.
+    function test_donationCannotStealFromLaterDepositor() public {
+        // attacker seeds the empty vault and donates to inflate the share price
+        vm.startPrank(attacker);
+        vault.fzzDeposit(1);
+        asset.transfer(address(vault), 1_000 ether);
+        vm.stopPrank();
+
+        // honest depositor adds real liquidity after the donation
+        vm.prank(bob);
+        uint256 bobShares = vault.fzzDeposit(500 ether);
+
+        // attacker exits first, then bob exits
+        uint256 atkShares = vault.vzzShares(attacker);
+        vm.prank(attacker);
+        vault.fzzRedeem(atkShares);
+
+        uint256 bobBefore = asset.balanceOf(bob);
+        vm.prank(bob);
+        vault.fzzRedeem(bobShares);
+        uint256 bobGot = asset.balanceOf(bob) - bobBefore;
+
+        assertGe(bobGot, 500 ether * 99 / 100, "honest depositor must recover ~their deposit");
+    }
+}
