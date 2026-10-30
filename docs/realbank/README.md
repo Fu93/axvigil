@@ -58,3 +58,35 @@ The last recorded run is in [`verify_log.txt`](verify_log.txt).
    requires the deposit to be refused; only the class fix (reject codeless tokens) passes.
    Because un-listing `address(0)` shares the identical blind spot, it is rejected too —
    both are reproduced as negative controls in `realbank_verify.py`.
+
+## `empty-market-inflation` · Empty-Market Share Inflation
+
+| | |
+|---|---|
+| Incident | Compound-fork empty-market share inflation — Hundred Finance (Apr 2023, ~$7M) and Sonne Finance (May 2024, ~$20M). Patched and public. |
+| Mother | [`mothers/empty-market-inflation/`](../../mothers/empty-market-inflation/) |
+| vulnClass | **1 (price manipulation)** — an economic/accounting exploit of a manipulable live value. Within the deployed `NUM_CLASSES = 3` cap. |
+| Difficulty | 1 (advanced) |
+| Reference fix | `fix_share_inflation` in [`variantgen/variantgen/fixes.py`](../../variantgen/variantgen/fixes.py) (`fixId` `share_inflation`). Pools in `variantgen/variantgen/pools.py`. |
+| Sources | rekt.news (Hundred, Sonne) and the OpenZeppelin ERC-4626 inflation-attack note (links in `mother.json` → `realWorld`). Re-implemented from the public description; no protocol code copied. |
+
+**Self-contained, no fork.** A minimal share vault over one mock ERC20, with PoC and hidden
+tests as plain Foundry tests on a fresh local EVM.
+
+**The bug.** The vault prices shares off its **live asset balance** (`balanceOf(this)`). An
+attacker seeds the empty vault with 1 wei (1 share), then transfers a large amount straight
+to the vault — a *donation* that inflates the share price without minting shares. A later
+honest deposit rounds down against the inflated price (to a single share or zero), and the
+attacker redeems its one share for the whole pool, including the victim's deposit.
+
+**Reference fix.** Value the pool by the assets actually deposited **through** the vault (a
+donation-resistant book value the mother already tracks), not the raw token balance — so a
+direct transfer cannot move the share price. The fix reroutes the pricing reads from the live
+balance helper to the book-value helper (a minimal, interface-preserving change).
+
+**Grading.** The PoC passes on the original and fails after the fix (differential). A hidden
+test, `test_donationCannotStealFromLaterDepositor`, encodes the economic invariant: after a
+donation, an honest depositor must recover ~their principal. This rejects partial patches
+that merely block zero-share deposits (e.g. `require(shares > 0)`), which still let the
+inflated price skew a real deposit and lose the depositor's funds — only the donation-resistant
+class fix passes. Verify with `scripts/verify_empty_market.py`.

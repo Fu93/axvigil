@@ -1,0 +1,35 @@
+{
+  "motherId": "empty-market-inflation",
+  "vulnClass": 1,
+  "difficulty": 1,
+  "targetSentinel": "Czz",
+  "pragma": "0.8.28",
+  "fixId": "share_inflation",
+  "identifiers": {
+    "Czz": "contract",
+    "vzzAsset": "noun_token",
+    "vzzTotalShares": "noun_shares",
+    "vzzBook": "noun_book",
+    "vzzShares": "noun_shareof",
+    "fzzDeposit": "verb_deposit",
+    "fzzRedeem": "verb_redeem",
+    "fzzPoolValue": "fn_poolvalue",
+    "fzzBookValue": "fn_bookvalue",
+    "fzzTotal": "verb_total"
+  },
+  "requiredFunctionSentinels": ["fzzDeposit", "fzzRedeem", "fzzTotal"],
+  "distractors": [1, 4],
+  "limits": { "maxChangedLines": 6, "maxBytes": 8000 },
+  "title": "Empty-Market Share Inflation",
+  "summary": "A share vault prices deposits off its live asset balance, so a direct transfer (donation) inflates the share price and rounds a later deposit down to almost nothing. Deposits and redemptions must stay fair, and a donation must not let one depositor seize another's funds.",
+  "realWorld": {
+    "incident": "Hundred Finance / Sonne Finance (Compound-fork empty-market share inflation), 2023",
+    "lossReported": "~$7M (Hundred Finance, Apr 2023) and ~$20M (Sonne, May 2024) across related empty-market / donation issues",
+    "sources": [
+      "https://rekt.news/hundred-finance-rekt/",
+      "https://rekt.news/sonne-finance-rekt/",
+      "https://docs.openzeppelin.com/contracts/5.x/erc4626#inflation-attack"
+    ],
+    "note": "Re-implemented from the public description of the empty-market share-inflation class; no protocol code copied."
+  }
+}

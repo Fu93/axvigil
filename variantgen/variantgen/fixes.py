@@ -117,10 +117,26 @@ def fix_bridge_phantom_deposit(src: str, ctx: dict) -> str:
     return src[: m.end()] + guard + src[m.end():]
 
 
+def fix_share_inflation(src: str, ctx: dict) -> str:
+    """Real incident (Hundred Finance / Sonne, Compound-fork empty markets). The vault
+    prices shares off its live asset balance, so a direct transfer (donation) inflates
+    the share price and rounds later deposits down. Value the pool by the assets actually
+    deposited through the vault (a donation-resistant book helper the mother defines)
+    instead of the live balance. Rewrite CALL sites only, not the definition."""
+    ids = _ids(ctx)
+    live_fn = ids["fzzPoolValue"]
+    book_fn = ids["fzzBookValue"]
+    pattern = re.compile(rf"(?<!function ){re.escape(live_fn)}\(\)")
+    if not pattern.search(src):
+        raise ValueError("share-inflation fix: could not locate the live-value call site")
+    return pattern.sub(f"{book_fn}()", src)
+
+
 FIXES = {
     "reentrancy_cei": fix_reentrancy_cei,
     "access_control": fix_access_control,
     "price_twap": fix_price_twap,
     "sig_replay": fix_sig_replay,
     "bridge_phantom_deposit": fix_bridge_phantom_deposit,
+    "share_inflation": fix_share_inflation,
 }
