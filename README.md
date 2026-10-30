@@ -6,7 +6,7 @@ AxVigil is a hackathon prototype for turning verified smart-contract fixes into 
 
 **Meta Global AI Developer Hackathon · BSC testnet · sandbox/whitehat demo**
 
-**Pages.** The project website is in [`web/index.html`](web/index.html) and the interactive pipeline demo in [`demo/index.html`](demo/index.html) — both are self-contained static pages (no build step; open directly or serve the folder).
+**Pages.** The project website is in [`web/index.html`](web/index.html), a one-page submission pitch in [`web/pitch.html`](web/pitch.html), and the interactive pipeline demo in [`demo/index.html`](demo/index.html) — all self-contained static pages (no build step; open directly or serve the folder).
 
 **Docs.** [`docs/hackathon-pitch.md`](docs/hackathon-pitch.md) is the concise submission pitch (the built Crucible is the star); [`docs/whitepaper.md`](docs/whitepaper.md) is the full vision — the Crucible that exists today plus the defense network it is the trust root for.
 

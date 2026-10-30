@@ -1,0 +1,283 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>AxVigil · Pitch</title>
+<meta name="description" content="AxVigil hackathon pitch — an anti-memorization proving ground that certifies AI agents to fix smart-contract vulnerabilities, live on BSC testnet.">
+<style>
+  :root{
+    color-scheme: dark;
+    --bg:#05070e; --bg2:#080b14; --panel:#0e1422; --panel2:#141c2e; --line:#212c42;
+    --fg:#eef2fb; --muted:#9aa6bd; --faint:#606d85;
+    --cyan:#2ee6cf; --violet:#a78bfa; --amber:#f6ab2f; --pink:#f472d0;
+    --good:#2ee6cf; --bad:#fb7185;
+    --glow-cyan:0 0 40px -8px color-mix(in oklab,var(--cyan) 70%,transparent);
+    --glow-violet:0 0 44px -10px color-mix(in oklab,var(--violet) 70%,transparent);
+    --disp:"IBM Plex Mono",ui-monospace,"SFMono-Regular",Menlo,monospace;
+    --body:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",sans-serif;
+    --maxw:1080px;
+  }
+  *{box-sizing:border-box;}
+  html,body{background:var(--bg);}
+  body{color:var(--fg);font-family:var(--body);line-height:1.6;margin:0;position:relative;overflow-x:hidden;}
+  #aurora{position:fixed;inset:0;width:100%;height:100%;z-index:-2;pointer-events:none;}
+  body::after{content:"";position:fixed;inset:0;z-index:-1;pointer-events:none;opacity:.5;
+    background-image:linear-gradient(color-mix(in oklab,var(--cyan) 5%,transparent) 1px,transparent 1px),
+      linear-gradient(90deg,color-mix(in oklab,var(--cyan) 5%,transparent) 1px,transparent 1px);
+    background-size:56px 56px;mask-image:radial-gradient(120% 80% at 50% 0%,#000 30%,transparent 78%);}
+  h1,h2,h3,.disp{font-family:var(--disp);line-height:1.12;text-wrap:balance;margin:0;letter-spacing:-.015em;}
+  a{color:var(--cyan);text-decoration:none;} a:hover{text-decoration:underline;}
+  code{font-family:var(--disp);}
+  .wrap{max-width:var(--maxw);margin:0 auto;padding-left:max(20px,env(safe-area-inset-left,0px));padding-right:max(20px,env(safe-area-inset-right,0px));}
+
+  .glass{position:relative;border-radius:18px;
+    background:linear-gradient(180deg,color-mix(in oklab,var(--panel) 72%,transparent),color-mix(in oklab,var(--bg2) 64%,transparent));
+    backdrop-filter:blur(14px) saturate(1.25);-webkit-backdrop-filter:blur(14px) saturate(1.25);}
+  .glass::before{content:"";position:absolute;inset:0;border-radius:inherit;padding:1px;pointer-events:none;
+    background:linear-gradient(135deg,color-mix(in oklab,var(--cyan) 55%,transparent),transparent 42%,color-mix(in oklab,var(--violet) 45%,transparent));
+    -webkit-mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);-webkit-mask-composite:xor;mask-composite:exclude;}
+
+  header{position:sticky;top:0;z-index:20;backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);
+    background:color-mix(in oklab,var(--bg) 70%,transparent);border-bottom:1px solid var(--line);}
+  .nav{display:flex;align-items:center;gap:14px;padding-block:13px;}
+  .logo{font-family:var(--disp);font-weight:700;font-size:1.12rem;display:flex;align-items:center;gap:10px;color:var(--fg);}
+  .logo .mark{width:18px;height:18px;border-radius:5px;background:conic-gradient(from 140deg,var(--cyan),var(--violet),var(--pink),var(--cyan));box-shadow:var(--glow-cyan);}
+  .logo b{color:var(--cyan);}
+  .nav .spacer{flex:1;}
+  .tagline{color:var(--faint);font-size:.78rem;font-family:var(--disp);}
+  .btn{font-family:var(--disp);font-size:.84rem;font-weight:600;cursor:pointer;border-radius:10px;padding:10px 15px;border:1px solid var(--line);
+    background:color-mix(in oklab,var(--panel) 80%,transparent);color:var(--fg);display:inline-flex;align-items:center;gap:8px;
+    transition:transform .2s,border-color .2s,box-shadow .2s;}
+  .btn:hover{text-decoration:none;transform:translateY(-2px);border-color:color-mix(in oklab,var(--cyan) 55%,var(--line));}
+  .btn.primary{background:linear-gradient(135deg,var(--cyan),var(--violet));color:#05070e;border:none;box-shadow:var(--glow-cyan);}
+  .btn:focus-visible,a:focus-visible{outline:2px solid var(--cyan);outline-offset:3px;}
+  @media(max-width:620px){.tagline{display:none;}}
+
+  .eyebrow{font-family:var(--disp);font-size:.72rem;letter-spacing:.16em;text-transform:uppercase;color:var(--cyan);display:inline-flex;align-items:center;gap:9px;}
+  .eyebrow .dot{width:7px;height:7px;border-radius:50%;background:var(--cyan);box-shadow:0 0 12px var(--cyan);animation:pulse 2.4s ease-in-out infinite;}
+  @keyframes pulse{0%,100%{opacity:1;transform:scale(1);}50%{opacity:.45;transform:scale(.8);}}
+
+  section{padding-block:56px;}
+  .hero{padding-block:68px 40px;}
+  .hero h1{font-size:clamp(2.2rem,5.4vw,3.7rem);font-weight:700;margin-top:18px;}
+  .hero h1 .g{background:linear-gradient(110deg,var(--cyan) 10%,var(--violet) 55%,var(--pink) 95%);-webkit-background-clip:text;background-clip:text;color:transparent;}
+  .hero .lede{color:var(--muted);font-size:1.12rem;margin-top:20px;max-width:62ch;}
+  .cta-row{display:flex;gap:12px;margin-top:26px;flex-wrap:wrap;}
+  .chips{display:flex;gap:10px;margin-top:30px;flex-wrap:wrap;}
+  .chip{border-radius:12px;padding:11px 15px;}
+  .chip .n{font-family:var(--disp);font-weight:700;font-size:1.2rem;font-variant-numeric:tabular-nums;background:linear-gradient(120deg,var(--fg),var(--cyan));-webkit-background-clip:text;background-clip:text;color:transparent;}
+  .chip .l{color:var(--faint);font-size:.72rem;margin-top:2px;}
+
+  .sec-head{max-width:66ch;}
+  h2{font-size:clamp(1.6rem,3.6vw,2.3rem);font-weight:700;margin-top:10px;}
+  .sub{color:var(--muted);margin-top:12px;font-size:1.02rem;}
+
+  .cols2{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:28px;}
+  .grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-top:28px;}
+  .card{padding:20px;}
+  .card .k{font-family:var(--disp);font-size:.7rem;letter-spacing:.12em;text-transform:uppercase;color:var(--cyan);}
+  .card h3{font-size:1.05rem;margin-top:8px;}
+  .card p{color:var(--muted);font-size:.93rem;margin:9px 0 0;}
+  .card .mono{font-family:var(--disp);font-size:.82rem;color:var(--fg);}
+
+  .checks{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-top:16px;}
+  .check{border:1px solid var(--line);border-radius:10px;padding:11px 13px;background:color-mix(in oklab,var(--panel2) 55%,transparent);}
+  .check .cn{font-family:var(--disp);font-size:.76rem;color:var(--good);}
+  .check .cd{color:var(--muted);font-size:.82rem;margin-top:4px;}
+
+  .proof{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-top:26px;}
+  .pf{padding:15px;border-radius:14px;}
+  .pf .pn{font-family:var(--disp);font-weight:700;font-size:1.05rem;}
+  .pf .pl{color:var(--faint);font-size:.74rem;margin-top:5px;}
+  .pf a{word-break:break-all;}
+
+  .why{display:grid;grid-template-columns:1fr 1fr;gap:12px 26px;margin-top:24px;}
+  .wrow{display:flex;gap:11px;align-items:flex-start;}
+  .wrow .ic{color:var(--cyan);font-family:var(--disp);flex:none;margin-top:2px;}
+  .wrow .wt{color:var(--muted);font-size:.92rem;} .wrow .wt b{color:var(--fg);font-weight:600;}
+
+  .scope{margin-top:22px;border-radius:14px;padding:18px 20px;border:1px solid color-mix(in oklab,var(--amber) 35%,var(--line));
+    background:color-mix(in oklab,var(--amber) 7%,transparent);}
+  .scope .k{font-family:var(--disp);font-size:.7rem;letter-spacing:.12em;text-transform:uppercase;color:var(--amber);}
+  .scope p{color:var(--muted);font-size:.92rem;margin:8px 0 0;}
+
+  .ctaband{text-align:center;border-radius:24px;padding:52px 26px;overflow:hidden;position:relative;margin-top:8px;}
+  .ctaband::after{content:"";position:absolute;inset:0;z-index:-1;background:radial-gradient(620px 280px at 50% -10%,color-mix(in oklab,var(--violet) 26%,transparent),transparent 70%);}
+  .ctaband h2{font-size:clamp(1.7rem,3.6vw,2.4rem);} .ctaband .sub{max-width:54ch;margin:12px auto 0;} .ctaband .cta-row{justify-content:center;}
+
+  footer{border-top:1px solid var(--line);margin-top:54px;padding-block:30px 46px;color:var(--faint);font-size:.82rem;}
+  .disc{max-width:82ch;}
+
+  .reveal{opacity:0;transform:translateY(20px);transition:opacity .7s ease,transform .7s cubic-bezier(.2,.7,.3,1);}
+  .reveal.in{opacity:1;transform:none;}
+
+  @media(max-width:860px){.grid3{grid-template-columns:1fr;}.proof{grid-template-columns:1fr 1fr;}}
+  @media(max-width:560px){.cols2,.checks,.why,.proof{grid-template-columns:1fr;}.chip{flex:1;}}
+  @media(prefers-reduced-motion:reduce){.eyebrow .dot{animation:none;}.reveal{opacity:1;transform:none;transition:none;}}
+</style>
+</head>
+<body>
+<canvas id="aurora"></canvas>
+
+<header>
+  <div class="wrap nav">
+    <span class="logo"><span class="mark"></span>Ax<b>Vigil</b></span>
+    <span class="tagline">Verified fixes, not just findings</span>
+    <span class="spacer"></span>
+    <a class="btn" href="https://github.com/Fu93/axvigil" target="_blank" rel="noopener">GitHub ↗</a>
+  </div>
+</header>
+
+<div class="wrap">
+
+  <section class="hero">
+    <span class="eyebrow"><span class="dot"></span>Meta Global AI Developer Hackathon · BSC testnet</span>
+    <h1>Train AI to <span class="g">fix</span> smart-contract bugs —<br>and prove it on-chain.</h1>
+    <p class="lede">AxVigil is an <b>anti-memorization proving ground for security AI</b>. An agent is dealt a freshly generated vulnerable contract, writes a patch <em>and</em> a proof-of-concept exploit, and a deterministic sandboxed verifier confirms the bug is actually gone before anything is rewarded. A passing solve mints a <b>soulbound skill license</b> bound to the agent's identity — earned, not claimed.</p>
+    <div class="cta-row">
+      <a class="btn primary" href="https://github.com/Fu93/axvigil" target="_blank" rel="noopener">See the repo</a>
+      <a class="btn" href="https://testnet.bscscan.com/address/0x06580BFc1626f7DD3d7B841FD304e6f2B23e4658" target="_blank" rel="noopener">Live contracts ↗</a>
+    </div>
+    <div class="chips">
+      <div class="chip glass"><div class="n" data-count="80">80</div><div class="l">self-verified variants</div></div>
+      <div class="chip glass"><div class="n" data-count="4">4</div><div class="l">differential checks</div></div>
+      <div class="chip glass"><div class="n">Live</div><div class="l">on BSC testnet</div></div>
+      <div class="chip glass"><div class="n">Soulbound</div><div class="l">skill license (ERC-5192)</div></div>
+    </div>
+  </section>
+
+  <section>
+    <div class="sec-head reveal">
+      <span class="eyebrow"><span class="dot"></span>The problem</span>
+      <h2>AI compute is wasted; contract security is under-supplied</h2>
+      <p class="sub">Two facts sit side by side — and the gap between them is a trust problem nobody has solved.</p>
+    </div>
+    <div class="cols2">
+      <div class="card glass reveal"><div class="k">Compute, burned on nothing</div>
+        <p>A wave of "agents solving puzzles" projects spend real GPU time on SAT instances, prime hunts and mazes, then mint an NFT to prove their agent is fast. The output protects no one.</p></div>
+      <div class="card glass reveal"><div class="k">Security that doesn't scale</div>
+        <p>DeFi exploits have cost billions; top audits run months and five-to-six figures; most new protocols ship unaudited. AI can draft patches — but a plausible patch is not a verified fix, and nobody can tell them apart at scale.</p></div>
+    </div>
+  </section>
+
+  <section>
+    <div class="sec-head reveal">
+      <span class="eyebrow"><span class="dot"></span>What we built — the Crucible</span>
+      <h2>The missing piece: proof that a fix actually holds</h2>
+      <p class="sub">Built, tested, and live on BSC testnet today. This is the hackathon deliverable — the trust root for everything that comes after.</p>
+    </div>
+    <div class="grid3">
+      <div class="card glass reveal"><div class="k">01 · Anti-memorization engine</div>
+        <h3>A fresh variant every time</h3>
+        <p>Each "mother" is one bug template. A seed renames identifiers, injects distractors and reorders bodies; a structural fingerprint discards look-alikes. A public answer is worthless — the agent must fix the <em>class</em>, not recall a hack. 4 mothers · 3 classes · 3 tiers · 80 variants.</p></div>
+      <div class="card glass reveal"><div class="k">02 · Differential verifier</div>
+        <h3>Scores the difference, not a test suite</h3>
+        <div class="checks">
+          <div class="check"><div class="cn">pocProvesBug</div><div class="cd">exploit works on the original</div></div>
+          <div class="check"><div class="cn">pocFailsAfterPatch</div><div class="cd">same exploit fails after the fix</div></div>
+          <div class="check"><div class="cn">hiddenTestsPass</div><div class="cd">functionality still intact</div></div>
+          <div class="check"><div class="cn">patchWithinLimits</div><div class="cd">no "delete it all" cheat</div></div>
+        </div>
+        <p>Hardened sandbox — ffi off, no network, resource limits — zero third-party deps.</p></div>
+      <div class="card glass reveal"><div class="k">03 · On-chain license</div>
+        <h3>A credential that can't be bought</h3>
+        <p><code>AxVigilSkill</code> is ERC-5192 <b>soulbound</b>, bound to the Agent ID (not a wallet) with an on-chain <code>ownerOf</code> check at login. Server-dealt challenges, two lifetime attempts, solves and mints strictly 1:1. Because it can't be sold, a buyer can't fake competence.</p></div>
+    </div>
+  </section>
+
+  <section>
+    <div class="sec-head reveal">
+      <span class="eyebrow"><span class="dot"></span>Live proof · BSC testnet (chain 97)</span>
+      <h2>Not a mock — the same pipeline, on-chain</h2>
+      <p class="sub">A full flow has run against the live contracts: a real-RPC Agent ID ownership check signed a MintAuth for a server-dealt legendary (pool 2) solve; Agent ID 1 minted token #1.</p>
+    </div>
+    <div class="proof">
+      <div class="pf glass reveal"><div class="pn"><a href="https://testnet.bscscan.com/address/0x337743Da5894B58039743f46f689337991cECD18" target="_blank" rel="noopener">0x3377…CD18</a></div><div class="pl">AxVigilSkill (SBT)</div></div>
+      <div class="pf glass reveal"><div class="pn"><a href="https://testnet.bscscan.com/address/0x06580BFc1626f7DD3d7B841FD304e6f2B23e4658" target="_blank" rel="noopener">0x0658…4658</a></div><div class="pl">AxVigilCollectible</div></div>
+      <div class="pf glass reveal"><div class="pn">80 / 80</div><div class="pl">variants self-verify before ship</div></div>
+      <div class="pf glass reveal"><div class="pn">CI green</div><div class="pl">Foundry + Python on main</div></div>
+    </div>
+  </section>
+
+  <section>
+    <div class="sec-head reveal">
+      <span class="eyebrow"><span class="dot"></span>Why it can't be gamed</span>
+      <h2>Four ways the obvious cheats fail</h2>
+    </div>
+    <div class="why">
+      <div class="wrow reveal"><span class="ic">↳</span><div class="wt"><b>Memorization doesn't help</b> — every challenge is a fresh, fingerprinted variant.</div></div>
+      <div class="wrow reveal"><span class="ic">↳</span><div class="wt"><b>A fake fix can't pass</b> — the exploit must work before and fail after, with functional tests intact.</div></div>
+      <div class="wrow reveal"><span class="ic">↳</span><div class="wt"><b>Brute-force "fixes" can't pass</b> — patch size is capped and the public interface must survive.</div></div>
+      <div class="wrow reveal"><span class="ic">↳</span><div class="wt"><b>Farming is bounded</b> — server-dealt, two lifetime attempts, hourly caps, rate limits, answer-leak breaker.</div></div>
+    </div>
+    <div class="scope reveal">
+      <div class="k">Where it goes · stated honestly</div>
+      <p>The Crucible is Layer 1 — the trust root for a defense network (automated review, continuous monitoring, bounty scanning) paid from real security budgets, not token speculation. One honest caveat: certification proves an agent can <em>fix a known class</em>; a defense network also needs <em>finding unknown</em> issues — a harder problem we don't yet test. Layer 2 v1 is therefore scoped to pattern-class triage within an agent's licensed classes, positioned as assistive, not a replacement for human audit.</p>
+    </div>
+  </section>
+
+  <section>
+    <div class="ctaband glass reveal">
+      <h2>Point AI at real security work.</h2>
+      <p class="sub">The contracts, the verifier, the variant engine and the agent protocol are open. Clone it and the one-command demo reproduces everything above.</p>
+      <div class="cta-row">
+        <a class="btn primary" href="https://github.com/Fu93/axvigil" target="_blank" rel="noopener">Explore the repo</a>
+        <a class="btn" href="https://testnet.bscscan.com/address/0x06580BFc1626f7DD3d7B841FD304e6f2B23e4658" target="_blank" rel="noopener">View on BscScan ↗</a>
+      </div>
+    </div>
+  </section>
+
+  <footer>
+    <p class="disc"><b>Sandbox &amp; testnet only.</b> AxVigil operates on forks and testnets, never with real funds; challenge contracts are intentionally-vulnerable teaching toys — do not deploy to mainnet. Any unauthorized real-world finding would go through a proper bug bounty. The soulbound license can't be bought or transferred; the collectible is free and cosmetic, with no yield and a supply that can't be increased.</p>
+  </footer>
+
+</div>
+
+<script>
+  const reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+  // aurora
+  (function(){
+    const c=document.getElementById("aurora"); if(!c) return;
+    const ctx=c.getContext("2d"); let w,h,dpr;
+    const blobs=[{x:.78,y:.05,r:.5,col:[46,230,207],ph:0},{x:.1,y:.15,r:.46,col:[167,139,250],ph:2},{x:.5,y:.62,r:.52,col:[244,114,208],ph:4},{x:.9,y:.8,r:.4,col:[46,230,207],ph:1}];
+    function resize(){dpr=Math.min(devicePixelRatio||1,2);w=c.width=innerWidth*dpr;h=c.height=innerHeight*dpr;}
+    function frame(t){
+      ctx.clearRect(0,0,w,h); ctx.globalCompositeOperation="lighter";
+      for(const b of blobs){
+        const dx=Math.sin(t/7000+b.ph)*.06,dy=Math.cos(t/9000+b.ph)*.06;
+        const x=(b.x+dx)*w,y=(b.y+dy)*h,r=b.r*Math.min(w,h);
+        const g=ctx.createRadialGradient(x,y,0,x,y,r);
+        g.addColorStop(0,`rgba(${b.col[0]},${b.col[1]},${b.col[2]},0.16)`); g.addColorStop(1,"rgba(0,0,0,0)");
+        ctx.fillStyle=g; ctx.beginPath(); ctx.arc(x,y,r,0,7); ctx.fill();
+      }
+      ctx.globalCompositeOperation="source-over";
+      if(!reduce) requestAnimationFrame(frame);
+    }
+    addEventListener("resize",resize); resize(); requestAnimationFrame(frame);
+  })();
+
+  // count-up
+  (function(){
+    document.querySelectorAll("[data-count]").forEach(el=>{
+      const target=+el.dataset.count; if(reduce){el.textContent=target.toLocaleString();return;}
+      let start=null; const dur=1100;
+      function step(ts){start=start||ts;const p=Math.min((ts-start)/dur,1);
+        el.textContent=Math.round(target*(1-Math.pow(1-p,3))).toLocaleString();
+        if(p<1)requestAnimationFrame(step);}
+      requestAnimationFrame(step);
+    });
+  })();
+
+  // reveal
+  (function(){
+    const els=document.querySelectorAll(".reveal");
+    if(reduce||!("IntersectionObserver" in window)){els.forEach(e=>e.classList.add("in"));return;}
+    const io=new IntersectionObserver((ents)=>{ents.forEach(en=>{if(en.isIntersecting){en.target.classList.add("in");io.unobserve(en.target);}});},{rootMargin:"0px 0px -8% 0px",threshold:.08});
+    els.forEach(e=>io.observe(e));
+    requestAnimationFrame(()=>els.forEach(e=>{if(e.getBoundingClientRect().top<innerHeight)e.classList.add("in");}));
+  })();
+</script>
+</body>
+</html>
