@@ -1,0 +1,8 @@
+# python3 scripts/verify_empty_market.py   (2026-10-30, strict: only the donation-resistant class fix is accepted)
+empty-market-inflation: 20 rendered, 20 unique fingerprints, 20/20 reference solutions pass
+[noop_patch] passed=False proves=True failsAfter=False hidden=False limits=True  expect=False  ok
+[instance_require_shares_gt0] passed=False proves=True failsAfter=False hidden=False limits=True  expect=False  ok
+[gutted_deposit] passed=False proves=True failsAfter=True hidden=False limits=True  expect=False  ok
+
+# Negative controls rejected (expect_pass=False): no-op, instance_require_shares_gt0
+# (partial patch that only blocks zero-share deposits), gutted_deposit. Exit code 0.
