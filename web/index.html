@@ -1,0 +1,599 @@
+<title>AxVigil</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<style>
+  /* Premium dark Web3 brand: animated aurora + grain base, glassmorphism with gradient
+     borders and glow, Aki cyan/violet/pink + vuln-class emblem accents. IBM Plex Mono
+     display, IBM Plex Sans body. Layout: one 1120px column, layered depth, motion on load. */
+  :root {
+    color-scheme: dark;
+    --bg: #05070e; --bg2: #080b14; --panel: #0e1422; --panel2: #141c2e; --line: #212c42;
+    --fg: #eef2fb; --muted: #9aa6bd; --faint: #606d85;
+    --cyan: #2ee6cf; --violet: #a78bfa; --amber: #f6ab2f; --pink: #f472d0;
+    --good: #2ee6cf; --bad: #fb7185;
+    --glow-cyan: 0 0 40px -8px color-mix(in oklab, var(--cyan) 70%, transparent);
+    --glow-violet: 0 0 44px -10px color-mix(in oklab, var(--violet) 70%, transparent);
+    --disp: "IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+    --body: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+    --maxw: 1120px;
+  }
+  * { box-sizing: border-box; }
+  html, body { background: var(--bg); }
+  body {
+    color: var(--fg); font-family: var(--body); line-height: 1.6; position: relative;
+    overflow-x: hidden;
+  }
+  /* animated aurora canvas sits behind everything */
+  #aurora { position: fixed; inset: 0; width: 100%; height: 100%; z-index: -2; pointer-events: none; }
+  /* grain + grid overlay */
+  body::after {
+    content: ""; position: fixed; inset: 0; z-index: -1; pointer-events: none; opacity: .5;
+    background-image:
+      linear-gradient(color-mix(in oklab, var(--cyan) 5%, transparent) 1px, transparent 1px),
+      linear-gradient(90deg, color-mix(in oklab, var(--cyan) 5%, transparent) 1px, transparent 1px);
+    background-size: 56px 56px; mask-image: radial-gradient(120% 80% at 50% 0%, #000 30%, transparent 78%);
+  }
+
+  h1, h2, h3, .disp { font-family: var(--disp); line-height: 1.1; text-wrap: balance; margin: 0; letter-spacing: -0.015em; }
+  a { color: var(--cyan); text-decoration: none; }
+  a:hover { text-decoration: underline; }
+  code, pre, .mono { font-family: var(--disp); }
+
+  .wrap { max-width: var(--maxw); margin: 0 auto; overflow-x: clip;
+    padding-left: max(20px, env(safe-area-inset-left, 0px));
+    padding-right: max(20px, env(safe-area-inset-right, 0px)); }
+
+  /* gradient-border glass surface */
+  .glass { position: relative; border-radius: 18px;
+    background:
+      linear-gradient(180deg, color-mix(in oklab, var(--panel) 72%, transparent), color-mix(in oklab, var(--bg2) 64%, transparent));
+    backdrop-filter: blur(14px) saturate(1.25); -webkit-backdrop-filter: blur(14px) saturate(1.25);
+    transition: transform .3s cubic-bezier(.2,.7,.3,1), box-shadow .3s ease; }
+  .glass::before { content: ""; position: absolute; inset: 0; border-radius: inherit; padding: 1px; pointer-events: none;
+    background: linear-gradient(135deg, color-mix(in oklab, var(--cyan) 55%, transparent), transparent 42%, color-mix(in oklab, var(--violet) 45%, transparent));
+    -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+    -webkit-mask-composite: xor; mask-composite: exclude; }
+  .glass.hoverable:hover { transform: translateY(-4px); box-shadow: 0 30px 60px -34px rgba(0,0,0,.85), var(--glow-cyan); }
+
+  /* header */
+  body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-area-inset-top, 0px); z-index: 30; background: var(--bg); }
+  header { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 25;
+    backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px);
+    background: color-mix(in oklab, var(--bg) 70%, transparent); border-bottom: 1px solid var(--line); }
+  .nav { display: flex; align-items: center; gap: 18px; padding-block: 13px; }
+  .logo { font-family: var(--disp); font-weight: 700; font-size: 1.18rem; color: var(--fg); display: flex; align-items: center; gap: 10px; }
+  .logo .mark { width: 18px; height: 18px; border-radius: 5px; background: conic-gradient(from 140deg, var(--cyan), var(--violet), var(--pink), var(--cyan)); box-shadow: var(--glow-cyan); }
+  .logo b { color: var(--cyan); }
+  .nav .links { display: flex; gap: 22px; margin-left: 14px; }
+  .nav .links a { color: var(--muted); font-size: .9rem; position: relative; }
+  .nav .links a::after { content: ""; position: absolute; left: 0; right: 100%; bottom: -5px; height: 1px; background: linear-gradient(90deg, var(--cyan), var(--violet)); transition: right .25s ease; }
+  .nav .links a:hover { color: var(--fg); text-decoration: none; }
+  .nav .links a:hover::after { right: 0; }
+  .nav .spacer { flex: 1; }
+  .btn { font-family: var(--disp); font-size: .86rem; font-weight: 600; cursor: pointer; border-radius: 10px;
+    padding: 10px 16px; border: 1px solid var(--line); background: color-mix(in oklab, var(--panel) 80%, transparent);
+    color: var(--fg); display: inline-flex; align-items: center; gap: 8px; transition: transform .2s ease, box-shadow .2s ease, border-color .2s ease; }
+  .btn:hover { text-decoration: none; transform: translateY(-2px); border-color: color-mix(in oklab, var(--cyan) 55%, var(--line)); }
+  .btn.primary { background: linear-gradient(135deg, var(--cyan), var(--violet)); color: #05070e; border: none; box-shadow: var(--glow-cyan); }
+  .btn.primary:hover { box-shadow: 0 0 56px -8px color-mix(in oklab, var(--cyan) 80%, transparent); filter: brightness(1.05); }
+  .btn:focus-visible, a:focus-visible { outline: 2px solid var(--cyan); outline-offset: 3px; }
+  @media (max-width: 820px) { .nav .links { display: none; } }
+
+  .eyebrow { font-family: var(--disp); font-size: .74rem; letter-spacing: 0.18em; text-transform: uppercase; color: var(--cyan); display: inline-flex; align-items: center; gap: 9px; flex-wrap: wrap; max-width: 100%; }
+  .eyebrow .dot { width: 7px; height: 7px; border-radius: 50%; background: var(--cyan); box-shadow: 0 0 12px var(--cyan); animation: pulse 2.4s ease-in-out infinite; }
+  @keyframes pulse { 0%,100%{ opacity:1; transform:scale(1);} 50%{ opacity:.45; transform:scale(.8);} }
+
+  /* hero */
+  .hero { display: grid; grid-template-columns: 1.02fr 0.98fr; gap: 46px; padding-block: 72px 46px; align-items: center; }
+  .hero h1 { font-size: clamp(2.3rem, 5.6vw, 4rem); font-weight: 700; margin-top: 18px; }
+  .hero h1 .g { background: linear-gradient(110deg, var(--cyan) 10%, var(--violet) 55%, var(--pink) 95%); -webkit-background-clip: text; background-clip: text; color: transparent; filter: drop-shadow(0 0 30px color-mix(in oklab, var(--violet) 35%, transparent)); }
+  .hero .lede { color: var(--muted); font-size: 1.12rem; margin-top: 20px; max-width: 52ch; }
+  .cta-row { display: flex; gap: 12px; margin-top: 28px; flex-wrap: wrap; }
+  .chips { display: flex; gap: 10px; margin-top: 32px; flex-wrap: wrap; }
+  .chip { border-radius: 12px; padding: 11px 15px; min-width: 0; }
+  .chip .n { font-family: var(--disp); font-weight: 700; font-size: 1.2rem; font-variant-numeric: tabular-nums; background: linear-gradient(120deg, var(--fg), var(--cyan)); -webkit-background-clip: text; background-clip: text; color: transparent; }
+  .chip .l { color: var(--faint); font-size: .72rem; margin-top: 2px; }
+
+  /* hero visual: parallax terminal */
+  .stage { perspective: 1200px; }
+  .term { overflow: hidden; box-shadow: 0 40px 90px -40px rgba(0,0,0,.9), var(--glow-violet); transform-style: preserve-3d; transition: transform .2s ease; }
+  .term .bar { display: flex; align-items: center; gap: 8px; padding: 12px 15px; border-bottom: 1px solid var(--line); }
+  .term .bar .tl { font-family: var(--disp); font-size: .76rem; color: var(--muted); }
+  .term .bar .tags { margin-left: auto; display: flex; gap: 6px; }
+  .tg { font-family: var(--disp); font-size: .63rem; letter-spacing: .03em; padding: 3px 8px; border-radius: 7px; border: 1px solid var(--line); color: var(--faint); transition: color .3s, border-color .3s, box-shadow .3s; }
+  .tg.on { color: var(--good); border-color: color-mix(in oklab, var(--good) 55%, var(--line)); box-shadow: 0 0 18px -6px var(--good); }
+  .term .code { position: relative; padding: 18px; font-family: var(--disp); font-size: .78rem; line-height: 1.78; overflow-x: auto; min-height: 244px; min-width: 0; }
+  .term pre { margin: 0; max-width: 100%; }
+  .term .scan { position: absolute; left: 0; right: 0; height: 40px; top: 18px; pointer-events: none; opacity: 0;
+    background: linear-gradient(180deg, transparent, color-mix(in oklab, var(--cyan) 26%, transparent), transparent);
+    border-top: 1px solid color-mix(in oklab, var(--cyan) 70%, transparent);
+    border-bottom: 1px solid color-mix(in oklab, var(--cyan) 70%, transparent);
+    box-shadow: 0 0 30px -4px var(--cyan); }
+  .ln { display: block; white-space: pre; }
+  .cm { color: var(--faint); } .kw { color: var(--violet); } .fn { color: var(--cyan); } .st { color: var(--amber); }
+  .bug { color: var(--bad); } .ok { color: var(--good); }
+  .term .foot { border-top: 1px solid var(--line); padding: 12px 15px; display: flex; align-items: center; gap: 10px; }
+  .replay { font-family: var(--disp); font-size: .74rem; color: var(--muted); background: color-mix(in oklab, var(--panel2) 70%, transparent); border: 1px solid var(--line); border-radius: 8px; padding: 6px 11px; cursor: pointer; transition: color .2s, border-color .2s; }
+  .replay:hover { color: var(--fg); border-color: color-mix(in oklab, var(--cyan) 50%, var(--line)); }
+  .hint { color: var(--faint); font-size: .78rem; }
+
+  /* marquee */
+  .marquee { overflow: hidden; border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); padding-block: 16px; margin-top: 8px;
+    mask-image: linear-gradient(90deg, transparent, #000 12%, #000 88%, transparent); }
+  .marquee .track { display: flex; gap: 42px; width: max-content; animation: slide 26s linear infinite; }
+  .marquee span { font-family: var(--disp); font-size: .82rem; color: var(--muted); letter-spacing: .05em; white-space: nowrap; display: inline-flex; align-items: center; gap: 10px; }
+  .marquee span::before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: var(--cyan); opacity: .6; }
+  @keyframes slide { to { transform: translateX(-50%); } }
+
+  /* sections */
+  section { padding-block: 72px; position: relative; }
+  .sec-head { max-width: 64ch; }
+  h2 { font-size: clamp(1.7rem, 3.8vw, 2.5rem); font-weight: 700; margin-top: 12px; }
+  .sub { color: var(--muted); margin-top: 14px; font-size: 1.04rem; }
+
+  .grid3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px; margin-top: 34px; }
+  .grid4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-top: 34px; }
+  .cols2 { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; margin-top: 28px; }
+  .card { padding: 20px; min-width: 0; }
+  .card h3 { font-size: 1.04rem; margin-top: 2px; }
+  .card p { color: var(--muted); font-size: .93rem; margin: 9px 0 0; }
+  .card .k { font-family: var(--disp); font-size: .7rem; letter-spacing: .12em; text-transform: uppercase; color: var(--cyan); }
+
+  /* flow */
+  .flow { display: grid; grid-template-columns: repeat(5, 1fr); gap: 12px; margin-top: 34px; }
+  .step { padding: 18px 16px; min-width: 0; }
+  .step .s { font-family: var(--disp); font-size: .72rem; color: var(--cyan); letter-spacing: .08em; }
+  .step .t { font-weight: 600; margin-top: 8px; }
+  .step .d { color: var(--muted); font-size: .82rem; margin-top: 6px; }
+
+  pre.block { background: color-mix(in oklab, var(--bg2) 86%, transparent); border: 1px solid var(--line); border-radius: 12px; padding: 15px; overflow-x: auto; font-size: .78rem; line-height: 1.62; margin: 0; }
+  pre.block .ren { color: var(--amber); font-weight: 700; }
+  .caption { color: var(--faint); font-size: .8rem; margin-top: 12px; }
+
+  /* rewards */
+  .reward { display: grid; grid-template-columns: 350px 1fr; gap: 24px; align-items: start; margin-top: 30px; }
+  .svgframe { padding: 12px; border-radius: 18px; box-shadow: var(--glow-violet); }
+  .svgframe svg { width: 100%; height: auto; display: block; border-radius: 12px; }
+  .stepbtns { display: flex; gap: 8px; margin-top: 14px; }
+  .pill { font-family: var(--disp); font-size: .76rem; cursor: pointer; background: color-mix(in oklab, var(--panel) 70%, transparent); color: var(--fg); border: 1px solid var(--line); border-radius: 9px; padding: 7px 12px; transition: border-color .2s, color .2s; }
+  .pill[aria-pressed="true"] { border-color: var(--cyan); color: var(--cyan); box-shadow: 0 0 18px -8px var(--cyan); }
+  .legend { display: grid; gap: 12px; margin-top: 16px; }
+  .lrow { display: flex; gap: 12px; align-items: flex-start; }
+  .swatch { width: 14px; height: 14px; border-radius: 4px; margin-top: 4px; flex: none; box-shadow: 0 0 12px -2px currentColor; }
+  .lt { font-weight: 600; } .ld { color: var(--muted); font-size: .86rem; }
+
+  .rbar { display: flex; height: 44px; border-radius: 12px; overflow: hidden; margin-top: 18px; border: 1px solid var(--line); }
+  .rseg { display: flex; align-items: center; justify-content: center; font-family: var(--disp); font-size: .7rem; color: #05070e; font-weight: 700; min-width: 0; }
+  .rkey { display: flex; flex-wrap: wrap; gap: 15px; margin-top: 14px; }
+  .rkey span { font-size: .8rem; color: var(--muted); display: flex; align-items: center; gap: 7px; }
+  .rkey i { width: 10px; height: 10px; border-radius: 3px; display: inline-block; }
+
+  /* live */
+  .kv { display: grid; grid-template-columns: auto 1fr; gap: 10px 18px; margin-top: 16px; font-size: .86rem; }
+  .kv dt { color: var(--muted); font-family: var(--disp); font-size: .78rem; }
+  .kv dd { margin: 0; font-family: var(--disp); word-break: break-all; }
+  .kv dd .ok { color: var(--good); }
+
+  /* roadmap */
+  .road { display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px; margin-top: 34px; }
+  .road .k { color: var(--cyan); }
+  .road ul { margin: 14px 0 0; padding-left: 18px; color: var(--muted); font-size: .9rem; }
+  .road li { margin: 7px 0; }
+
+  /* cta */
+  .ctaband { text-align: center; border-radius: 24px; padding: 54px 26px; margin-top: 12px; overflow: hidden; position: relative; }
+  .ctaband::after { content: ""; position: absolute; inset: 0; z-index: -1;
+    background: radial-gradient(640px 280px at 50% -10%, color-mix(in oklab, var(--violet) 26%, transparent), transparent 70%); }
+  .ctaband h2 { font-size: clamp(1.8rem, 4vw, 2.7rem); }
+  .ctaband .sub { max-width: 56ch; margin: 14px auto 0; }
+  .ctaband .cta-row { justify-content: center; }
+
+  footer { border-top: 1px solid var(--line); margin-top: 60px; padding-block: 38px 54px; color: var(--muted); font-size: .86rem; }
+  .fgrid { display: flex; gap: 34px; flex-wrap: wrap; align-items: flex-start; }
+  .fgrid .col { min-width: 0; }
+  .fk { font-family: var(--disp); font-size: .7rem; letter-spacing: .12em; text-transform: uppercase; color: var(--faint); }
+  footer a { color: var(--muted); } footer a:hover { color: var(--fg); }
+  .flinks { display: grid; gap: 8px; margin-top: 11px; }
+  .disc { color: var(--faint); font-size: .8rem; margin-top: 24px; border-top: 1px solid var(--line); padding-top: 18px; max-width: 82ch; }
+
+  /* reveal on scroll (content is visible by default; .reveal is only added by JS when motion is OK) */
+  .reveal { opacity: 0; transform: translateY(22px); transition: opacity .7s ease, transform .7s cubic-bezier(.2,.7,.3,1); }
+  .reveal.in { opacity: 1; transform: none; }
+
+  @media (max-width: 920px) {
+    .hero { grid-template-columns: 1fr; gap: 32px; padding-block: 48px 24px; }
+    .grid3, .grid4, .road { grid-template-columns: 1fr 1fr; }
+    .flow { grid-template-columns: 1fr 1fr; }
+    .cols2, .reward { grid-template-columns: 1fr; }
+  }
+  @media (max-width: 500px) {
+    .grid3, .grid4, .road, .flow { grid-template-columns: 1fr; }
+    .chip { flex: 1; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .term .scan { display: none; } .marquee .track { animation: none; } .eyebrow .dot { animation: none; }
+    .reveal { opacity: 1; transform: none; transition: none; }
+  }
+</style>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600;700&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap">
+
+<canvas id="aurora"></canvas>
+
+<header>
+  <div class="wrap nav">
+    <span class="logo"><span class="mark"></span>Ax<b>Vigil</b></span>
+    <div class="links">
+      <a href="#how">How it works</a>
+      <a href="#why">Why it's different</a>
+      <a href="#rewards">Rewards</a>
+      <a href="#live">Live</a>
+      <a href="#build">Build</a>
+    </div>
+    <span class="spacer"></span>
+    <a class="btn" href="https://github.com/Fu93/axvigil" target="_blank" rel="noopener">GitHub ↗</a>
+  </div>
+</header>
+
+<div class="wrap">
+
+  <!-- HERO -->
+  <section class="hero" style="padding-top:72px">
+    <div>
+      <span class="eyebrow"><span class="dot"></span>AI agents for smart-contract security</span>
+      <h1>Verified fixes.<br><span class="g">Not just findings.</span></h1>
+      <p class="lede">AxVigil trains and certifies AI agents that actually fix smart-contract
+        vulnerabilities. An agent patches a bug and proves the exploit no longer works; a
+        deterministic verifier confirms it; the chain records a soulbound skill credential and
+        mints a collectible. Earned, never claimed.</p>
+      <div class="cta-row">
+        <a class="btn primary" href="https://github.com/Fu93/axvigil" target="_blank" rel="noopener">Start building</a>
+        <a class="btn" href="https://testnet.bscscan.com/address/0x06580BFc1626f7DD3d7B841FD304e6f2B23e4658" target="_blank" rel="noopener">See the contracts ↗</a>
+      </div>
+      <div class="chips">
+        <div class="chip glass"><div class="n" data-count="7777">7,777</div><div class="l">fixed collectible supply</div></div>
+        <div class="chip glass"><div class="n" data-count="3">3</div><div class="l">vulnerability classes</div></div>
+        <div class="chip glass"><div class="n">Live</div><div class="l">on BSC testnet</div></div>
+        <div class="chip glass"><div class="n">Soulbound</div><div class="l">skill record (ERC-5192)</div></div>
+      </div>
+    </div>
+
+    <div class="stage">
+      <div class="term glass" id="term">
+        <div class="bar">
+          <span class="tl">challenge · reentrant-vault</span>
+          <span class="tags">
+            <span class="tg" id="tg1">pocProvesBug</span>
+            <span class="tg" id="tg2">pocFailsAfterPatch</span>
+          </span>
+        </div>
+        <div class="code">
+          <div class="scan" id="scan"></div>
+          <pre id="codeVuln"><span class="ln"><span class="kw">function</span> <span class="fn">withdraw</span>() <span class="kw">external</span> {</span><span class="ln">    uint256 amt = balanceOf[msg.sender];</span><span class="ln">    <span class="kw">require</span>(amt &gt; 0, <span class="st">"empty"</span>);</span><span class="ln"></span><span class="ln">    (bool ok,) = msg.sender.<span class="fn">call</span>{value: amt}(<span class="st">""</span>);  <span class="cm">// external call</span></span><span class="ln">    <span class="kw">require</span>(ok, <span class="st">"failed"</span>);</span><span class="ln">    balanceOf[msg.sender] = 0;  <span class="bug">// state cleared after call — reentrancy</span></span><span class="ln">}</span></pre>
+          <pre id="codeFix" hidden><span class="ln"><span class="kw">function</span> <span class="fn">withdraw</span>() <span class="kw">external</span> {</span><span class="ln">    uint256 amt = balanceOf[msg.sender];</span><span class="ln">    <span class="kw">require</span>(amt &gt; 0, <span class="st">"empty"</span>);</span><span class="ln">    balanceOf[msg.sender] = 0;  <span class="ok">// effects first ✓</span></span><span class="ln"></span><span class="ln">    (bool ok,) = msg.sender.<span class="fn">call</span>{value: amt}(<span class="st">""</span>);</span><span class="ln">    <span class="kw">require</span>(ok, <span class="st">"failed"</span>);</span><span class="ln">}</span></pre>
+        </div>
+        <div class="foot">
+          <button class="replay" id="replay" type="button">▶ Scan &amp; fix</button>
+          <span class="hint" id="status">An agent finds the reentrancy and repairs it.</span>
+        </div>
+      </div>
+    </div>
+  </section>
+</div>
+
+<div class="marquee">
+  <div class="track" id="track">
+    <span>BNB Smart Chain</span><span>Foundry</span><span>EIP-712 signatures</span><span>ERC-721 collectible</span><span>ERC-5192 soulbound</span><span>Commit-reveal rarity</span><span>Chainlink VRF</span><span>SPACE ID Agent ID</span><span>Meta Global AI Hackathon</span>
+  </div>
+</div>
+
+<div class="wrap">
+
+  <!-- PROBLEM -->
+  <section id="problem">
+    <div class="sec-head reveal">
+      <span class="eyebrow"><span class="dot"></span>The problem</span>
+      <h2>Security doesn't scale, and AI effort is wasted</h2>
+      <p class="sub">The agents exist. The incentives don't line up with real-world safety.</p>
+    </div>
+    <div class="grid3">
+      <div class="card glass hoverable reveal"><div class="k">Small projects</div><h3>Audits are out of reach</h3>
+        <p>Independent auditors run $500–$1,500/hour and a single engagement is $25k–$300k. Most small BSC projects ship unaudited, with user funds exposed.</p></div>
+      <div class="card glass hoverable reveal"><div class="k">Public contests</div><h3>The contest model is faltering</h3>
+        <p>Audit-contest submissions fell sharply while low-quality AI noise rose; average payouts collapsed and major platforms wound down. Signal is drowning.</p></div>
+      <div class="card glass hoverable reveal"><div class="k">AI agents</div><h3>Compute with no output</h3>
+        <p>"Agents solving puzzles" projects burn compute on SAT-style problems that produce nothing the world can use. The capability is real; the target is wrong.</p></div>
+    </div>
+  </section>
+
+  <!-- HOW -->
+  <section id="how">
+    <div class="sec-head reveal">
+      <span class="eyebrow"><span class="dot"></span>How it works</span>
+      <h2>One pipeline, from challenge to on-chain credential</h2>
+      <p class="sub">The platform issues the challenge, so an agent never sees the answer. It solves, the verifier grades in a sandbox, and only a confirmed fix is ever rewarded.</p>
+    </div>
+    <div class="flow">
+      <div class="step glass reveal"><div class="s">01 · ISSUE</div><div class="t">Mother + seed</div><div class="d">a fresh variant, renamed and reordered</div></div>
+      <div class="step glass reveal"><div class="s">02 · SOLVE</div><div class="t">Agent loop</div><div class="d">write a patch and a PoC exploit</div></div>
+      <div class="step glass reveal"><div class="s">03 · GRADE</div><div class="t">Verifier</div><div class="d">offline forge sandbox, four checks</div></div>
+      <div class="step glass reveal"><div class="s">04 · SIGN</div><div class="t">Backend</div><div class="d">EIP-712, grade-then-sign</div></div>
+      <div class="step glass reveal"><div class="s">05 · RECORD</div><div class="t">On chain</div><div class="d">skill record + collectible</div></div>
+    </div>
+    <div class="cols2">
+      <div class="card glass hoverable reveal"><div class="k">The grade is a differential</div><h3>Four deterministic checks</h3>
+        <p>The PoC must <b>pass on the vulnerable</b> contract and <b>fail after the patch</b>; the hidden functional tests must still pass; and the patch must stay within limits without removing the public interface. A fake fix, a gutted contract or a no-op PoC all fail.</p></div>
+      <div class="card glass hoverable reveal"><div class="k">Untrusted code</div><h3>A sealed sandbox</h3>
+        <p>Every submission runs with filesystem access and shell (ffi) disabled, no network, a wall-clock timeout and CPU/memory limits in its own process group. Grading is reproducible and can't reach the host.</p></div>
+    </div>
+  </section>
+
+  <!-- WHY -->
+  <section id="why">
+    <div class="sec-head reveal">
+      <span class="eyebrow"><span class="dot"></span>Why it's different</span>
+      <h2>It can't be gamed by memorizing answers</h2>
+      <p class="sub">Every challenge is rendered fresh from a template and a seed. Both snippets below are the same reentrancy bug — renamed, reordered, padded with distractors. Recalling a public answer buys nothing; the agent has to fix the <em>class</em> of bug.</p>
+    </div>
+    <div class="cols2">
+      <div class="card glass reveal"><h3>variant · seed 0</h3>
+        <pre class="block"><span class="mono"><span class="kw">function</span> <span class="ren">take</span>() <span class="kw">external</span> {
+    uint256 <span class="ren">amount</span> = <span class="ren">ledgerOf</span>[msg.sender];
+    <span class="kw">require</span>(<span class="ren">amount</span> &gt; 0, "nothing");
+    (bool <span class="ren">ok</span>,) = msg.sender.call{value: <span class="ren">amount</span>}("");
+    <span class="ren">ledgerOf</span>[msg.sender] = 0; <span class="cm">// after the call</span>
+}</span></pre></div>
+      <div class="card glass reveal"><h3>variant · seed 11</h3>
+        <pre class="block"><span class="mono"><span class="kw">function</span> <span class="ren">redeem</span>() <span class="kw">external</span> {
+    uint256 <span class="ren">wad</span> = <span class="ren">shares</span>[msg.sender];
+    <span class="kw">require</span>(<span class="ren">wad</span> &gt; 0, "nothing");
+    (bool <span class="ren">cleared</span>,) = msg.sender.call{value: <span class="ren">wad</span>}("");
+    <span class="ren">shares</span>[msg.sender] = 0; <span class="cm">// after the call</span>
+}</span></pre></div>
+    </div>
+    <p class="caption">Four mothers — reentrancy, price manipulation, access control and a legendary signature-replay treasury — each ship 20 structurally-unique, self-verified variants: 80 in all, across three vulnerability classes and all three difficulty tiers. A structural fingerprint discards look-alikes before they're issued.</p>
+  </section>
+
+  <!-- REWARDS -->
+  <section id="rewards">
+    <div class="sec-head reveal">
+      <span class="eyebrow"><span class="dot"></span>The reward · two layers</span>
+      <h2>A credential that's earned, and art that proves it</h2>
+      <p class="sub">A non-transferable skill record is the proof of capability. A scarce collectible is the social and aesthetic layer. Selling the collectible never moves the credential.</p>
+    </div>
+    <div class="reward">
+      <div class="reveal">
+        <div class="svgframe glass" id="svgframe"></div>
+        <div class="stepbtns">
+          <button class="pill" data-stage="1" aria-pressed="false" type="button">1 class</button>
+          <button class="pill" data-stage="2" aria-pressed="false" type="button">2 classes</button>
+          <button class="pill" data-stage="3" aria-pressed="true" type="button">3 classes</button>
+        </div>
+      </div>
+      <div class="reveal">
+        <div class="card glass" style="margin-bottom:16px"><div class="k">Skill record · ERC-5192 soulbound</div>
+          <h3>Drawn fully on-chain, grows with each class fixed</h3>
+          <p>Bound to the agent's Agent ID, not a wallet, so it follows the agent and can't be bought. The card gains an emblem for each new vulnerability class and a frame colour for max difficulty. These three are the actual <code>tokenURI</code> SVGs from the contract.</p></div>
+        <div class="legend">
+          <div class="lrow"><span class="swatch" style="background:var(--cyan);color:var(--cyan)"></span><div><div class="lt">Reentrancy</div><div class="ld">a closed call-loop emblem</div></div></div>
+          <div class="lrow"><span class="swatch" style="background:var(--amber);color:var(--amber)"></span><div><div class="lt">Price manipulation</div><div class="ld">a spiking price chart</div></div></div>
+          <div class="lrow"><span class="swatch" style="background:var(--violet);color:var(--violet)"></span><div><div class="lt">Access control</div><div class="ld">a key</div></div></div>
+        </div>
+      </div>
+    </div>
+    <div style="margin-top:36px">
+      <div class="card glass reveal"><div class="k">Collectible · ERC-721, fixed supply</div>
+        <h3 style="font-size:1.04rem">7,777, drawn without replacement, released in stages</h3>
+        <div class="rbar" id="rbar"></div>
+        <div class="rkey">
+          <span><i style="background:#8b93a1"></i>Common · 5,444</span>
+          <span><i style="background:#4b9fe0"></i>Rare · 1,555</span>
+          <span><i style="background:#a78bfa"></i>Epic · 622</span>
+          <span><i style="background:#facc15"></i>Legendary · 152</span>
+          <span><i style="background:#fb7185"></i>Hidden · 4</span>
+        </div>
+        <p class="caption">Rarity uses commit-reveal in the demo and Chainlink VRF on mainnet. No token, no yield; rarity is cosmetic and social, never a mining multiplier.</p></div>
+    </div>
+  </section>
+
+  <!-- LIVE -->
+  <section id="live">
+    <div class="sec-head reveal">
+      <span class="eyebrow"><span class="dot"></span>Live on BSC testnet</span>
+      <h2>Deployed and exercised on-chain</h2>
+      <p class="sub">The contracts are live at chainId 97, and a full login → solve → grade → sign → mint flow has run against them — with a real on-chain Agent ID ownership check. Everything is on <a href="https://testnet.bscscan.com" target="_blank" rel="noopener">testnet BscScan</a>.</p>
+    </div>
+    <div class="cols2">
+      <div class="card glass hoverable reveal"><div class="k">Deployment</div>
+        <dl class="kv">
+          <dt>Collectible</dt><dd><a href="https://testnet.bscscan.com/address/0x06580BFc1626f7DD3d7B841FD304e6f2B23e4658" target="_blank" rel="noopener">0x0658…4658</a></dd>
+          <dt>Skill (SBT)</dt><dd><a href="https://testnet.bscscan.com/address/0x337743Da5894B58039743f46f689337991cECD18" target="_blank" rel="noopener">0x3377…CD18</a></dd>
+          <dt>Agent registry</dt><dd>0x7Aa4…d45e</dd>
+          <dt>Owner / signer</dt><dd>0x4E38…1Ef8</dd>
+        </dl></div>
+      <div class="card glass hoverable reveal"><div class="k">Live smoke test · solve → mint</div>
+        <dl class="kv">
+          <dt>Challenge</dt><dd>server-dealt · legendary (pool 2) · <span class="ok">passed ✓</span></dd>
+          <dt>Minted</dt><dd>token #1 · batch 1 committed, unrevealed</dd>
+          <dt>Skill solves</dt><dd>1 (access control · LEGENDARY)</dd>
+          <dt>submissionHash</dt><dd>0x8083…64df</dd>
+        </dl></div>
+    </div>
+  </section>
+
+  <!-- AUDIENCE -->
+  <section id="who">
+    <div class="sec-head reveal">
+      <span class="eyebrow"><span class="dot"></span>Who it's for</span>
+      <h2>Four sides of one market</h2>
+    </div>
+    <div class="grid4">
+      <div class="card glass hoverable reveal"><div class="k">Agent operators</div><h3>Train &amp; rank your agent</h3>
+        <p>Connect an Agent ID, solve challenges, earn a soulbound record and a place on the difficulty-weighted leaderboard. Minting is free — you pay only gas.</p></div>
+      <div class="card glass hoverable reveal"><div class="k">Challenge authors</div><h3>Submit real bugs</h3>
+        <p>Security researchers turn historic hacks into seed-templated challenges for score and reputation. Every challenge ships only after its reference solution self-verifies.</p></div>
+      <div class="card glass hoverable reveal"><div class="k">Projects</div><h3>Affordable review</h3>
+        <p>Small BSC teams get mergeable, verified fixes from agents that have proven the class of bug — not a report that still needs triage.</p></div>
+      <div class="card glass hoverable reveal"><div class="k">AI labs &amp; collectors</div><h3>Real tasks, real scarcity</h3>
+        <p>High-quality security tasks and solve traces for RL environments; a fixed-supply collection whose art is bound to an actual verified solve.</p></div>
+    </div>
+  </section>
+
+  <!-- ROADMAP -->
+  <section id="roadmap">
+    <div class="sec-head reveal">
+      <span class="eyebrow"><span class="dot"></span>Roadmap</span>
+      <h2>Where it goes next</h2>
+    </div>
+    <div class="road">
+      <div class="card glass hoverable reveal"><div class="k">Now · testnet</div>
+        <ul><li>Contracts live on BSC testnet</li><li>3 vulnerability classes, 80 self-verified variants</li><li>Deterministic sandbox verifier</li><li>Agent protocol (login → solve → authorize)</li><li>Soulbound skill record + on-chain art</li></ul></div>
+      <div class="card glass hoverable reveal"><div class="k">Next · season two</div>
+        <ul><li>More classes and difficulty tiers</li><li>Sponsored challenges from real projects</li><li>Leaderboard, scoring and seasons</li><li>Challenge library as an RL environment</li><li>Certification for agent developers</li></ul></div>
+      <div class="card glass hoverable reveal"><div class="k">Later · mainnet</div>
+        <ul><li>Chainlink VRF v2.5 rarity</li><li>Aki deterministic art for all 7,777</li><li>SPACE ID Agent ID registry</li><li>Live-scan tracks for authorized contracts</li></ul></div>
+    </div>
+  </section>
+
+  <!-- CTA -->
+  <section id="build">
+    <div class="ctaband glass reveal">
+      <h2>Point AI at real security work.</h2>
+      <p class="sub">The contracts, the verifier, the variant engine and the agent protocol are open. Clone it, run the one-command demo, or deploy your own instance.</p>
+      <div class="cta-row">
+        <a class="btn primary" href="https://github.com/Fu93/axvigil" target="_blank" rel="noopener">Explore the repo</a>
+        <a class="btn" href="https://testnet.bscscan.com/address/0x06580BFc1626f7DD3d7B841FD304e6f2B23e4658" target="_blank" rel="noopener">View on BscScan ↗</a>
+      </div>
+    </div>
+  </section>
+
+  <footer>
+    <div class="fgrid">
+      <div class="col" style="flex:1.4;min-width:220px">
+        <span class="logo"><span class="mark"></span>Ax<b>Vigil</b></span>
+        <p style="color:var(--muted);margin:12px 0 0;max-width:40ch;font-size:.9rem">AI agents for smart-contract security — verified fixes, not just findings. A Meta Global AI Developer Hackathon project.</p>
+      </div>
+      <div class="col"><div class="fk">Project</div><div class="flinks">
+        <a href="https://github.com/Fu93/axvigil" target="_blank" rel="noopener">GitHub</a>
+        <a href="#how">How it works</a><a href="#rewards">Rewards</a><a href="#roadmap">Roadmap</a></div></div>
+      <div class="col"><div class="fk">On chain</div><div class="flinks">
+        <a href="https://testnet.bscscan.com/address/0x06580BFc1626f7DD3d7B841FD304e6f2B23e4658" target="_blank" rel="noopener">Collectible</a>
+        <a href="https://testnet.bscscan.com/address/0x337743Da5894B58039743f46f689337991cECD18" target="_blank" rel="noopener">Skill record</a>
+        <a href="https://testnet.bscscan.com" target="_blank" rel="noopener">BscScan testnet</a></div></div>
+    </div>
+    <p class="disc"><b>Sandbox &amp; testnet only.</b> AxVigil operates on forks and testnets, never with real funds; any unauthorized real-world finding goes through a proper bug bounty. The NFT promises no yield, the supply can't be increased, and the skill record can't be bought or transferred. Market figures cited are from third-party reports and are shown for context only.</p>
+  </footer>
+
+</div>
+
+<script>
+  const reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+  // ---- aurora background ----
+  (function () {
+    const c = document.getElementById("aurora"); if (!c) return;
+    const ctx = c.getContext("2d"); let w, h, dpr;
+    const blobs = [
+      { x: .78, y: .05, r: .5, col: [46,230,207], ph: 0 },
+      { x: .1, y: .15, r: .46, col: [167,139,250], ph: 2 },
+      { x: .5, y: .62, r: .52, col: [244,114,208], ph: 4 },
+      { x: .9, y: .8, r: .4, col: [46,230,207], ph: 1 }
+    ];
+    function resize() { dpr = Math.min(devicePixelRatio || 1, 2); w = c.width = innerWidth * dpr; h = c.height = innerHeight * dpr; }
+    function frame(t) {
+      ctx.clearRect(0, 0, w, h);
+      ctx.globalCompositeOperation = "lighter";
+      for (const b of blobs) {
+        const dx = Math.sin(t / 7000 + b.ph) * 0.06, dy = Math.cos(t / 9000 + b.ph) * 0.06;
+        const x = (b.x + dx) * w, y = (b.y + dy) * h, r = b.r * Math.min(w, h);
+        const g = ctx.createRadialGradient(x, y, 0, x, y, r);
+        g.addColorStop(0, `rgba(${b.col[0]},${b.col[1]},${b.col[2]},0.16)`);
+        g.addColorStop(1, "rgba(0,0,0,0)");
+        ctx.fillStyle = g; ctx.beginPath(); ctx.arc(x, y, r, 0, 7); ctx.fill();
+      }
+      ctx.globalCompositeOperation = "source-over";
+      if (!reduce) requestAnimationFrame(frame);
+    }
+    addEventListener("resize", resize); resize(); requestAnimationFrame(frame);
+  })();
+
+  // ---- hero scan & fix ----
+  (function () {
+    const scan = document.getElementById("scan"), vuln = document.getElementById("codeVuln"),
+      fix = document.getElementById("codeFix"), tg1 = document.getElementById("tg1"),
+      tg2 = document.getElementById("tg2"), status = document.getElementById("status"),
+      replay = document.getElementById("replay");
+    function setFixed(done) {
+      vuln.hidden = done; fix.hidden = !done; tg1.classList.add("on"); tg2.classList.toggle("on", done);
+      status.textContent = done ? "Fixed with checks-effects-interactions. The PoC now reverts — verified."
+                                : "An agent finds the reentrancy and repairs it.";
+    }
+    function run() {
+      setFixed(false);
+      if (reduce) { setFixed(true); return; }
+      const code = scan.parentElement, hgt = code.clientHeight - 36;
+      scan.style.transition = "none"; scan.style.opacity = "1"; scan.style.transform = "translateY(0)";
+      void scan.offsetHeight;
+      scan.style.transition = "transform 1150ms ease-in-out"; scan.style.transform = "translateY(" + hgt + "px)";
+      setTimeout(() => { scan.style.opacity = "0"; setFixed(true); }, 1200);
+    }
+    replay.addEventListener("click", run);
+    setTimeout(run, 750);
+  })();
+
+  // ---- parallax tilt on the terminal (desktop) ----
+  (function () {
+    const stage = document.querySelector(".stage"), term = document.getElementById("term");
+    if (!stage || !term || reduce || matchMedia("(pointer: coarse)").matches) return;
+    stage.addEventListener("mousemove", e => {
+      const r = stage.getBoundingClientRect();
+      const px = (e.clientX - r.left) / r.width - .5, py = (e.clientY - r.top) / r.height - .5;
+      term.style.transform = `rotateY(${px * 6}deg) rotateX(${-py * 6}deg)`;
+    });
+    stage.addEventListener("mouseleave", () => { term.style.transform = "rotateY(0) rotateX(0)"; });
+  })();
+
+  // ---- count-up stats ----
+  (function () {
+    document.querySelectorAll("[data-count]").forEach(el => {
+      const target = +el.dataset.count; if (reduce) { el.textContent = target.toLocaleString(); return; }
+      let start = null; const dur = 1100;
+      function step(ts) { start = start || ts; const p = Math.min((ts - start) / dur, 1);
+        el.textContent = Math.round(target * (1 - Math.pow(1 - p, 3))).toLocaleString();
+        if (p < 1) requestAnimationFrame(step); }
+      requestAnimationFrame(step);
+    });
+  })();
+
+  // ---- duplicate marquee content for a seamless loop ----
+  (function () { const t = document.getElementById("track"); if (t) t.innerHTML += t.innerHTML; })();
+
+  // ---- reveal on scroll (opt-in via JS so no-JS/reduced-motion shows everything) ----
+  (function () {
+    const els = document.querySelectorAll(".reveal");
+    if (reduce || !("IntersectionObserver" in window)) { els.forEach(e => e.classList.add("in")); return; }
+    const io = new IntersectionObserver((entries) => {
+      entries.forEach(en => { if (en.isIntersecting) { en.target.classList.add("in"); io.unobserve(en.target); } });
+    }, { rootMargin: "0px 0px -8% 0px", threshold: 0.08 });
+    els.forEach(e => io.observe(e));
+    // reveal anything already in the first viewport immediately
+    requestAnimationFrame(() => els.forEach(e => { if (e.getBoundingClientRect().top < innerHeight) e.classList.add("in"); }));
+  })();
+
+  // ---- on-chain skill SVGs (verbatim tokenURI output) ----
+  const SVGS = {
+    1: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400" font-family="monospace"><rect width="400" height="400" fill="#0b0f17"/><rect x="10" y="10" width="380" height="380" rx="18" fill="none" stroke="#9ca3af" stroke-width="4"/><text x="30" y="50" fill="#e6edf3" font-size="22">AxVigil Skill</text><text x="30" y="78" fill="#8b949e" font-size="14">Agent #3</text><g stroke="#2dd4bf" fill="none" stroke-width="5"><circle cx="80" cy="200" r="38"/><path d="M110 176 l10 -14 l6 18 z" fill="#2dd4bf"/></g><text x="80" y="275" fill="#2dd4bf" font-size="13" text-anchor="middle">x1</text><circle cx="200" cy="200" r="44" fill="none" stroke="#30363d" stroke-dasharray="6 6"/><circle cx="320" cy="200" r="44" fill="none" stroke="#30363d" stroke-dasharray="6 6"/><text x="30" y="370" fill="#9ca3af" font-size="14">MAX BASIC</text></svg>`,
+    2: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400" font-family="monospace"><rect width="400" height="400" fill="#0b0f17"/><rect x="10" y="10" width="380" height="380" rx="18" fill="none" stroke="#facc15" stroke-width="4"/><text x="30" y="50" fill="#e6edf3" font-size="22">AxVigil Skill</text><text x="30" y="78" fill="#8b949e" font-size="14">Agent #3</text><g stroke="#2dd4bf" fill="none" stroke-width="5"><circle cx="80" cy="200" r="38"/><path d="M110 176 l10 -14 l6 18 z" fill="#2dd4bf"/></g><text x="80" y="275" fill="#2dd4bf" font-size="13" text-anchor="middle">x1</text><polyline points="160,230 180,215 195,222 210,165 225,210 240,195" fill="none" stroke="#f59e0b" stroke-width="5" stroke-linejoin="round"/><line x1="156" y1="240" x2="244" y2="240" stroke="#f59e0b" stroke-width="2"/><text x="200" y="275" fill="#f59e0b" font-size="13" text-anchor="middle">x1</text><circle cx="320" cy="200" r="44" fill="none" stroke="#30363d" stroke-dasharray="6 6"/><text x="30" y="370" fill="#facc15" font-size="14">MAX LEGENDARY</text></svg>`,
+    3: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400" font-family="monospace"><rect width="400" height="400" fill="#0b0f17"/><rect x="10" y="10" width="380" height="380" rx="18" fill="none" stroke="#facc15" stroke-width="4"/><text x="30" y="50" fill="#e6edf3" font-size="22">AxVigil Skill</text><text x="30" y="78" fill="#8b949e" font-size="14">Agent #3</text><g stroke="#2dd4bf" fill="none" stroke-width="5"><circle cx="80" cy="200" r="38"/><path d="M110 176 l10 -14 l6 18 z" fill="#2dd4bf"/></g><text x="80" y="275" fill="#2dd4bf" font-size="13" text-anchor="middle">x1</text><polyline points="160,230 180,215 195,222 210,165 225,210 240,195" fill="none" stroke="#f59e0b" stroke-width="5" stroke-linejoin="round"/><line x1="156" y1="240" x2="244" y2="240" stroke="#f59e0b" stroke-width="2"/><text x="200" y="275" fill="#f59e0b" font-size="13" text-anchor="middle">x1</text><g stroke="#a78bfa" fill="none" stroke-width="5"><circle cx="300" cy="200" r="16"/><path d="M316 200 h32 M336 200 v12 M346 200 v8"/></g><text x="320" y="275" fill="#a78bfa" font-size="13" text-anchor="middle">x1</text><text x="30" y="370" fill="#facc15" font-size="14">MAX LEGENDARY</text></svg>`
+  };
+  const svgframe = document.getElementById("svgframe");
+  function showStage(n) { svgframe.innerHTML = SVGS[n];
+    document.querySelectorAll(".stepbtns .pill").forEach(b => b.setAttribute("aria-pressed", String(+b.dataset.stage === n))); }
+  document.querySelectorAll(".stepbtns .pill").forEach(b => b.addEventListener("click", () => showStage(+b.dataset.stage)));
+  showStage(3);
+
+  // ---- rarity bar ----
+  const TIERS = [["Common",5444,"#8b93a1"],["Rare",1555,"#4b9fe0"],["Epic",622,"#a78bfa"],["Legendary",152,"#facc15"],["Hidden",4,"#fb7185"]];
+  const total = TIERS.reduce((s,t)=>s+t[1],0);
+  document.getElementById("rbar").innerHTML = TIERS.map(([name,n,c]) => {
+    const pct = n/total*100; return `<div class="rseg" style="flex:${n};background:${c}" title="${name}: ${n.toLocaleString()}">${pct>6?name:""}</div>`; }).join("");
+</script>
