@@ -8,6 +8,8 @@ AxVigil is a hackathon prototype for turning verified smart-contract fixes into 
 
 **Pages.** The project website is in [`web/index.html`](web/index.html) and the interactive pipeline demo in [`demo/index.html`](demo/index.html) — both are self-contained static pages (no build step; open directly or serve the folder).
 
+**Docs.** [`docs/hackathon-pitch.md`](docs/hackathon-pitch.md) is the concise submission pitch (the built Crucible is the star); [`docs/whitepaper.md`](docs/whitepaper.md) is the full vision — the Crucible that exists today plus the defense network it is the trust root for.
+
 ## Why AxVigil
 
 AI coding agents can generate patches, but it is difficult to distinguish a plausible answer from a fix that actually removes an exploit without breaking the contract. AxVigil connects four pieces:
