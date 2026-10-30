@@ -16,8 +16,10 @@ mainnet).
 | `bridge-phantom-deposit` (real incident) | 2 access control | 1 advanced | a bridge credits ERC20 deposits pulled via a low-level call that "succeeds" on an address with no code (the native resource maps to `address(0)`), so a deposit that moved nothing is withdrawn as real coin | refuse tokens with no code in the pull helper |
 
 `bridge-phantom-deposit` is the first **real-incident** challenge: Qubit QBridge (Jan 2022, already
-patched and public), rebuilt self-contained with no fork. Known gap 1: a patch of
-`require(token != address(0))` falsely passes. See [`../docs/realbank/`](../docs/realbank/README.md).
+patched and public), rebuilt self-contained with no fork. Only the class fix (reject codeless
+tokens) is accepted — `address(0)`-only instance patches (a `token != address(0)` guard, or
+un-listing `address(0)`) are rejected by a hidden codeless-token test. See
+[`../docs/realbank/`](../docs/realbank/README.md).
 
 Each PoC passes on the vulnerable version and fails on the patched one, so the
 grader scores the **differential**, not an absolute test.

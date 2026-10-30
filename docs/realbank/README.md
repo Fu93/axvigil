@@ -26,7 +26,9 @@ then withdraws it as real native coin locked by honest users.
 
 **Reference fix.** The pull helper refuses tokens with no code
 (`require(token.code.length > 0)`), which is the OpenZeppelin SafeERC20 / `Address`
-behaviour. Un-listing `address(0)` is also accepted.
+behaviour. This is the only accepted class of fix: patches that merely neutralize the
+`address(0)` instance (a `token != address(0)` guard, or un-listing `address(0)`) are
+**rejected**, because any other codeless address still phantom-deposits (see Closed gaps).
 
 ### Verify
 
@@ -38,18 +40,21 @@ The script renders 20 unique variants and checks that 20/20 reference fixes pass
 runs grader negative controls on seed 0:
 
 - A no-op patch fails.
-- The alternative un-list fix passes.
-- An over-eager "require a bool return" fix fails the hidden tests.
+- An over-eager "require a bool return" fix fails the hidden tests (it breaks no-return tokens).
 - A gutted deposit fails the hidden tests.
+- Both address(0)-only instance patches fail the hidden tests: a `token != address(0)`
+  guard (`instance_zero_address_guard`) and un-listing `address(0)` (`instance_unlist_zero`).
 
 The last recorded run is in [`verify_log.txt`](verify_log.txt).
 
-### Known gaps
+### Closed gaps
 
-1. **`require(token != address(0))` falsely passes.** The canonical PoC relies on the
-   `address(0)` special case. A patch that only blocks the zero address makes that PoC
-   revert, so `pocFailsAfterPatch` holds and the grader accepts it. Every other codeless
-   token is still exploitable. `realbank_verify.py` reproduces this as the
-   `known_gap1_zero_address_only` control, which is reported but does not fail the run.
-   Planned fix: add a hidden invariant test that a deposit is only credited for what the
-   bridge actually received, run against a codeless non-zero token.
+1. **`require(token != address(0))` (and un-listing `address(0)`) no longer pass** — closed
+   2026-10-30. The canonical PoC uses the `address(0)` special case, so a patch that only
+   neutralizes the zero address makes that PoC revert and would otherwise look fixed. But
+   the bug class is "a low-level call succeeds on any address with no code", so every
+   non-zero codeless token is still exploitable. The hidden test
+   `test_codelessNonZeroTokenCannotPhantomDeposit` lists a non-zero codeless token and
+   requires the deposit to be refused; only the class fix (reject codeless tokens) passes.
+   Because un-listing `address(0)` shares the identical blind spot, it is rejected too —
+   both are reproduced as negative controls in `realbank_verify.py`.

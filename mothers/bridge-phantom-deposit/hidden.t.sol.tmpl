@@ -36,6 +36,7 @@ contract HiddenTest is Test {
     address internal owner = makeAddr("owner");
     address internal alice = makeAddr("alice");
     address internal bob = makeAddr("bob");
+    address internal attacker = makeAddr("attacker");
     bytes32 internal constant RID_TOK = keccak256("tok");
     bytes32 internal constant RID_USDT = keccak256("usdt");
 
@@ -108,5 +109,34 @@ contract HiddenTest is Test {
         vm.prank(bob);
         vm.expectRevert(bytes("not owner"));
         bridge.fzzSetResource(keccak256("x"), address(tok));
+    }
+
+    /// @notice A listed resource whose token is a non-contract address (no code) must
+    ///         not allow a phantom deposit. The low-level transferFrom call "succeeds"
+    ///         against a codeless address and returns no data, so a deposit that moved
+    ///         nothing would be credited and then withdrawn as honest liquidity. This is
+    ///         the Qubit class: a patch that only blocks `address(0)` still leaves every
+    ///         other codeless address exploitable, so it must NOT pass. The class fix
+    ///         refuses any codeless token in the pull helper.
+    function test_codelessNonZeroTokenCannotPhantomDeposit() public {
+        address ghost = makeAddr("ghost"); // non-zero EOA, has no code
+        require(ghost != address(0) && ghost.code.length == 0, "test setup: ghost must be codeless");
+        bytes32 rid = keccak256("ghost-resource");
+        vm.prank(owner);
+        bridge.fzzSetResource(rid, ghost);
+
+        // honest native liquidity the phantom deposit would otherwise steal
+        vm.prank(alice);
+        bridge.fzzDepositNative{value: 4 ether}();
+
+        // the codeless-token deposit must be rejected by the pull helper
+        vm.prank(attacker);
+        vm.expectRevert();
+        bridge.fzzDeposit(rid, 4 ether);
+
+        // nothing was credited and honest liquidity is intact
+        assertEq(bridge.vzzLocked(rid, attacker), 0, "no phantom credit");
+        assertEq(bridge.fzzTotalNative(), 4 ether, "honest liquidity untouched");
+        assertEq(attacker.balance, 0, "attacker gained nothing");
     }
 }

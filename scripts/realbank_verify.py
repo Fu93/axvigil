@@ -54,8 +54,6 @@ def sub(name: str, patched_src: str, expect_pass: bool, label: str = "") -> bool
 
 results = []
 results.append(sub("noop_patch", orig, expect_pass=False))
-listed = [ln for ln in orig.splitlines() if "[address(0)] = true;" in ln][0]
-results.append(sub("alt_fix_unlist_zero", orig.replace(listed + "\n", ""), expect_pass=True))
 eager = orig.replace("(data.length == 0 || abi.decode(data, (bool)))",
                      "(data.length == 32 && abi.decode(data, (bool)))")
 results.append(sub("overeager_fix_requires_bool", eager, expect_pass=False))
@@ -63,13 +61,17 @@ gut = orig.replace('require(amount > 0, "zero amount");\n        ',
                    'require(false, "disabled");\n        ', 1)
 results.append(sub("gutted_deposit", gut, expect_pass=False))
 
-# Known gap 1: only blocking token == address(0) defeats the canonical PoC but leaves
-# every other codeless token exploitable. The grader currently ACCEPTS it (false pass).
-# Reported, not counted toward the exit code, until the hidden tests cover it.
+# Instance patches that only neutralize the address(0) case must BOTH be rejected:
+# the class is "a low-level call succeeds on any codeless address", so any non-zero
+# codeless token still phantom-deposits. The codeless-token hidden test rejects both.
+#   (1) guard the pull with token != address(0)
 zero_only = orig.replace('require(amount > 0, "zero amount");\n',
                          'require(amount > 0, "zero amount");\n        require(token != address(0), "zero token");\n', 1)
-sub("known_gap1_zero_address_only", zero_only, expect_pass=False,
-    label="KNOWN GAP 1 (grader accepts it; should fail)")
+results.append(sub("instance_zero_address_guard", zero_only, expect_pass=False))
+#   (2) unlist address(0). Removes the one reachable instance but leaves every other
+#       codeless token exploitable, so it is an instance patch, not the class fix.
+listed = [ln for ln in orig.splitlines() if "[address(0)] = true;" in ln][0]
+results.append(sub("instance_unlist_zero", orig.replace(listed + "\n", ""), expect_pass=False))
 
 shutil.rmtree(tmp, ignore_errors=True)
 sys.exit(rc or (0 if all(results) else 1))
