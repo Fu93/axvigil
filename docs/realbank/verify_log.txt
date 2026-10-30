@@ -1,0 +1,28 @@
+# python3 scripts/realbank_verify.py mothers/bridge-phantom-deposit 20   (2026-10-30T19:23Z, forge Version:)
+  seed    0  fp cde93054e8498d81  reference PASS
+  seed    1  fp 3d9c5e654a8e19bb  reference PASS
+  seed    2  fp 5270629be56f8c31  reference PASS
+  seed    3  fp bcf1d981991cfcde  reference PASS
+  seed    4  fp 20b9410d7d97479f  reference PASS
+  seed    5  fp ff6efda95de35935  reference PASS
+  seed    6  fp e3b77e35087894dd  reference PASS
+  seed    7  fp 3cc1a89669cb4c1b  reference PASS
+  seed    8  fp e93b5b4346500f84  reference PASS
+  seed    9  fp 9bf282a7bc9d0b49  reference PASS
+  seed   10  fp 11af3ade96748f0a  reference PASS
+  seed   11  fp 9cb11388b3da5609  reference PASS
+  seed   12  fp fba5c11cc53fc054  reference PASS
+  seed   13  fp e221ebabe454411f  reference PASS
+  seed   14  fp 88f314dee0cba2cf  reference PASS
+  seed   15  fp 83686a77ff7051a4  reference PASS
+  seed   16  fp 9b5044c16fb06f28  reference PASS
+  seed   17  fp aabf9b5f8db77f80  reference PASS
+  seed   18  fp 2cdd65e506c81f27  reference PASS
+  seed   19  fp 4a0e51d4341e53b5  reference PASS
+
+bridge-phantom-deposit: 20 rendered, 20 unique fingerprints, 20/20 reference solutions pass
+[noop_patch] passed=False proves=True failsAfter=False hidden=True limits=True  expect=False  ok
+[alt_fix_unlist_zero] passed=True proves=True failsAfter=True hidden=True limits=True  expect=True  ok
+[overeager_fix_requires_bool] passed=False proves=True failsAfter=True hidden=False limits=True  expect=False  ok
+[gutted_deposit] passed=False proves=True failsAfter=True hidden=False limits=True  expect=False  ok
+[known_gap1_zero_address_only] passed=True proves=True failsAfter=True hidden=True limits=True  expect=False  KNOWN GAP 1 (grader accepts it; should fail)

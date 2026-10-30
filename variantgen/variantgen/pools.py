@@ -44,6 +44,13 @@ POOLS: dict[str, list[str]] = {
     "noun_signer": ["signer", "authorizer", "issuer", "attestor", "approver", "notary"],
     "noun_voucher": ["used", "consumed", "redeemed", "spent", "seenVoucher", "settled"],
     "noun_digest": ["digest", "voucherHash", "message", "payload", "claimHash"],
+    # bridge-phantom-deposit mother (real incident: Qubit QBridge, Jan 2022)
+    "contract_bridge": ["Bridge", "Gateway", "Portal", "BridgeHandler", "Tunnel", "Conduit", "LockBox", "Custodian"],
+    "noun_resource_token": ["tokenOf", "resourceToken", "tokenForResource", "assetOf", "resourceAsset"],
+    "noun_listed": ["whitelisted", "allowed", "listed", "isSupported", "approvedToken"],
+    "verb_set_resource": ["setResource", "registerResource", "mapResource", "bindResource", "listResource"],
+    "verb_deposit_native": ["depositETH", "depositNative", "lockNative", "bridgeNative", "sendNative"],
+    "fn_pull": ["_safeTransferFrom", "_pullTokens", "_collect", "_take", "_receiveTokens"],
 }
 
 # Structurally-distinct harmless functions. {name} is replaced with a unique id.

@@ -1,0 +1,112 @@
+// SPDX-License-Identifier: MIT
+pragma solidity 0.8.28;
+
+import {Test} from "forge-std/Test.sol";
+import {Czz} from "../src/Czz.sol";
+
+contract HToken {
+    mapping(address => uint256) public balanceOf;
+    mapping(address => mapping(address => uint256)) public allowance;
+    function mint(address to, uint256 a) external { balanceOf[to] += a; }
+    function approve(address s, uint256 a) external returns (bool) { allowance[msg.sender][s] = a; return true; }
+    function transfer(address to, uint256 a) external returns (bool) {
+        balanceOf[msg.sender] -= a; balanceOf[to] += a; return true;
+    }
+    function transferFrom(address f, address to, uint256 a) external returns (bool) {
+        allowance[f][msg.sender] -= a; balanceOf[f] -= a; balanceOf[to] += a; return true;
+    }
+}
+
+/// @dev USDT-style: no return value on transfer / transferFrom.
+contract HTokenNoReturn {
+    mapping(address => uint256) public balanceOf;
+    mapping(address => mapping(address => uint256)) public allowance;
+    function mint(address to, uint256 a) external { balanceOf[to] += a; }
+    function approve(address s, uint256 a) external { allowance[msg.sender][s] = a; }
+    function transfer(address to, uint256 a) external { balanceOf[msg.sender] -= a; balanceOf[to] += a; }
+    function transferFrom(address f, address to, uint256 a) external {
+        allowance[f][msg.sender] -= a; balanceOf[f] -= a; balanceOf[to] += a;
+    }
+}
+
+contract HiddenTest is Test {
+    Czz internal bridge;
+    HToken internal tok;
+    HTokenNoReturn internal usdt;
+    address internal owner = makeAddr("owner");
+    address internal alice = makeAddr("alice");
+    address internal bob = makeAddr("bob");
+    bytes32 internal constant RID_TOK = keccak256("tok");
+    bytes32 internal constant RID_USDT = keccak256("usdt");
+
+    function setUp() public {
+        vm.prank(owner);
+        bridge = new Czz();
+        tok = new HToken();
+        usdt = new HTokenNoReturn();
+        vm.startPrank(owner);
+        bridge.fzzSetResource(RID_TOK, address(tok));
+        bridge.fzzSetResource(RID_USDT, address(usdt));
+        vm.stopPrank();
+        tok.mint(alice, 100 ether);
+        usdt.mint(alice, 100 ether);
+        vm.deal(alice, 10 ether);
+    }
+
+    function test_ownerIsDeployer() public view {
+        assertEq(bridge.vzzOwner(), owner);
+    }
+
+    function test_nativeDepositAndWithdraw() public {
+        vm.startPrank(alice);
+        bridge.fzzDepositNative{value: 3 ether}();
+        assertEq(bridge.vzzLocked(bridge.NATIVE_RESOURCE(), alice), 3 ether);
+        assertEq(bridge.fzzTotalNative(), 3 ether);
+        bridge.fzzWithdraw(bridge.NATIVE_RESOURCE(), 2 ether);
+        vm.stopPrank();
+        assertEq(alice.balance, 9 ether);
+        assertEq(bridge.fzzTotalNative(), 1 ether);
+    }
+
+    function test_erc20DepositAndWithdraw() public {
+        vm.startPrank(alice);
+        tok.approve(address(bridge), 40 ether);
+        bridge.fzzDeposit(RID_TOK, 40 ether);
+        assertEq(tok.balanceOf(address(bridge)), 40 ether);
+        assertEq(bridge.vzzLocked(RID_TOK, alice), 40 ether);
+        bridge.fzzWithdraw(RID_TOK, 15 ether);
+        vm.stopPrank();
+        assertEq(tok.balanceOf(alice), 75 ether);
+        assertEq(bridge.depositNonce(), 1);
+    }
+
+    function test_noReturnTokenStillWorks() public {
+        vm.startPrank(alice);
+        usdt.approve(address(bridge), 7 ether);
+        bridge.fzzDeposit(RID_USDT, 7 ether);
+        bridge.fzzWithdraw(RID_USDT, 7 ether);
+        vm.stopPrank();
+        assertEq(usdt.balanceOf(alice), 100 ether);
+    }
+
+    function test_depositWithoutAllowanceReverts() public {
+        vm.prank(alice);
+        vm.expectRevert();
+        bridge.fzzDeposit(RID_TOK, 1 ether);
+    }
+
+    function test_cannotWithdrawMoreThanLocked() public {
+        bytes32 rid = bridge.NATIVE_RESOURCE();
+        vm.startPrank(alice);
+        bridge.fzzDepositNative{value: 1 ether}();
+        vm.expectRevert(bytes("exceeds locked"));
+        bridge.fzzWithdraw(rid, 2 ether);
+        vm.stopPrank();
+    }
+
+    function test_nonOwnerCannotSetResource() public {
+        vm.prank(bob);
+        vm.expectRevert(bytes("not owner"));
+        bridge.fzzSetResource(keccak256("x"), address(tok));
+    }
+}
