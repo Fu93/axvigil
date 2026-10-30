@@ -64,7 +64,7 @@ Web3 當下有兩個事實並排擺著:
 ## 鏈上實證(BSC 測試網, chain 97)
 
 - **已部署並在鏈上實測。** `AxVigilSkill` `0x3377…CD18`、`AxVigilCollectible` `0x0658…4658`、Agent ID 註冊表 `0x7Aa4…d45e`。
-- **完整流程已對 live 合約跑過:** 一個做了真實 RPC Agent ID ownership 檢查的後端,為一個*伺服器發放的*傳奇(pool 2)solve 簽了 MintAuth;Agent ID 1 鑄出 token #1(batch 1 已 commit,reveal 待進行)。`submissionHash 0x8083…64df`。
+- **完整流程已對 live 合約跑過:** 一個做了真實 RPC Agent ID ownership 檢查的後端,為一個*伺服器發放的*傳奇(pool 2)solve 簽了 MintAuth;Agent ID 1 鑄出 token #1(batch 1 已 commit,之後已揭示:tier COMMON)。`submissionHash 0x8083…64df`。
 - **全部 80 個變體自我驗證:** 產生器在每個變體出貨前,都會把它的參考解丟進真實的驗證器跑過。CI(Foundry + Python)在 `main` 綠燈。
 
 這裡沒有任何東西是模擬的:agent 看到的題目、拿到的評分、鏈上的紀錄,是同一條管線。

@@ -88,11 +88,38 @@
     "submissionHash": "0x80834fbc89e0be163ee745d19461c788c4ed86441c513cc6203c183b000864df",
     "mintedPerAgent": 1,
     "skillTotalSolves": 1,
-    "revealed": false
+    "revealed": true
+  },
+  "liveDemo": {
+    "reveal": {
+      "description": "Batch 1 seed revealed and token #1's tier drawn with contracts/script/BscReveal.s.sol (reveal-only, chain-97 guard, seed hash checked before broadcast).",
+      "script": "contracts/script/BscReveal.s.sol",
+      "batchId": 1,
+      "tokenId": 1,
+      "agentId": 1,
+      "seedRevealTx": "0x130571a235fc52f11a9615f3f485b49cde1f24c29a1e255314b0a19c8e7e2072",
+      "seedRevealBlock": 139859136,
+      "tokenRevealTx": "0x8db5db92734979ee36dbc916e76b67c7f3f24ad9d570027f0ddbdc4f69be294b",
+      "tokenRevealBlock": 139859138,
+      "revealedAt": "2026-10-30T19:10:25Z",
+      "tokensRevealed": 1,
+      "vulnClass": 2,
+      "difficulty": 2,
+      "pool": 2,
+      "tier": 0,
+      "tierName": "COMMON",
+      "artId": 20000,
+      "tokenURI": "20000",
+      "batchRevealed": true,
+      "gasUsed": 179903,
+      "gasPriceWei": "100000000",
+      "costBNB": "0.0000179903",
+      "note": "revealSeed closes batch 1, so mint() reverts with NoOpenBatch until the owner commits the next batch seed."
+    }
   },
   "notes": [
     "MockAgentID is an open-mint testnet/demo registry, not a production registry.",
-    "The batch-1 seed is kept local (outside the repo) and is not stored in this manifest."
+    "The batch-1 seed was kept local (outside the repo) until reveal; it is not stored in this manifest and is now public on-chain via liveDemo.reveal.seedRevealTx."
   ],
   "previous": {
     "network": "BSC Testnet",

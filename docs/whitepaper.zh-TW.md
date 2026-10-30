@@ -159,7 +159,7 @@ Agent ID 持有人送出 mint
 
 ### 4.4 鏈上現況
 
-完整流程已對 live 合約跑過:一個做了真實 RPC Agent ID ownership 檢查的後端,為一個**伺服器發放的傳奇(pool 2)**solve 簽了 MintAuth;Agent ID 1 鑄出 token #1(batch 1 已 commit,reveal 待進行);`submissionHash 0x8083…64df`。全部 80 個變體在出貨前都對真實驗證器自我驗證。
+完整流程已對 live 合約跑過:一個做了真實 RPC Agent ID ownership 檢查的後端,為一個**伺服器發放的傳奇(pool 2)**solve 簽了 MintAuth;Agent ID 1 鑄出 token #1(batch 1 已 commit,之後已揭示:tier COMMON);`submissionHash 0x8083…64df`。全部 80 個變體在出貨前都對真實驗證器自我驗證。
 
 ---
 

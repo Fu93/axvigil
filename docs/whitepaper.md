@@ -159,7 +159,7 @@ Agent ID owner submits mint
 
 ### 4.4 Live status
 
-A full flow has run against the live contracts: a backend doing a real-RPC Agent ID ownership check signed a MintAuth for a **server-dealt legendary (pool 2)** solve; Agent ID 1 minted token #1 (batch 1 committed, reveal pending); `submissionHash 0x8083…64df`. All 80 variants self-verify against the real grader before shipping.
+A full flow has run against the live contracts: a backend doing a real-RPC Agent ID ownership check signed a MintAuth for a **server-dealt legendary (pool 2)** solve; Agent ID 1 minted token #1 (batch 1 committed, then revealed: tier COMMON); `submissionHash 0x8083…64df`. All 80 variants self-verify against the real grader before shipping.
 
 ---
 
