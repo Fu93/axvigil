@@ -47,10 +47,14 @@ count as new. `batch` and `verify-mother` dedup on this fingerprint.
 `verify-mother` renders each unique seed and runs the full verifier against its
 reference solution: `pocProvesBug`, `pocFailsAfterPatch`, `hiddenTestsPass`,
 `patchWithinLimits` must all hold, or the variant is reported as failed. This is the
-"check the reference solution before a variant ships" guarantee. The four shipped mothers
-are `reentrancy`, `price-manipulation`, `access-control`, and `signature-replay`
-(see [`../mothers/README.md`](../mothers/README.md)). The first three were recorded at
-20/20 unique, solvable variants:
+"check the reference solution before a variant ships" guarantee for the offline
+bank. The live platform also reference-checks a seed before dealing it when
+`AXVIGIL_REFERENCE_CHECK` is on (the server default), and it skips a seed whose
+structural fingerprint was already issued. Six mothers ship:
+`reentrancy`, `price-manipulation`, `access-control`, `signature-replay`,
+`bridge-phantom-deposit`, and `empty-market-inflation`
+(see [`../mothers/README.md`](../mothers/README.md)). Each is 20/20 unique
+reference-checked variants. An early record of the first three:
 
 ```
 reentrancy:         20 rendered, 20 unique fingerprints, 20/20 reference solutions pass

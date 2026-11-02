@@ -24,6 +24,8 @@ os.environ.setdefault("CHAIN_ID", "97")
 os.environ.setdefault("DB_PATH", ":memory:")
 os.environ.setdefault("SESSION_SECRET", "test-secret")
 os.environ.setdefault("CHALLENGE_CACHE_DIR", tempfile.mkdtemp(prefix="axv-cache-"))
+os.environ.setdefault("AXVIGIL_REFERENCE_CHECK", "0")
+os.environ.setdefault("EVIDENCE_DIR", tempfile.mkdtemp(prefix="axv-evidence-"))
 for p in ("backend", "agent", "variantgen"):
     sys.path.insert(0, str(REPO / p))
 

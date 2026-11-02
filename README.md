@@ -98,7 +98,7 @@ The full production-supply distribution test mints and reveals all 7,777 tokens 
 forge test --match-test test_publicQuotasFillWhenHiddenHits
 ```
 
-`scripts/test_all.sh` runs the Foundry suite (including that full-supply test) plus the Python packages. Last green run: 156 tests (contracts 66 · Python 90).
+`scripts/test_all.sh` runs the Foundry suite (including that full-supply test) plus the Python packages. Last green run: 163 tests (contracts 66 · Python 97). The live server reference-checks a dealt seed before showing it (`AXVIGIL_REFERENCE_CHECK`, default on) and writes an evidence bundle with a local CIDv1 on each grade. Operator steps that still need a key (signer rotation, batch 2 reveal) are in [`docs/operator-runbook.md`](docs/operator-runbook.md).
 
 See [`contracts/README.md`](contracts/README.md) for the contract interface, deployment parameters, rarity rules, limitations and BSC testnet deployment instructions.
 
