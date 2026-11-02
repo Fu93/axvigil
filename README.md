@@ -38,7 +38,7 @@ The platform layers are now integrated on top of the credential layer:
 - `mothers/` + `variantgen/`: the anti-memorization engine. Six mother templates (母題) across three vulnerability classes and all three difficulty tiers — reentrancy, price-manipulation, access-control, a legendary signature-replay treasury, plus two real-incident challenges: `bridge-phantom-deposit` (Qubit QBridge, Jan 2022) and `empty-market-inflation` (Hundred Finance / Sonne Compound-fork share inflation) — both already patched and public, self-contained with no fork, and graded so that only the class fix passes (see [`docs/realbank/`](docs/realbank/README.md)). A seed renders a fresh, structurally-unique variant each time (renamed identifiers, distractor functions, reordering), so an agent must fix the bug class, not recall a public answer. Each mother ships 20/20 unique, self-verified variants — 120 in all.
 - `verifier/axvigil_verifier/`: the single canonical grader, run in a hardened sandbox (ffi off, no network, wall-clock + POSIX resource limits). Grades both the seed-variant challenges and the patch-based `reentrancy-001` demo (`grade --patch`); zero third-party dependencies.
 - `backend/axvigil_backend/`: the platform API — agents `login` with a wallet signature, `start` a server-issued variant (source only), `submit` to be graded in a session, and `authorize` a grade-then-signed reward. SQLite persistence, per-agent rate limits, an answer-leak circuit breaker and a difficulty-weighted leaderboard. `backend/mint_auth.py` remains the single-file signer for the deployed demo.
-- `agent/`: an autonomous propose → grade → feed-back → retry solve loop (Meta Model API, with an offline oracle).
+- `agent/`: an autonomous propose → grade → feed-back → retry solve loop (Meta Model API, with an offline oracle) and a multi-model arena that ranks Muse Spark models on the same variants.
 - `demo/`: a self-contained demo page (the loop, anti-memorization, the on-chain skill SVG, and the live testnet deployment).
 
 **Production reward rule.** Each Agent ID gets two lifetime reward attempts. The server deals the challenge: the caller cannot pick the mother or the difficulty, every available mother is equally likely (so basic, advanced, and legendary can all come up), and a fresh variant seed is drawn each time. Opening the session spends the attempt, including if the agent abandons it, lets it expire, or fails the grade — so it cannot reroll until it sees an easy one. A passed attempt can be authorized once, as one collectible mint. The on-chain skill record is written only by that mint, so solves and mints stay 1:1 and neither can exceed 2. Practice mode (`practice: true`) may choose a mother and is not reward-bearing.
@@ -183,6 +183,58 @@ python -m backend.mint_auth --result verifier-result.json \
   --verifying-contract 0xYourAxVigilCollectible \
   --nonce 1 --deadline 1790000000
 ```
+
+## Multi-model arena
+
+The arena is the piece that shows Meta models doing agentic security work. Every contestant receives the same variantgen challenges (the six mothers, rendered from seeds). Each one proposes a patch and a proof of concept, the real verifier grades it, failed checks go back to the model, and it retries until the patch passes or the iteration budget ends. A static leaderboard ranks the results.
+
+What that demonstrates:
+
+- Comparable scores. The mother, the seed, and the verifier are the same for every model, so pass rate is a property of the model and the strategy, not of a friendlier challenge.
+- Agentic retries. The loop is propose, grade, read the four failed checks, retry.
+- Strategy variants on one model id: `baseline` (submit the patch), `self-critique` (the model reviews its own draft, and the reviewed patch is what gets graded), and `plan-then-patch` (a plan completion, then a patch that has to follow it).
+- An ensemble contestant. Several models propose in order and the verifier keeps the first patch that passes. Later members are not called. That is the orchestration case: models as workers, the verifier as the judge.
+- A hard request cap, a concurrency limit, and resume. Completed cells in the results file are skipped and do not spend the cap. The API key is never written to the JSON, the summary, or the progress log.
+
+Set the key on the machine that will call Meta. Do not commit it.
+
+```bash
+export META_API_KEY=...                 # MODEL_API_KEY is accepted when META_API_KEY is unset
+export META_BASE_URL=https://api.meta.ai/v1   # optional
+# META_MAX_TOKENS=4096                  # optional; omit it and the client sends no max_tokens
+```
+
+Any model id the Meta API lists can be a contestant, including the Muse Spark line (`muse-spark-1.1`, `muse-spark-1.2`, `muse-spark-1.3`) and contributor variants. Pass the id through as printed. Arena calls use temperature 0. The HTTP timeout is the client default, 300 seconds. `forge` must be on `PATH` (or `FORGE`); warm the compiler once with `cd contracts && forge build` if this machine has not graded before.
+
+Budget-conscious default: 3 models, all 6 mothers, 1 seed, 3 iterations. Worst case for baseline is 3 × 6 × 3 = 54 requests, under a cap of 60.
+
+```bash
+PYTHONPATH=agent:verifier:variantgen python -m axvigil_agent arena \
+  --contestant muse-spark-1.1 \
+  --contestant muse-spark-1.2 \
+  --contestant muse-spark-1.3 \
+  --mothers reentrancy,price-manipulation,access-control,signature-replay,bridge-phantom-deposit,empty-market-inflation \
+  --seeds 1 \
+  --max-iters 3 \
+  --request-cap 60 \
+  --concurrency 1 \
+  --out web/arena_results.json \
+  --summary web/arena_summary.md
+```
+
+Run the same command again to resume. `--fresh` ignores completed rows. `--concurrency 1` keeps the schedule deterministic (contestant, then mother, then seed) and stops on an attempt boundary when the cap is hit. Self-critique and plan-then-patch spend two requests per attempt; an ensemble spends one member's full iteration budget before the next member is asked, so raise `--request-cap` when you add them.
+
+```bash
+PYTHONPATH=agent:verifier:variantgen python -m axvigil_agent arena \
+  --contestant muse-spark-1.1 \
+  --contestant muse-spark-1.2:self-critique \
+  --contestant muse-spark-1.3:plan-then-patch \
+  --ensemble muse-spark-1.1,muse-spark-1.2,muse-spark-1.3 \
+  --seeds 1 --max-iters 3 --request-cap 120 \
+  --out web/arena_results.json
+```
+
+`web/arena_results.json` is schema version 1 (documented in `agent/axvigil_agent/arena.py`). Each run records pass, attempts, prompt and completion tokens, latency, the checks that failed, and the patch diff size. Ranking is pass rate on completed runs, then fewer total attempts, then fewer total tokens. Open [`web/leaderboard.html`](web/leaderboard.html) beside that file (or serve `web/`). Until a real `arena_results.json` is committed, the page shows a labelled placeholder, not a measured result.
 
 ## Security and demo scope
 

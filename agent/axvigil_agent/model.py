@@ -25,6 +25,30 @@ class ModelClient(Protocol):
         ...
 
 
+class ClientStop(Exception):
+    """The client cannot serve another completion. The solve loop stops and keeps
+    any attempts already graded. The arena raises this when the request cap is hit."""
+
+    def __init__(self, reason: str = "stopped"):
+        super().__init__(reason)
+        self.reason = reason
+
+
+def usage_from_response(data: object) -> dict:
+    """OpenAI-style usage, normalised to prompt/completion counts. Missing usage is zero."""
+    usage = data.get("usage") if isinstance(data, dict) else None
+    if not isinstance(usage, dict):
+        return {"prompt": 0, "completion": 0}
+
+    def num(key: str) -> int:
+        try:
+            return int(usage.get(key) or 0)
+        except (TypeError, ValueError):
+            return 0
+
+    return {"prompt": num("prompt_tokens"), "completion": num("completion_tokens")}
+
+
 def checked_max_tokens(value: int | None) -> int | None:
     """A positive completion cap, or None when the request should not set one."""
     if value is None:
@@ -62,6 +86,7 @@ class MetaModelClient:
         model: str | None = None,
         timeout_s: int = 300,
         max_tokens: int | None = None,
+        temperature: float = 0.2,
     ):
         # META_API_KEY is this repo's name. MODEL_API_KEY is accepted because some
         # Meta quickstarts export that name instead.
@@ -69,6 +94,8 @@ class MetaModelClient:
         self.base_url = (base_url or os.environ.get("META_BASE_URL", "https://api.meta.ai/v1")).rstrip("/")
         self.model = model or os.environ.get("META_MODEL", "muse-spark-1.1")
         self.timeout_s = timeout_s
+        self.temperature = temperature
+        self.last_usage = {"prompt": 0, "completion": 0}
         # An explicit argument wins. None reads META_MAX_TOKENS (unset = no cap).
         self.max_tokens = checked_max_tokens(max_tokens) if max_tokens is not None else max_tokens_from_env()
         if not self.api_key:
@@ -80,7 +107,7 @@ class MetaModelClient:
     def completion_payload(self, system: str, user: str) -> dict:
         payload = {
             "model": self.model,
-            "temperature": 0.2,
+            "temperature": self.temperature,
             "messages": [
                 {"role": "system", "content": system},
                 {"role": "user", "content": user},
@@ -105,8 +132,13 @@ class MetaModelClient:
             data = json.loads(resp.read().decode("utf-8"))
         # Reasoning models can return content=null when the reply is cut off.
         # Hand the solver an empty string so it takes the unparseable-retry path
-        # instead of crashing on None.strip().
+        # instead of crashing on None.strip(). Token counts stay on `last_usage`
+        # (zero when the provider omits `usage`). The API key is not logged.
+        self.last_usage = usage_from_response(data)
         return message_text(data["choices"][0]["message"])
+
+    def __repr__(self) -> str:
+        return f"MetaModelClient(model={self.model!r}, base_url={self.base_url!r})"
 
 
 def message_text(message: object) -> str:
