@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400" font-family="monospace" role="img" aria-labelledby="skill7title skill7desc">
+  <title id="skill7title">AxVigil Skill #7</title>
+  <desc id="skill7desc">On-chain SVG from AxVigilSkill token 7. Gold legendary frame. Access-control key emblem times one. Reentrancy and price-manipulation slots are still empty.</desc>
+  <rect width="400" height="400" fill="#0b0f17"/>
+  <rect x="10" y="10" width="380" height="380" rx="18" fill="none" stroke="#facc15" stroke-width="4"/>
+  <text x="30" y="50" fill="#e6edf3" font-size="22">AxVigil Skill</text>
+  <text x="30" y="78" fill="#8b949e" font-size="14">Agent #7</text>
+  <circle cx="80" cy="200" r="44" fill="none" stroke="#30363d" stroke-dasharray="6 6"/>
+  <circle cx="200" cy="200" r="44" fill="none" stroke="#30363d" stroke-dasharray="6 6"/>
+  <g stroke="#a78bfa" fill="none" stroke-width="5">
+    <circle cx="300" cy="200" r="16"/>
+    <path d="M316 200 h32 M336 200 v12 M346 200 v8"/>
+  </g>
+  <text x="320" y="275" fill="#a78bfa" font-size="13" text-anchor="middle">x1</text>
+  <text x="30" y="370" fill="#facc15" font-size="14">MAX LEGENDARY</text>
+</svg>
