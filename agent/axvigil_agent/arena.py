@@ -60,6 +60,8 @@ Strategies
   self-critique     the model reviews its own draft and the reviewed JSON is
                     what the verifier sees
   plan-then-patch   a plan completion, then a patch completion that must follow it
+  agentic           tool-using loop (read, list, public forge, patch, submit).
+                    The transcript is stored on the run as ``evidence``.
   ensemble          each member model runs the member strategy in order; the
                     verifier keeps the first passing patch and later members
                     are not called
@@ -87,6 +89,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 from .model import ClientStop
+from .agentic import run_agentic
 from .solver import solve
 
 SCHEMA_VERSION = 1
@@ -96,7 +99,7 @@ CHECK_NAMES = (
     "hiddenTestsPass",
     "patchWithinLimits",
 )
-STRATEGIES = ("baseline", "self-critique", "plan-then-patch")
+STRATEGIES = ("baseline", "self-critique", "plan-then-patch", "agentic")
 DEFAULT_MOTHERS = (
     "reentrancy",
     "price-manipulation",
@@ -124,12 +127,14 @@ RUN_FIELDS = (
     "patchDiffLines",
     "ensembleWinner",
     "error",
+    "evidence",
 )
 SCHEMA = {
     "version": SCHEMA_VERSION,
     "description": (
         "Arena ledger. ranking is pass rate on completed runs, then fewer "
-        "total attempts, then fewer total tokens (prompt + completion)."
+        "total attempts, then fewer total tokens (prompt + completion). "
+        "Agentic runs add evidence.transcript (tool calls and trimmed results)."
     ),
     "run": list(RUN_FIELDS),
     "tokens": ["prompt", "completion"],
@@ -420,6 +425,7 @@ class _Meter:
         self.inner = inner
         self.budget = budget
         self.sink = sink
+        self.last_usage = {"prompt": 0, "completion": 0}
 
     def complete(self, system: str, user: str) -> str:
         if not self.budget.try_acquire():
@@ -433,7 +439,25 @@ class _Meter:
         self.sink.prompt += prompt
         self.sink.completion += completion
         self.sink.calls += 1
+        self.last_usage = {"prompt": prompt, "completion": completion}
         return text
+
+    def complete_turn(self, messages, *, tools=None):
+        if not self.budget.try_acquire():
+            raise ClientStop("request_cap")
+        try:
+            turn = self.inner.complete_turn(messages, tools=tools)
+        except ClientStop:
+            raise
+        except Exception:
+            self.sink.calls += 1
+            raise
+        prompt, completion = _read_usage(self.inner)
+        self.sink.prompt += prompt
+        self.sink.completion += completion
+        self.sink.calls += 1
+        self.last_usage = {"prompt": prompt, "completion": completion}
+        return turn
 
 
 class _Strategy:
@@ -545,6 +569,12 @@ def run_arena(
     on_event=None,
     secrets: list[str] | None = None,
     render_fn=None,
+    tool_protocol: str = "tools",
+    max_steps: int = 6,
+    max_output_bytes: int = 4096,
+    agent_wall_clock_s: float = 180,
+    token_budget: int = 20000,
+    forge_runner=None,
 ) -> dict:
     """Run the matrix. ``client_factory(model_id)`` must return a fresh client.
 
@@ -605,6 +635,12 @@ def run_arena(
             timeout_s=timeout_s,
             emit=emit,
             secrets=secret_values,
+            tool_protocol=tool_protocol,
+            max_steps=max_steps,
+            max_output_bytes=max_output_bytes,
+            agent_wall_clock_s=agent_wall_clock_s,
+            token_budget=token_budget,
+            forge_runner=forge_runner,
         )
 
     if concurrency <= 1:
@@ -711,6 +747,12 @@ def _run_cell(
     timeout_s: int,
     emit,
     secrets: list[str],
+    tool_protocol: str = "tools",
+    max_steps: int = 6,
+    max_output_bytes: int = 4096,
+    agent_wall_clock_s: float = 180,
+    token_budget: int = 20000,
+    forge_runner=None,
 ) -> dict:
     started = time.perf_counter()
     sink = _Sink()
@@ -721,7 +763,7 @@ def _run_cell(
             meta = json.loads((challenge_dir / "challenge.json").read_text())
             target = meta["targetFile"]
             original = (challenge_dir / "src" / target).read_text()
-            solved, winner, cut_short, last_patch, attempts, failed, challenge_id = _solve_contestant(
+            solved, winner, cut_short, last_patch, attempts, failed, challenge_id, evidence = _solve_contestant(
                 task.contestant,
                 challenge_dir,
                 seed=task.seed,
@@ -734,6 +776,12 @@ def _run_cell(
                 solc=solc,
                 timeout_s=timeout_s,
                 emit=emit,
+                tool_protocol=tool_protocol,
+                max_steps=max_steps,
+                max_output_bytes=max_output_bytes,
+                agent_wall_clock_s=agent_wall_clock_s,
+                token_budget=token_budget,
+                forge_runner=forge_runner,
             )
         diff = changed_lines(original, last_patch) if isinstance(last_patch, str) else 0
         status = "completed" if solved or not cut_short else "budget"
@@ -741,7 +789,7 @@ def _run_cell(
             task, challenge_id=challenge_id or f"{task.mother}-{task.seed}",
             status=status, passed=solved, attempts=attempts, sink=sink,
             latency_ms=_latency(started), failed=failed if not solved else [],
-            diff=diff, winner=winner, error=None,
+            diff=diff, winner=winner, error=None, evidence=evidence,
         )
         emit(
             f"[arena] {task.run_id} status={status} pass={solved} "
@@ -758,6 +806,44 @@ def _run_cell(
         )
 
 
+def _live_grade(*args, **kwargs):
+    import axvigil_agent.solver as solver_mod
+    return solver_mod._grade(*args, **kwargs)
+
+
+def _run_agentic_member(
+    client, challenge_dir, *, seed, grader, forge_bin, solc, timeout_s, emit,
+    tool_protocol, max_steps, max_output_bytes, agent_wall_clock_s, token_budget,
+    forge_runner,
+):
+    result = run_agentic(
+        client, challenge_dir, protocol=tool_protocol, max_steps=max_steps,
+        max_output_bytes=max_output_bytes, wall_clock_s=agent_wall_clock_s,
+        token_budget=token_budget, forge_runner=forge_runner,
+        forge_bin=forge_bin, solc=solc, forge_timeout_s=timeout_s,
+    )
+    meta = json.loads((Path(challenge_dir) / "challenge.json").read_text())
+    evidence = result.evidence(tool_protocol)
+    cut = result.stop_reason == "request_cap"
+    if emit:
+        emit(f"[agentic] stop={result.stop_reason} steps={result.steps}")
+    if not result.patch or not result.poc:
+        return False, cut, result.patch, [], meta.get("challengeId"), evidence
+    grade_fn = grader if grader is not None else _live_grade
+    res = grade_fn(
+        challenge_dir, meta["targetFile"], result.patch, result.poc,
+        seed, forge_bin, solc, timeout_s,
+    )
+    checks = {
+        "pocProvesBug": res.pocProvesBug,
+        "pocFailsAfterPatch": res.pocFailsAfterPatch,
+        "hiddenTestsPass": res.hiddenTestsPass,
+        "patchWithinLimits": res.patchWithinLimits,
+    }
+    failed = [] if res.passed else _failed_checks(checks)
+    return bool(res.passed), cut, result.patch, failed, meta.get("challengeId"), evidence
+
+
 def _solve_contestant(
     contestant: Contestant,
     challenge_dir: Path,
@@ -772,6 +858,12 @@ def _solve_contestant(
     solc: str | None,
     timeout_s: int,
     emit,
+    tool_protocol: str = "tools",
+    max_steps: int = 6,
+    max_output_bytes: int = 4096,
+    agent_wall_clock_s: float = 180,
+    token_budget: int = 20000,
+    forge_runner=None,
 ):
     if contestant.strategy == "ensemble":
         models = contestant.models
@@ -790,13 +882,38 @@ def _solve_contestant(
     challenge_id = None
     solved = False
     ran = False
+    evidence = None
 
     for model in models:
         if budget.exhausted:
             cut_short = True
             break
         raw = client_factory(model)
-        client = _Strategy(_Meter(raw, budget, sink), strategy)
+        metered = _Meter(raw, budget, sink)
+        if strategy == "agentic":
+            solved_one, cut_one, patch, failed_one, challenge_id, evidence = _run_agentic_member(
+                metered, challenge_dir, seed=seed, grader=grader, forge_bin=forge_bin,
+                solc=solc, timeout_s=timeout_s, emit=emit, tool_protocol=tool_protocol,
+                max_steps=max_steps, max_output_bytes=max_output_bytes,
+                agent_wall_clock_s=agent_wall_clock_s, token_budget=token_budget,
+                forge_runner=forge_runner,
+            )
+            ran = True
+            attempts += 1 if patch else 0
+            if patch is not None:
+                last_patch = patch
+            failed = failed_one
+            if cut_one:
+                cut_short = True
+                break
+            if solved_one:
+                solved = True
+                failed = []
+                if contestant.strategy == "ensemble":
+                    winner = model
+                break
+            continue
+        client = _Strategy(metered, strategy)
         outcome = solve(
             client, challenge_dir, seed=seed, max_iters=max_iters, grader=grader,
             forge_bin=forge_bin, solc=solc, timeout_s=timeout_s, on_event=emit,
@@ -819,7 +936,7 @@ def _solve_contestant(
             break
     if not ran and cut_short:
         failed = []
-    return solved, winner, cut_short, last_patch, attempts, failed, challenge_id
+    return solved, winner, cut_short, last_patch, attempts, failed, challenge_id, evidence
 
 
 def _latency(started: float) -> int:
@@ -839,6 +956,7 @@ def _record(
     diff: int,
     winner: str | None,
     error: str | None,
+    evidence: dict | None = None,
 ) -> dict:
     models = list(task.contestant.models) if task.contestant.strategy == "ensemble" else [task.contestant.model]
     return {
@@ -860,4 +978,5 @@ def _record(
         "patchDiffLines": diff,
         "ensembleWinner": winner,
         "error": error,
+        "evidence": evidence,
     }

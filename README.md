@@ -98,7 +98,7 @@ The full production-supply distribution test mints and reveals all 7,777 tokens 
 forge test --match-test test_publicQuotasFillWhenHiddenHits
 ```
 
-`scripts/test_all.sh` runs the Foundry suite (including that full-supply test) plus the Python packages. Last green run: 196 tests (contracts 75 · Python 121). One Docker image check is skipped until `axvigil-sandbox:1.8.7` is built. The live server reference-checks a dealt seed before showing it (`AXVIGIL_REFERENCE_CHECK`, default on) and writes an evidence bundle with a local CIDv1 on each grade. The mined signer rotation, batch-2 reveal, and 2-of-3 mint are recorded in [`docs/operator-runbook.md`](docs/operator-runbook.md). Repeating them still needs keys that stay out of git.
+`scripts/test_all.sh` runs the Foundry suite (including that full-supply test) plus the Python packages. Last green run: 209 tests (contracts 75 · Python 134). One Docker image check is skipped until `axvigil-sandbox:1.8.7` is built. The live server reference-checks a dealt seed before showing it (`AXVIGIL_REFERENCE_CHECK`, default on) and writes an evidence bundle with a local CIDv1 on each grade. The mined signer rotation, batch-2 reveal, and 2-of-3 mint are recorded in [`docs/operator-runbook.md`](docs/operator-runbook.md). Repeating them still needs keys that stay out of git.
 
 See [`contracts/README.md`](contracts/README.md) for the contract interface, deployment parameters, rarity rules, limitations and BSC testnet deployment instructions.
 
@@ -192,7 +192,7 @@ What that demonstrates:
 
 - Comparable scores. The mother, the seed, and the verifier are the same for every model, so pass rate is a property of the model and the strategy, not of a friendlier challenge.
 - Agentic retries. The loop is propose, grade, read the four failed checks, retry.
-- Strategy variants on one model id: `baseline` (submit the patch), `self-critique` (the model reviews its own draft, and the reviewed patch is what gets graded), and `plan-then-patch` (a plan completion, then a patch that has to follow it).
+- Strategy variants on one model id: `baseline` (submit the patch), `self-critique` (the model reviews its own draft, and the reviewed patch is what gets graded), `plan-then-patch` (a plan completion, then a patch that has to follow it), and `agentic` (a tool-using loop: read files, run the public PoC and public tests, apply a diff, then submit). Hidden tests and the reference solution are not in the tool workspace. The transcript of tool calls and trimmed results is stored on the run as `evidence`.
 - An ensemble contestant. Several models propose in order and the verifier keeps the first patch that passes. Later members are not called. That is the orchestration case: models as workers, the verifier as the judge.
 - A hard request cap, a concurrency limit, and resume. Completed cells in the results file are skipped and do not spend the cap. The API key is never written to the JSON, the summary, or the progress log.
 
@@ -234,7 +234,44 @@ PYTHONPATH=agent:verifier:variantgen python -m axvigil_agent arena \
   --out web/arena_results.json
 ```
 
-`web/arena_results.json` is schema version 1 (documented in `agent/axvigil_agent/arena.py`). Each run records pass, attempts, prompt and completion tokens, latency, the checks that failed, and the patch diff size. Ranking is pass rate on completed runs, then fewer total attempts, then fewer total tokens. Open [`web/leaderboard.html`](web/leaderboard.html) beside that file (or serve `web/`). Until a real `arena_results.json` is committed, the page shows a labelled placeholder, not a measured result.
+`web/arena_results.json` is schema version 1 (documented in `agent/axvigil_agent/arena.py`). Each run records pass, attempts, prompt and completion tokens, latency, the checks that failed, and the patch diff size. Agentic runs also record `evidence.transcript`. Ranking is pass rate on completed runs, then fewer total attempts, then fewer total tokens. Open [`web/leaderboard.html`](web/leaderboard.html) beside that file (or serve `web/`). Until a real `arena_results.json` is committed, the page shows a labelled placeholder, not a measured result.
+
+The Meta chat-completions API is OpenAI-compatible, so `--tool-protocol tools` (the default) sends a `tools` array and reads `tool_calls`. `--tool-protocol json` does not send `tools`; the model returns one `{"action","arguments"}` object per turn. Use json when a Muse Spark build ignores tool calls. This repo does not probe the live API.
+
+Small live agentic smoke (2 mothers, 1 seed, at most 4 model rounds each, cap 10). Do not commit the key.
+
+```bash
+export META_API_KEY=...
+PYTHONPATH=agent:verifier:variantgen python -m axvigil_agent arena \
+  --contestant muse-spark-1.1:agentic \
+  --mothers reentrancy,access-control \
+  --seeds 1 \
+  --max-steps 4 \
+  --request-cap 10 \
+  --tool-protocol tools \
+  --concurrency 1 \
+  --out web/arena_agentic_smoke.json \
+  --summary web/arena_agentic_smoke.md
+```
+
+Full arena with a baseline trio plus one agentic contestant. Worst case is about 3 × 6 × 3 baseline requests plus 6 × 6 agentic steps (90). A cap of 120 leaves room for a short retry.
+
+```bash
+PYTHONPATH=agent:verifier:variantgen python -m axvigil_agent arena \
+  --contestant muse-spark-1.1 \
+  --contestant muse-spark-1.2 \
+  --contestant muse-spark-1.3 \
+  --contestant muse-spark-1.1:agentic \
+  --mothers reentrancy,price-manipulation,access-control,signature-replay,bridge-phantom-deposit,empty-market-inflation \
+  --seeds 1 \
+  --max-iters 3 \
+  --max-steps 6 \
+  --request-cap 120 \
+  --tool-protocol tools \
+  --concurrency 1 \
+  --out web/arena_results.json \
+  --summary web/arena_summary.md
+```
 
 ## Security and demo scope
 

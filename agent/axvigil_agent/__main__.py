@@ -16,6 +16,7 @@ import shutil
 import sys
 from pathlib import Path
 
+from .agentic import run_agentic
 from .arena import (
     DEFAULT_MOTHERS,
     ensemble_contestant,
@@ -76,6 +77,41 @@ def _outcome_payload(outcome) -> dict:
     }
 
 
+def _cmd_solve_agentic(args, client, challenge_dir: Path) -> int:
+    result = run_agentic(
+        client, challenge_dir, protocol=args.tool_protocol, max_steps=args.max_steps,
+        token_budget=20_000, forge_bin=_default_forge(), solc=_default_solc(),
+        forge_timeout_s=args.timeout,
+    )
+    graded = None
+    if result.patch and result.poc:
+        import axvigil_agent.solver as solver_mod
+        meta = json.loads((challenge_dir / "challenge.json").read_text())
+        graded = solver_mod._grade(
+            challenge_dir, meta["targetFile"], result.patch, result.poc,
+            args.seed, _default_forge(), _default_solc(), args.timeout,
+        )
+    passed = bool(graded and graded.passed)
+    payload = {
+        "solved": passed,
+        "stopReason": result.stop_reason,
+        "steps": result.steps,
+        "evidence": result.evidence(args.tool_protocol),
+    }
+    if graded is not None:
+        payload["checks"] = {
+            "pocProvesBug": graded.pocProvesBug,
+            "pocFailsAfterPatch": graded.pocFailsAfterPatch,
+            "hiddenTestsPass": graded.hiddenTestsPass,
+            "patchWithinLimits": graded.patchWithinLimits,
+        }
+    if args.json:
+        print(json.dumps(payload, indent=2))
+    else:
+        print(f"agentic stop: {result.stop_reason}  steps: {result.steps}  solved: {passed}")
+    return 0 if passed else 1
+
+
 def _meta_factory(model: str) -> MetaModelClient:
     # Temperature 0 keeps arena calls as deterministic as the provider allows.
     # The model HTTP timeout is the client default, 300s.
@@ -126,6 +162,9 @@ def _cmd_arena(args) -> int:
             forge_bin=_default_forge(),
             solc=_default_solc(),
             on_event=lambda message: print(message, file=sys.stderr),
+            tool_protocol=args.tool_protocol,
+            max_steps=args.max_steps,
+            token_budget=args.token_budget,
         )
     except ValueError as exc:
         print(f"arena: {exc}", file=sys.stderr)
@@ -157,6 +196,10 @@ def main(argv: list[str] | None = None) -> int:
     s.add_argument("--timeout", type=int, default=120)
     s.add_argument("--oracle", action="store_true", help="offline dry-run with the reference solution")
     s.add_argument("--json", action="store_true", help="print the outcome as JSON")
+    s.add_argument("--agentic", action="store_true", help="tool-using loop instead of a single JSON patch")
+    s.add_argument("--tool-protocol", default="tools", choices=("tools", "json"), dest="tool_protocol",
+                   help="tools = OpenAI tool_calls; json = one JSON action per turn")
+    s.add_argument("--max-steps", type=int, default=6, dest="max_steps")
 
     arena = sub.add_parser(
         "arena",
@@ -171,7 +214,7 @@ def main(argv: list[str] | None = None) -> int:
     arena.add_argument(
         "--contestant", action="append", default=[],
         help="model, model:strategy, or model:strategy:id. "
-             "strategy is baseline, self-critique, or plan-then-patch",
+             "strategy is baseline, self-critique, plan-then-patch, or agentic",
     )
     arena.add_argument(
         "--ensemble", default=None,
@@ -191,12 +234,21 @@ def main(argv: list[str] | None = None) -> int:
     arena.add_argument("--out", default="arena_results.json")
     arena.add_argument("--summary", default=None, help="markdown path (default: beside --out)")
     arena.add_argument("--fresh", action="store_true", help="ignore completed rows already in --out")
+    arena.add_argument("--tool-protocol", default="tools", choices=("tools", "json"), dest="tool_protocol",
+                       help="agentic protocol: tools (OpenAI tool_calls) or json (one action per turn)")
+    arena.add_argument("--max-steps", type=int, default=6, dest="max_steps",
+                       help="agentic model rounds per challenge")
+    arena.add_argument("--token-budget", type=int, default=20000, dest="token_budget",
+                       help="agentic prompt+completion token budget per challenge")
 
     args = p.parse_args(argv)
     if args.cmd == "arena":
         return _cmd_arena(args)
     challenge_dir = Path(args.challenge)
 
+    if args.oracle and args.agentic:
+        print("solve: --agentic and --oracle cannot be combined", file=sys.stderr)
+        return 2
     if args.oracle:
         client = _oracle_client(challenge_dir)
     else:
@@ -205,6 +257,9 @@ def main(argv: list[str] | None = None) -> int:
         except RuntimeError as exc:
             print(str(exc), file=sys.stderr)
             return 2
+
+    if args.agentic:
+        return _cmd_solve_agentic(args, client, challenge_dir)
 
     outcome = solve(
         client, challenge_dir, seed=args.seed, max_iters=args.max_iters,
