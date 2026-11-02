@@ -75,6 +75,17 @@
     "maxHiddenChanceBps": 30
   },
   "gasPriceWei": "200000000",
+  "thresholdRedeploy": {
+    "status": "pending",
+    "note": "Not broadcast. The live collectible above is still the single-signer PR #8 bytecode. Deploy script/DeployThreshold.s.sol, then fill these fields. Old tokens stay on the current collectible.",
+    "collectible": null,
+    "skill": null,
+    "agentRegistry": "0x7Aa441477f0246353bdAe504cF0F9B3027D6d45e",
+    "threshold": 2,
+    "validators": [null, null, null],
+    "deployTx": null,
+    "signerRotationTx": null
+  },
   "museSparkMint": {
     "label": "Muse Spark live solve. Not the reference-solution smoke test below.",
     "description": "Server-dealt signature-replay (legendary, pool 2) solved by muse-spark-1.1 on the first model request. Backend signed MintAuth. The same wallet is still deployer, owner, admin, and signer; signer rotation has not been sent.",

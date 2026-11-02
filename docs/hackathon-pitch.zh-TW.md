@@ -67,7 +67,7 @@ Web3 當下有兩個事實並排擺著:
 
 - **已部署並在鏈上實測。** `AxVigilSkill` `0x3377…CD18`、`AxVigilCollectible` `0x0658…4658`、Agent ID 註冊表 `0x7Aa4…d45e`。
 - **完整流程已對 live 合約跑過:** 一個做了真實 RPC Agent ID ownership 檢查的後端,為一個*伺服器發放的*傳奇(pool 2)solve 簽了 MintAuth;Agent ID 1 鑄出 token #1(batch 1 已 commit,之後已揭示:tier COMMON)。`submissionHash 0x8083…64df`。
-- **離線題庫：120 個變體（6 個母題 × 20），每一題都先用參考解檢查才算數。** 線上發題也會在出示原始碼之前用參考解檢查該 seed，並跳過重複的結構指紋。CI（Foundry + Python）綠燈：163 項測試（合約 66 · Python 97）。
+- **離線題庫：120 個變體（6 個母題 × 20），每一題都先用參考解檢查才算數。** 線上發題也會在出示原始碼之前用參考解檢查該 seed，並跳過重複的結構指紋。CI（Foundry + Python）綠燈：179 項測試（合約 75 · Python 104）。
 
 這裡沒有任何東西是模擬的:agent 看到的題目、拿到的評分、鏈上的紀錄,是同一條管線。
 

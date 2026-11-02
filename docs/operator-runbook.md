@@ -16,7 +16,41 @@ Pending:
 - `signerRotationTx`: null
 - `batch2RevealTx`: null
 
-## 1. Rotate the signer
+## 0. Deploy the threshold collectible (new bytecode)
+
+The live collectible does not have `mint(auth, bytes[])`. This is a new deploy, not an upgrade of token #1 and token #2. Those tokens stay on `0x06580BFc1626f7DD3d7B841FD304e6f2B23e4658`. After broadcast, fill `thresholdRedeploy` in `deployments/bsc-testnet-97.json`. The fields are null until then.
+
+```bash
+export PRIVATE_KEY=0x<deployer, also the initial owner>
+export SIGNER=0x<validator 1 address>
+export VALIDATOR_2=0x<validator 2 address>
+export VALIDATOR_3=0x<validator 3 address>
+export THRESHOLD=2
+export OWNER=0x<admin, not one of the validators>
+export AGENT_REGISTRY=0x7Aa441477f0246353bdAe504cF0F9B3027D6d45e
+export BSC_TESTNET_RPC=https://bsc-testnet-rpc.publicnode.com
+
+cd contracts
+forge script script/DeployThreshold.s.sol --rpc-url "$BSC_TESTNET_RPC" --broadcast
+```
+
+If `OWNER` is not the deployer, the owner must call `acceptOwnership()` on the new collectible. The deployer registers the three validators and `setThreshold(2)` before that hand-off. Validator private keys are not in this command: only addresses. Put each key in `VALIDATOR_KEY_1` / `_2` / `_3` on the machine that runs the validators.
+
+```bash
+export VERIFYING_CONTRACT=0x<new collectible from the script log>
+export CHAIN_ID=97
+export VALIDATOR_KEY_1=0x<key for SIGNER>
+export VALIDATOR_KEY_2=0x<key for VALIDATOR_2>
+export VALIDATOR_KEY_3=0x<key for VALIDATOR_3>
+export RECHECK=1
+./scripts/run_three_validators.sh
+```
+
+A coordinator (or a small client) POSTs the evidence `manifest` and one shared `auth` to `http://127.0.0.1:9101/sign`, `:9102`, and `:9103`, keeps the first 2 signatures, and the Agent ID owner calls `mint(auth, signatures)` on the new collectible. `submissionHash` is still single-use. The mint cap is still 2 per Agent ID. Pool must still equal difficulty.
+
+Live deals already reference-check the seed before `start()` returns source when `AXVIGIL_REFERENCE_CHECK` is on (the server default), and they skip a structural fingerprint this process has already issued.
+
+## 1. Rotate the signer on the current single-signer collectible
 
 Generate a new key on the operator machine. Do not commit it. Put the address in `NEW_SIGNER` and the private key only in the backend's `SIGNER_KEY`.
 

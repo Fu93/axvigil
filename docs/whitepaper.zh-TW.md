@@ -157,7 +157,7 @@ Agent ID 持有人送出 mint
 | Agent | 自動解題迴圈,附離線 oracle 讓評審重現 |
 | 合約 | EIP-712 授權；`mintedPerAgent` 上限為 2；每小時上限；可暫停；`setSigner`（owner 輪換 signer，signer 金鑰只能授權 mint）；供給固定 |
 | 部署 | BSC 測試網（chain 97）：Skill `0x3377…CD18`、Collectible `0x0658…4658`、註冊表 `0x7Aa4…d45e`（`MockAgentID`，開放鑄造，不是生產用 Agent ID） |
-| 測試 | Foundry 單元 / fuzz / 稀有度 / invariant / verify→mint 整合;Python 後端與 verifier 套件;163 項測試綠燈（合約 66 · Python 97） |
+| 測試 | Foundry 單元 / fuzz / 稀有度 / invariant / verify→mint 整合;Python 後端與 verifier 套件;179 項測試綠燈（合約 75 · Python 104；沙箱映像未建時有一項 Docker 檢查略過） |
 
 ### 4.4 鏈上實證（Muse Spark 鑄造）
 
@@ -206,7 +206,7 @@ Agent 迴圈是提案、評分、把評分日誌餵回去、再試（`agent/axvi
 | 合約 owner | `setSigner`、`commitSeed`、`revealSeed`、暫停、設定 URI | 在 signer 已輪換到另一把金鑰之後，偽造 `MintAuth` |
 | 任何人 | 用證據包重算 `submissionHash`，並重跑 `scripts/verify_evidence.py` | 在 `revealSeed` 之前還原 batch seed |
 
-沙箱是一個有資源上限的離線子程序：`ffi` 關閉、`FOUNDRY_OFFLINE`、牆鐘逾時，以及 POSIX `rlimit`（CPU、位址空間、檔案大小、程序數）。它不是 TEE，也不是 zkVM。
+預設沙箱是一個有資源上限的離線子程序：`ffi` 關閉、`FOUNDRY_OFFLINE`、牆鐘逾時，以及 POSIX `rlimit`（CPU、位址空間、檔案大小、程序數）。`AXVIGIL_SANDBOX=docker` 改在映像 `axvigil-sandbox:1.8.7` 裡跑同一份 forge 測試，帶 `--network none`、唯讀根檔案系統、uid 1000、CPU／記憶體／程序數上限，以及 tmpfs 工作目錄（`verifier/docker/Dockerfile`）。環境變數未設或設成 `subprocess` 時，仍用子程序。兩種都不是 TEE，也不是 zkVM。
 
 已知的誤放行缺口：**目前沒有已知的誤放行**。兩道真實事件母題的負向控制已拒絕只擋 `address(0)` 的橋接修補，以及金庫上只加 `require(shares > 0)` 的修補。這不是「所有可能的修補都已枚舉」的證明。
 
@@ -214,13 +214,14 @@ Agent 迴圈是提案、評分、把評分日誌餵回去、再試（`agent/axvi
 
 **本倉庫在黑客松截止前已有的部分（鏈上交易仍待操作者送出）：**
 
-- 金鑰分離：已部署的收藏品合約上已有 `setSigner`。`scripts/rotate_signer.sh` 會送出它。交易雜湊不寫在這裡。佔位：`signerRotationTx: null`。
+- 金鑰分離：已部署的收藏品合約上已有 `setSigner`。`scripts/rotate_signer.sh` 會送出它。佔位：`signerRotationTx: null`。
+- 門檻原型（2-of-3）：`mint(auth, bytes[])` 檢查 k 個不同驗證者的簽名。Owner 新增、移除驗證者並設定門檻。這需要新的部署（`script/DeployThreshold.s.sol`）。位址佔位在部署檔的 `thresholdRedeploy`，廣播之前是 null。舊的 token 留在目前的合約上。
 - 證據包：每一次評分過的 `/v1/submit` 寫入規範 JSON、本地 CIDv1，並可選用 `IPFS_PIN_URL` 釘選。CID 在 submit 與 authorize 的回應裡。鏈上的對應是既有的 `Minted.submissionHash`，沒有新增欄位。
 - Seed 揭示：`scripts/reveal_and_recompute.py` 可以在沒有金鑰的情況下對測試網做 dry-run。Batch 2 的揭示尚未送出。佔位：`batch2RevealTx: null`。
 
 **截止之後（尚未建造）：**
 
-- 門檻式多驗證者簽名，附質押與罰沒。
+- 在門檻原型之上加質押與罰沒（k-of-n 檢查已在本倉庫；質押還沒有）。
 - TEE 或 zkVM 證明的評分。
 - 鏈上的嘗試配額（今天的嘗試上限是後端狀態；合約把 mint 上限訂在 2）以及 ERC-8004 風格的身分，取代 `MockAgentID`。
 - 鏈上賞金市場。

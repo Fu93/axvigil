@@ -118,6 +118,58 @@ def forge_test_command(
     return cmd
 
 
+def _sandbox_mode() -> str:
+    mode = os.environ.get("AXVIGIL_SANDBOX", "subprocess").strip().lower()
+    if mode not in ("subprocess", "docker"):
+        raise ValueError("AXVIGIL_SANDBOX must be docker or subprocess")
+    return mode
+
+
+def docker_run_command(inputs: Path, match_path: str, fuzz_seed: int) -> list[str]:
+    """Locked-down `docker run` for one forge test.
+
+    The image root is read-only, the network is off, the process is uid 1000,
+    and the writable workdir is a tmpfs. The host project is mounted read-only.
+    """
+    image = os.environ.get("AXVIGIL_DOCKER_IMAGE", "axvigil-sandbox:1.8.7")
+    memory = os.environ.get("AXVIGIL_DOCKER_MEMORY", "1g")
+    cpus = os.environ.get("AXVIGIL_DOCKER_CPUS", "1")
+    pids = os.environ.get("AXVIGIL_DOCKER_PIDS", "128")
+    return [
+        "docker", "run", "--rm",
+        "--network", "none",
+        "--read-only",
+        "--user", "1000:1000",
+        "--memory", memory,
+        "--cpus", cpus,
+        "--pids-limit", pids,
+        "--tmpfs", "/work:rw,exec,size=256m",
+        "--tmpfs", "/tmp:rw,size=64m",
+        "-v", f"{inputs}:/inputs:ro",
+        "-e", "FOUNDRY_OFFLINE=true",
+        image,
+        "--match-path", match_path,
+        "--fuzz-seed", str(fuzz_seed),
+    ]
+
+
+def _run_in_docker(workdir: Path, match_path: str, fuzz_seed: int, timeout_s: int) -> RunResult:
+    cmd = docker_run_command(workdir, match_path, fuzz_seed)
+    try:
+        proc = subprocess.run(
+            cmd, capture_output=True, text=True, timeout=timeout_s, check=False,
+        )
+    except subprocess.TimeoutExpired:
+        return RunResult(compiled=False, timed_out=True, raw="timeout")
+    except FileNotFoundError:
+        return RunResult(compiled=False, timed_out=False, raw="docker was not found")
+    stdout = proc.stdout or ""
+    tests_map = _parse_forge_json(stdout)
+    if tests_map is None:
+        return RunResult(compiled=False, timed_out=False, raw=(proc.stderr or "") + stdout)
+    return RunResult(compiled=True, timed_out=False, tests=tests_map, raw=stdout)
+
+
 def run_test(
     *,
     sources: dict[str, str],
@@ -152,6 +204,9 @@ def run_test(
             dest = workdir / "test" / name
             dest.parent.mkdir(parents=True, exist_ok=True)
             dest.write_text(text)
+
+        if _sandbox_mode() == "docker":
+            return _run_in_docker(workdir, match_path, fuzz_seed, timeout_s)
 
         cmd = forge_test_command(forge_bin, match_path, solc, fuzz_seed)
 

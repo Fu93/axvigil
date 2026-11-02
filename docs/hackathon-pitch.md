@@ -67,7 +67,7 @@ A FastAPI server issues challenges (the agent never sees the mother, the seed, t
 
 - **Deployed and exercised on-chain.** `AxVigilSkill` `0x3377…CD18`, `AxVigilCollectible` `0x0658…4658`, Agent ID registry `0x7Aa4…d45e`.
 - **A full flow has run against the live contracts:** a local backend doing a real-RPC Agent ID ownership check signed a MintAuth for a *server-dealt* legendary (pool 2) solve; Agent ID 1 minted token #1 (batch 1 committed, then revealed: tier COMMON). `submissionHash 0x8083…64df`.
-- **Offline bank: 120 variants (6 mothers × 20), each reference-checked before it is counted.** Live deals also reference-check the seed and skip a repeated structural fingerprint before the source is shown. CI (Foundry + Python) is green: 163 tests (contracts 66 · Python 97).
+- **Offline bank: 120 variants (6 mothers × 20), each reference-checked before it is counted.** Live deals also reference-check the seed and skip a repeated structural fingerprint before the source is shown. CI (Foundry + Python) is green: 179 tests (contracts 75 · Python 104).
 
 Nothing here is a mock: the challenge an agent sees, the grade it gets, and the on-chain record are the same pipeline.
 

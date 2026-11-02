@@ -157,7 +157,7 @@ Agent ID owner submits mint
 | Agent | automated solve loop with an offline oracle so judges can reproduce runs |
 | Contracts | EIP-712 authorization; `mintedPerAgent` ceiling of 2; hourly cap; pausable; `setSigner` (owner rotates the signer; the signer key only authorizes mints); fixed supply |
 | Deployment | BSC testnet (chain 97): Skill `0x3377…CD18`, Collectible `0x0658…4658`, registry `0x7Aa4…d45e` (`MockAgentID`, open mint, not a production Agent ID) |
-| Tests | Foundry unit / fuzz / rarity-distribution / invariant / verify→mint integration; Python backend and verifier suites; 163 tests green (contracts 66 · Python 97) |
+| Tests | Foundry unit / fuzz / rarity-distribution / invariant / verify→mint integration; Python backend and verifier suites; 179 tests green (contracts 75 · Python 104; one Docker image check skipped until the sandbox image is built) |
 
 ### 4.4 Live proof (Muse Spark mint)
 
@@ -206,7 +206,7 @@ What a pass means: one sandboxed grader, on one machine, accepted one patch agai
 | Contract owner | `setSigner`, `commitSeed`, `revealSeed`, pause, set URI | forge a `MintAuth` once the signer has been rotated to a different key |
 | Anyone | recompute `submissionHash` from an evidence bundle and re-run `scripts/verify_evidence.py` | recover a batch seed before `revealSeed` |
 
-The sandbox is a resource-limited offline subprocess: `ffi` off, `FOUNDRY_OFFLINE`, a wall-clock timeout, and POSIX `rlimit` on CPU, address space, file size, and process count. It is not a TEE and not a zkVM.
+The default sandbox is a resource-limited offline subprocess: `ffi` off, `FOUNDRY_OFFLINE`, a wall-clock timeout, and POSIX `rlimit` on CPU, address space, file size, and process count. `AXVIGIL_SANDBOX=docker` runs the same forge test in `axvigil-sandbox:1.8.7` with `--network none`, a read-only root, uid 1000, CPU/memory/pid limits, and a tmpfs workdir (`verifier/docker/Dockerfile`). The subprocess runner remains the fallback when the env is unset or `subprocess`. Neither mode is a TEE or a zkVM.
 
 Known false-pass gap: **none known** on the two real-incident mothers after the negative controls (an `address(0)`-only bridge patch, and `require(shares > 0)` on the vault, both fail). That is not a proof that no other false-pass exists.
 
@@ -214,13 +214,14 @@ Known false-pass gap: **none known** on the two real-incident mothers after the 
 
 **In this repository, before the hackathon deadline (operator transactions still pending):**
 
-- Key separation: `setSigner` is already on the deployed collectible. `scripts/rotate_signer.sh` sends it. The tx hash is not filled in here. Placeholder: `signerRotationTx: null`.
+- Key separation: `setSigner` is on the deployed collectible. `scripts/rotate_signer.sh` sends it. Placeholder: `signerRotationTx: null`.
+- Threshold prototype (2-of-3): `mint(auth, bytes[])` checks k distinct validator signatures. The owner adds and removes validators and sets the threshold. This needs a new deploy (`script/DeployThreshold.s.sol`). Placeholder addresses are `thresholdRedeploy` in the deployment file; they are null until the operator broadcasts.
 - Evidence bundles: every graded `/v1/submit` writes canonical JSON, a local CIDv1, and optional `IPFS_PIN_URL` pinning. The CID is returned on submit and authorize. The on-chain tie is the existing `Minted.submissionHash`, not a new field.
 - Seed reveal: `scripts/reveal_and_recompute.py` can dry-run against the testnet with no key. Batch 2 reveal is pending. Placeholder: `batch2RevealTx: null`.
 
 **After the deadline (not built):**
 
-- Threshold multi-validator signing, with staking and slashing.
+- Staking and slashing on top of the threshold prototype (the k-of-n check itself is in this repo; stake is not).
 - TEE or zkVM attested grading.
 - On-chain attempt quotas (today the attempt cap is backend state; the contract caps mints at 2) and an ERC-8004-style identity instead of `MockAgentID`.
 - An on-chain bounty market.

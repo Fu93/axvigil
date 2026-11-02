@@ -46,8 +46,9 @@ import {IAxVigilSkill} from "./interfaces/IAxVigilSkill.sol";
 ///
 /// Limits: max 2 collectibles per Agent ID (lifetime, bound to tokenId not wallet). Each mint
 /// records exactly one skill solve, so the skill record stays 1:1 with mints. There is no
-/// mint-free solve path. Hourly mint cap, pausable, rotatable signer, supply fixed in the
-/// constructor with no way to increase it.
+/// mint-free solve path. Hourly mint cap, pausable, rotatable signer, and a validator set
+/// with a threshold (k-of-n EIP-712 signatures). The owner administers the set and is not
+/// a validator unless explicitly added. Supply is fixed in the constructor.
 contract AxVigilCollectible is ERC721, Ownable2Step, Pausable, EIP712 {
     using Strings for uint256;
 
@@ -83,6 +84,7 @@ contract AxVigilCollectible is ERC721, Ownable2Step, Pausable, EIP712 {
     /// @dev Art id layout: tier * 100_000 + vulnClass * 10_000 + index within (tier, vulnClass).
     uint256 private constant ART_TIER_MUL = 100_000;
     uint256 private constant ART_CLASS_MUL = 10_000;
+    uint256 public constant MAX_VALIDATORS = 16;
 
     // ---------------------------------------------------------------------
     // Types
@@ -141,6 +143,11 @@ contract AxVigilCollectible is ERC721, Ownable2Step, Pausable, EIP712 {
 
     address public signer;
     uint256 public hourlyCap;
+    /// @notice Registered graders. The owner is not a validator unless added.
+    mapping(address => bool) public isValidator;
+    uint256 public validatorCount;
+    /// @notice How many distinct validator signatures `mint(auth, bytes[])` requires.
+    uint256 public threshold;
 
     uint256 public totalMinted;
     /// @notice Next tokenId whose tier will be drawn (tokens are revealed strictly in order).
@@ -187,6 +194,9 @@ contract AxVigilCollectible is ERC721, Ownable2Step, Pausable, EIP712 {
     event SeedCommitted(uint32 indexed batchId, bytes32 seedHash);
     event SeedRevealed(uint32 indexed batchId, bytes32 seed);
     event SignerUpdated(address indexed oldSigner, address indexed newSigner);
+    event ValidatorAdded(address indexed validator);
+    event ValidatorRemoved(address indexed validator);
+    event ThresholdUpdated(uint256 threshold);
     event HourlyCapUpdated(uint256 cap);
     event BaseURIUpdated(string baseURI, string unrevealedURI);
     event ProvenanceHashSet(bytes32 provenanceHash);
@@ -206,6 +216,10 @@ contract AxVigilCollectible is ERC721, Ownable2Step, Pausable, EIP712 {
     error AlreadyRevealed();
     error ProvenanceAlreadySet();
     error ZeroAddress();
+    error InsufficientSignatures(uint256 got, uint256 required);
+    error DuplicateSigner(address signer);
+    error NotValidator(address signer);
+    error ThresholdRequired();
 
     // ---------------------------------------------------------------------
     // Constructor
@@ -255,7 +269,12 @@ contract AxVigilCollectible is ERC721, Ownable2Step, Pausable, EIP712 {
         _tier4 = tierCounts[4];
         signer = signer_;
         hourlyCap = hourlyCap_;
+        isValidator[signer_] = true;
+        validatorCount = 1;
+        threshold = 1;
         emit SignerUpdated(address(0), signer_);
+        emit ValidatorAdded(signer_);
+        emit ThresholdUpdated(1);
         emit HourlyCapUpdated(hourlyCap_);
     }
 
@@ -263,10 +282,26 @@ contract AxVigilCollectible is ERC721, Ownable2Step, Pausable, EIP712 {
     // Mint
     // ---------------------------------------------------------------------
 
-    /// @notice Mint one collectible using a backend-signed authorization.
+    /// @notice Mint with the single legacy signer. Reverts once the threshold is above 1.
     /// @dev Caller must currently own `auth.agentId` in the Agent ID registry.
     function mint(MintAuth calldata auth, bytes calldata signature) external whenNotPaused returns (uint256 tokenId) {
+        if (threshold != 1) revert ThresholdRequired();
         _checkAuth(auth, signature);
+        tokenId = _performMint(auth);
+    }
+
+    /// @notice Mint when `threshold` distinct registered validators have signed the same MintAuth.
+    function mint(MintAuth calldata auth, bytes[] calldata signatures) external whenNotPaused returns (uint256 tokenId) {
+        _checkAuthFields(auth);
+        _verifyThreshold(auth, signatures);
+        if (auth.pool != poolForDifficulty(auth.difficulty)) {
+            revert PoolDifficultyMismatch(auth.difficulty, auth.pool);
+        }
+        if (agentRegistry.ownerOf(auth.agentId) != msg.sender) revert NotAgentOwner();
+        tokenId = _performMint(auth);
+    }
+
+    function _performMint(MintAuth calldata auth) private returns (uint256 tokenId) {
         uint32 batchId = _checkLimits(auth.agentId);
 
         // --- effects ---
@@ -305,8 +340,8 @@ contract AxVigilCollectible is ERC721, Ownable2Step, Pausable, EIP712 {
         _emitMinted(tokenId, batchId, auth);
     }
 
-    /// @dev Signature, deadline, nonce, field ranges and Agent ID ownership.
-    function _checkAuth(MintAuth calldata auth, bytes calldata signature) internal view {
+    /// @dev Deadline, nonce, field ranges. Signatures and ownership are checked by the caller.
+    function _checkAuthFields(MintAuth calldata auth) internal view {
         if (block.timestamp > auth.deadline) revert Expired();
         if (nonceUsed[auth.nonce]) revert NonceUsed();
         if (submissionUsed[auth.submissionHash]) revert SubmissionUsed();
@@ -314,17 +349,43 @@ contract AxVigilCollectible is ERC721, Ownable2Step, Pausable, EIP712 {
             revert InvalidParams();
         }
         if (auth.to == address(0)) revert ZeroAddress();
+    }
+
+    /// @dev Single legacy signer, plus the shared field checks and Agent ID ownership.
+    function _checkAuth(MintAuth calldata auth, bytes calldata signature) internal view {
+        _checkAuthFields(auth);
 
         (address recovered, ECDSA.RecoverError err,) = ECDSA.tryRecover(hashMintAuth(auth), signature);
         if (err != ECDSA.RecoverError.NoError || recovered != signer) revert InvalidSignature();
 
-        // The signed pool is the difficulty. Checked after the signature so a mutated
-        // field is an invalid signature, and a backend that signs a mismatch is rejected too.
+        // A mutated pool fails the signature check above. This catches a signer
+        // who actually signed a pool that is not the difficulty.
         if (auth.pool != poolForDifficulty(auth.difficulty)) {
             revert PoolDifficultyMismatch(auth.difficulty, auth.pool);
         }
 
         if (agentRegistry.ownerOf(auth.agentId) != msg.sender) revert NotAgentOwner();
+    }
+
+    /// @dev `threshold` distinct recoveries, each a currently registered validator.
+    function _verifyThreshold(MintAuth calldata auth, bytes[] calldata signatures) internal view {
+        if (signatures.length < threshold) revert InsufficientSignatures(signatures.length, threshold);
+        address[] memory seen = new address[](signatures.length);
+        uint256 valid;
+        bytes32 digest = hashMintAuth(auth);
+        for (uint256 i; i < signatures.length; ++i) {
+            (address recovered, ECDSA.RecoverError err,) = ECDSA.tryRecover(digest, signatures[i]);
+            if (err != ECDSA.RecoverError.NoError) revert InvalidSignature();
+            if (!isValidator[recovered]) revert NotValidator(recovered);
+            for (uint256 j; j < valid; ++j) {
+                if (seen[j] == recovered) revert DuplicateSigner(recovered);
+            }
+            seen[valid] = recovered;
+            unchecked {
+                ++valid;
+            }
+        }
+        if (valid < threshold) revert InsufficientSignatures(valid, threshold);
     }
 
     /// @dev Per-agent quota, supply cap, hourly cap, open batch. Returns the open batch id.
@@ -511,6 +572,35 @@ contract AxVigilCollectible is ERC721, Ownable2Step, Pausable, EIP712 {
         if (newSigner == address(0)) revert ZeroAddress();
         emit SignerUpdated(signer, newSigner);
         signer = newSigner;
+    }
+
+    /// @notice Register a grader. The owner is not added unless this is called with the owner's address.
+    function addValidator(address validator) external onlyOwner {
+        if (validator == address(0)) revert ZeroAddress();
+        if (isValidator[validator] || validatorCount >= MAX_VALIDATORS) revert InvalidParams();
+        isValidator[validator] = true;
+        unchecked {
+            ++validatorCount;
+        }
+        emit ValidatorAdded(validator);
+    }
+
+    /// @notice Remove a grader. Refuses if the set would fall below `threshold`.
+    function removeValidator(address validator) external onlyOwner {
+        if (!isValidator[validator]) revert NotValidator(validator);
+        if (validatorCount - 1 < threshold) revert InvalidParams();
+        isValidator[validator] = false;
+        unchecked {
+            --validatorCount;
+        }
+        emit ValidatorRemoved(validator);
+    }
+
+    /// @notice How many distinct validator signatures a threshold mint requires.
+    function setThreshold(uint256 k) external onlyOwner {
+        if (k == 0 || k > validatorCount) revert InvalidParams();
+        threshold = k;
+        emit ThresholdUpdated(k);
     }
 
     /// @notice Adjust the hourly circuit breaker. Does not affect total supply.
