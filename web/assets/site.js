@@ -1,4 +1,4 @@
-/* AxVigil site behaviour: facts, language, nav, tabs, accordion, hero field. */
+/* AxVigil site behaviour: facts, language, nav, tabs, accordion. */
 (function () {
   var factsEl = document.getElementById("axvigil-facts");
   var facts = {};
@@ -279,6 +279,19 @@
       button.setAttribute("aria-pressed", String(button.getAttribute("data-lang") === next));
     });
     bindFacts(next);
+    document.querySelectorAll("[data-leaderboard]").forEach(function (el) {
+      el.hidden = facts.leaderboardLive !== true;
+    });
+    document.querySelectorAll("table").forEach(function (table) {
+      var heads = Array.prototype.map.call(table.querySelectorAll("thead th"), function (th) {
+        return th.textContent.trim();
+      });
+      table.querySelectorAll("tbody tr").forEach(function (row) {
+        Array.prototype.forEach.call(row.children, function (cell, index) {
+          if (heads[index]) cell.setAttribute("data-label", heads[index]);
+        });
+      });
+    });
     try { localStorage.setItem("axvigil-lang", next); } catch (err) { /* ignore */ }
   }
 
