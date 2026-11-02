@@ -1,5 +1,9 @@
 /* Tile field, halftone shield, hover pill, card tilt, counters. No libraries. */
 (function () {
+  if (location.hash) {
+    var jumped = document.querySelector(location.hash);
+    if (jumped) jumped.scrollIntoView();
+  }
   var reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches || /[?&]still=1/.test(location.search);
   var hidden = document.hidden;
 

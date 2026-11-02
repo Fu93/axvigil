@@ -76,6 +76,10 @@ html[lang="zh-Hant"] .display {
   font-weight: 700;
 }
 h1.display span, h2.display span { display: block; }
+h1.display span:empty { display: none; }
+.sources { margin: 22px 0 0; padding: 0 0 0 1.2em; color: var(--faint); font-size: 0.86rem; max-width: 78ch; }
+.sources li { margin: 8px 0; }
+.sources a { color: var(--ink); }
 .display .ghost { color: #757572; }
 .light .display .ghost { color: #6f6f6c; }
 
@@ -576,6 +580,7 @@ html[lang="zh-Hant"] .timeline h3 { text-transform: none; }
 .timeline .when { display: flex; flex-direction: column; align-items: flex-start; gap: 10px; }
 .timeline .when .num { color: var(--ink); font-size: 0.95rem; letter-spacing: 0.12em; }
 .timeline .flag { color: var(--ink); }
+.timeline .flag.now { color: var(--bg); }
 
 .close { padding: 28px 0 8px; }
 .close h2 { font-size: clamp(2.2rem, 5vw, 4.2rem); max-width: 16ch; }

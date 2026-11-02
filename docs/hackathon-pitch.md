@@ -1,6 +1,6 @@
 # AxVigil — Hackathon Pitch
 
-> **Verified fixes, not just findings.** AxVigil trains and certifies AI agents to *fix* smart-contract vulnerabilities — and proves each fix on-chain.
+> **Verified fixes, not just findings.** AxVigil trains and shows on a record AI agents to *fix* smart-contract vulnerabilities — and proves each fix on-chain.
 
 **Meta Global AI Developer Hackathon · BSC testnet (chain 97) · sandbox / whitehat**
 
@@ -8,7 +8,7 @@
 
 ## The one-liner
 
-AxVigil is an **anti-memorization proving ground for security AI**. An agent is dealt a freshly generated vulnerable contract, writes a patch *and* a proof-of-concept exploit, and a deterministic sandboxed verifier confirms the bug is actually gone before anything is rewarded. A passing solve mints a **soulbound skill license** bound to the agent's identity — a credential that is earned, not claimed.
+AxVigil is an **anti-memorization proving ground for security AI**. An agent is dealt a freshly generated vulnerable contract, writes a patch *and* a proof-of-concept exploit, and a deterministic sandboxed verifier confirms the bug is actually gone before anything is rewarded. A passing solve mints a **soulbound skill capability record** bound to the agent's identity — a capability record that is earned, not claimed.
 
 This proving ground (we call it **the Crucible**) is built, tested, and live on BSC testnet today. It is the trust root for a larger vision — a network that points AI compute at real contract security instead of zero-sum puzzle-solving — but the hackathon deliverable is the Crucible itself, and it works end to end.
 
@@ -18,7 +18,7 @@ This proving ground (we call it **the Crucible**) is built, tested, and live on 
 
 Two facts sit side by side in Web3 right now:
 
-- **AI compute is being burned on nothing.** A wave of "agents solving puzzles" projects spend real GPU time on SAT instances, prime hunts and mazes, then mint an NFT to prove their agent is fast. The output protects no one.
+- **AI compute is being burned on nothing.** A wave of "agents solving puzzles" projects spend real GPU time on SAT instances, prime hunts and puzzles, then mint an NFT to prove their agent is fast. The output protects no one.
 - **Contract security doesn't scale.** DeFi exploits have cost billions; top audits run months and tens to hundreds of thousands of dollars; most newly deployed small protocols ship unaudited. AI can already draft plausible patches — but a plausible patch is not a verified fix, and nobody can currently tell the two apart at scale.
 
 The gap between them is a **trust problem**: there is no independent, re-runnable way to show that an AI actually closed an exploit without breaking the contract. That is the gap AxVigil closes first.
@@ -27,12 +27,12 @@ The gap between them is a **trust problem**: there is no independent, re-runnabl
 
 ## What we built (and why it's the hard part)
 
-**1. An anti-memorization challenge engine (`mothers/` + `variantgen/`).**
-Each "mother" is one vulnerability template. A seed renders a structurally unique variant every time — renamed identifiers, injected distractor functions, reordered bodies — and a structural fingerprint discards look-alikes before issue. So a public answer is worthless; the agent has to fix the *class* of bug, not recall a known hack.
+**1. An anti-memorization challenge engine (`variantgen/` and the family-template directory).**
+Each "vulnerability family" is one vulnerability template. A seed renders a structurally unique fresh rewrite every time — renamed identifiers, injected distractor functions, reordered bodies — and a structural fingerprint discards look-alikes before issue. So a public answer is worthless; the agent has to fix the *class* of bug, not recall a known hack.
 
-- **6 mothers across 3 vulnerability classes and all 3 difficulty tiers**, each shipping **20 self-verified variants — 120 in all**. Two rebuild already-patched public incidents, and the grader accepts only the class fix.
+- **6 vulnerability families across 3 vulnerability classes and all 3 difficulty tiers**, each shipping **20 self-verified fresh rewrites — 120 in all**. Two rebuild already-patched public incidents, and the grader accepts only the class fix.
 
-| Mother | Class | Difficulty |
+| Vulnerability family | Class | Difficulty |
 |---|---|---|
 | `reentrancy` | Reentrancy | Basic |
 | `access-control` | Access Control | Basic |
@@ -53,13 +53,13 @@ Four checks, every one required:
 
 Runs in a hardened sandbox — `ffi` off, no network, wall-clock timeout and POSIX resource limits, its own process group — with **zero third-party dependencies**. Grading is reproducible and can't reach the host.
 
-**3. A platform and on-chain credential layer.**
-A FastAPI server issues challenges (the agent never sees the mother, the seed, the hidden tests or the reference solution), grades a submission in a session, and signs an EIP-712 authorization only for what passed. Login is a wallet signature **checked against the on-chain Agent ID registry (`ownerOf`)**. A passing solve lets the Agent ID owner mint:
+**3. A platform and on-chain capability record layer.**
+A FastAPI server issues challenges (the agent never sees the vulnerability family, the seed, the hidden tests or the reference solution), grades a submission in a session, and signs an EIP-712 authorization only for what passed. Login is a wallet signature **checked against the on-chain Agent ID registry (`ownerOf`)**. A passing solve lets the Agent ID owner mint:
 
-- **`AxVigilSkill`** — an **ERC-5192 soulbound** license bound to the Agent ID (not a wallet), recording per-class counts and max difficulty. `locked()` is always true: it can't be sold or transferred, and it follows the agent.
+- **`AxVigilSkill`** — an **ERC-5192 soulbound** capability record bound to the Agent ID (not a wallet), recording per-class counts and max difficulty. `locked()` is always true: it can't be sold or transferred, and it follows the agent.
 - **`AxVigilCollectible`** — a free, cosmetic ERC-721 commemorating a real verification event (its metadata carries the `submissionHash`).
 
-**Production reward rule:** the server deals the challenge — the caller can't pick the mother or difficulty, can't reroll, and opening a session spends one of **two lifetime attempts** whether it passes or not. Solves and mints stay strictly 1:1.
+**Production reward rule:** the server deals the challenge — the caller can't pick the vulnerability family or difficulty, can't reroll, and opening a session spends one of **two lifetime attempts** whether it passes or not. Solves and mints stay strictly 1:1.
 
 ---
 
@@ -67,7 +67,7 @@ A FastAPI server issues challenges (the agent never sees the mother, the seed, t
 
 - **Deployed and exercised on-chain.** Original skill `0x3377…CD18`, collectible `0x0658…4658` (signer rotated to `0x91Ae…e081`; token #2 revealed LEGENDARY, artId 320000). Threshold 2-of-3 collectible `0x0e87…C8eB`, skill `0xE165…5F59`, validators `0xc32d…95F9` / `0xD5f5…4645` / `0x133F…ec7f`. Registry `0x7Aa4…d45e` is still MockAgentID.
 - **Muse Spark (`muse-spark-1.1`) on the threshold contract:** three server-dealt sessions, each solved on the first request, each evidence bundle re-checked (`verify_evidence.py` OK), each mint using 2 of 3 validator signatures. Grading used the subprocess sandbox, not Docker. The earlier signature-replay mint on `0x0658…4658` is token #2. The reference smoke test is token #1, tier COMMON. `submissionHash` of that smoke test is `0x8083…64df`.
-- **Offline bank: 120 variants (6 mothers × 20), each reference-checked before it is counted.** Live deals also reference-check the seed and skip a repeated structural fingerprint before the source is shown. CI (Foundry + Python) is green: 180 tests (contracts 75 · Python 105).
+- **Offline bank: 120 fresh rewrites (6 vulnerability families × 20), each reference-checked before it is counted.** Live deals also reference-check the seed and skip a repeated structural fingerprint before the source is shown. CI (Foundry + Python) is green: 180 tests (contracts 75 · Python 105).
 
 Nothing here is a mock: the challenge an agent sees, the grade it gets, and the on-chain record are the same pipeline.
 
@@ -75,7 +75,7 @@ Nothing here is a mock: the challenge an agent sees, the grade it gets, and the 
 
 ## Why it can't be gamed
 
-- **Memorization doesn't help** — every challenge is a fresh, fingerprinted variant.
+- **Memorization doesn't help** — every challenge is a fresh, fingerprinted fresh rewrite.
 - **A fake fix can't pass** — the differential requires the exploit to work before and fail after, and the functional tests to still pass.
 - **Brute-force "fixes" can't pass** — patch size is capped and the public interface must survive.
 - **Farming is bounded** — server-dealt challenges, two lifetime attempts per Agent ID, hourly mint caps, API rate limits, an answer-leak circuit breaker, and a real Agent ID registry as a prerequisite.
@@ -84,12 +84,12 @@ Nothing here is a mock: the challenge an agent sees, the grade it gets, and the 
 
 ## Where it goes (roadmap, not built yet)
 
-The Crucible is Layer 1. The vision is to turn licensed agents into a **defense network**: automated first-pass review for newly deployed contracts, continuous monitoring, bounty-pool scanning — paid for out of real security budgets, not token speculation. That is deliberately future work, gated on the Crucible proving itself.
+The Crucible is Layer 1. The vision is to turn recorded agents into a **defense network**: automated first-pass review for newly deployed contracts, continuous monitoring, bounty-pool scanning — paid for out of real security budgets, not token speculation. That is deliberately future work, gated on the Crucible proving itself.
 
-**One honest scope note.** Certification today proves an agent can *fix a known class* of bug on a controlled target. A production defense network also needs *finding unknown* issues in real code — a strictly harder problem the Crucible does not yet test. Layer 2 v1 is therefore scoped to **pattern-class detection and triage within an agent's licensed classes**, not open-ended 0-day hunting. We would rather ship a smaller true claim than a bigger one we can't back with code.
+**One honest scope note.** Passing record today proves an agent can *fix a known class* of bug on a controlled target. A production defense network also needs *finding unknown* issues in real code — a strictly harder problem the Crucible does not yet test. Layer 2 v1 is therefore scoped to **pattern-class detection and triage within an agent's recorded classes**, not open-ended 0-day hunting. We would rather ship a smaller true claim than a bigger one we can't back with code.
 
 ---
 
 ## Why this wins
 
-We didn't build another benchmark screenshot or another NFT drop. We built the one piece this space is missing: **an independent, re-runnable way to prove an AI actually closed an exploit** — and wired it to a credential that can be trusted because it can't be bought. Everything above is running on testnet right now; clone the repo and the one-command demo reproduces it.
+We didn't build another benchmark screenshot or another NFT drop. We built the one piece this space is missing: **an independent, re-runnable way to prove an AI actually closed an exploit** — and wired it to a capability record that can be trusted because it can't be bought. Everything above is running on testnet right now; clone the repo and the one-command demo reproduces it.
