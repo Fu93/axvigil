@@ -157,7 +157,7 @@ Agent ID owner submits mint
 | Agent | automated solve loop with an offline oracle so judges can reproduce runs |
 | Contracts | EIP-712 authorization; `mintedPerAgent` ceiling of 2; hourly cap; pausable; `setSigner` (owner rotates the signer; the signer key only authorizes mints); fixed supply |
 | Deployment | BSC testnet (chain 97): Skill `0x3377…CD18`, Collectible `0x0658…4658`, registry `0x7Aa4…d45e` (`MockAgentID`, open mint, not a production Agent ID) |
-| Tests | Foundry unit / fuzz / rarity-distribution / invariant / verify→mint integration; Python backend and verifier suites; 179 tests green (contracts 75 · Python 104; one Docker image check skipped until the sandbox image is built) |
+| Tests | Foundry unit / fuzz / rarity-distribution / invariant / verify→mint integration; Python backend and verifier suites; 180 tests green (contracts 75 · Python 105; one Docker image check skipped until the sandbox image is built) |
 
 ### 4.4 Live proof (Muse Spark mint)
 
@@ -169,13 +169,13 @@ The primary on-chain proof is a **Muse Spark** solve, not the earlier reference-
 | Challenge | server-dealt `signature-replay` (legendary). Class 2 because `NUM_CLASSES = 3`; signature replay is grouped under access control |
 | Model calls | 1 request, 4,947 completion tokens, first try |
 | Grade | server hidden-test grade passed |
-| Signer | `0x4E38ec3f38D5c947B60E7e1273890Eea51501Ef8` (still also deployer, owner, and admin — rotation not sent) |
-| Mint | tx `0x8f135d51462a5a5ad98dc3af3df0838f5f3eabc1207210fc22041f876281c177`, block 140439816, 331,623 gas |
-| Collectible | token #2, `tokenURI` `ipfs://unrevealed.json`, batch 2 |
+| Signer at mint time | `0x4E38ec3f38D5c947B60E7e1273890Eea51501Ef8` (deployer). Rotated afterwards to `0x91AeE1253D3EF16864FEfC8EFF3431959c86e081` by [`setSigner`](https://testnet.bscscan.com/tx/0xaea5242f066736eae950daf093a8cfe44e863e2341e97ab4e08e406f1cea2d3b) (30,781 gas). That key is not the owner and not a threshold validator |
+| Mint | tx [`0x8f135d51…`](https://testnet.bscscan.com/tx/0x8f135d51462a5a5ad98dc3af3df0838f5f3eabc1207210fc22041f876281c177), block 140439816, 331,623 gas |
+| Collectible | token #2 on `0x0658…4658`. After reveal, tier LEGENDARY, artId 320000, `tokenURI` `320000` |
 | Skill | token #7, `locked() == true` |
 | submissionHash | `0x93eb0753c8c9022acfa604e06a7fa89c4f19b04730c049acba261fce092b7094` (in the `Minted` event: vulnClass 2, difficulty 2, pool 2, batch 2) |
-| Batch 2 commit | `0xc48b3866605adac8328dad2bfff467ba9918c2a4c91271d9257c5b12fbaef222` |
-| Batch 2 reveal | **pending.** The seed is not in the repo. `revealTx` is null until the operator runs `scripts/reveal_and_recompute.py` |
+| Batch 2 commit | [`0xc48b3866…`](https://testnet.bscscan.com/tx/0xc48b3866605adac8328dad2bfff467ba9918c2a4c91271d9257c5b12fbaef222) |
+| Batch 2 reveal | [`revealSeed`](https://testnet.bscscan.com/tx/0xf83f082999ea63a7bef5f4eacc105e1aa2d648c2be38af1a5ff7fabdb978d597) (77,699 gas) and [`revealTokens`](https://testnet.bscscan.com/tx/0x343f3a8ca91b5c31b5441381900eddf7478e9ed01deeb4e9900338c6273f6ef2) (102,912 gas). Replay matches token #1 (tier 0, artId 20000) and token #2 (tier 3, artId 320000). 0 mismatches |
 
 Secondary, kept in `deployments/bsc-testnet-97.json` under `smokeTest`: a reference solution for a server-dealt legendary session minted token #1 (Agent ID 1). Batch 1 was later revealed as tier COMMON, artId 20000, `submissionHash 0x8083…64df`.
 
@@ -187,7 +187,8 @@ The agent loop is propose → grade → feed the grader log back → retry (`age
 |---|---|
 | `bridge-phantom-deposit` seed 7 (contract `Tunnel`), after the PR #11 hint | attempt 0: narrow `address(0)` fix, hidden tests 7/8. attempt 1: `token.code.length > 0`, pass. 16,250 tokens, 45 s, 2 attempts |
 | `access-control` seed 1 (role rendered as `custodian`), after the hidden-test fix | pass on the first try. 3,487 tokens, 16 s |
-| Server-dealt `signature-replay` on BSC testnet | pass on the first try (1 request, 4,947 tokens), then the mint in §4.4 |
+| Server-dealt `signature-replay` on the original collectible | pass on the first try (1 request, 4,947 tokens), then the mint in §4.4, later revealed LEGENDARY artId 320000 |
+| Three server-dealt threshold mints on `0x0e87…C8eB` (2-of-3) | each `muse-spark-1.1` pass on the first request. price-manipulation token #1 (5,067 completion / 5,938 total tokens, [mint](https://testnet.bscscan.com/tx/0x720f135e0af68e9dd1b908fc428153cffb0351e173b3b8f9b741b83045d7e3ab), CID `bafkreick5qyty6dxfa6w6p2immr5jg2bj2buvvjvdeohnj7j2eui3fguly`); access-control token #2 (3,336 / 3,992, [mint](https://testnet.bscscan.com/tx/0xf30d90b0f6edddcd61d5674ff2a3bd66592c69a21c11b1158d087d1992505cd1), CID `bafkreib5fwr5qggt3wrxev7u7uhi4tvclkcgjhe4nf4hva7tsmfhhbmbcm`); price-manipulation token #3 (4,560 / 5,491, [mint](https://testnet.bscscan.com/tx/0xfb058e4daeec61cf5a711335a3d61b6bf95faf5e0e1d5b887c33952aad3b11dd), CID `bafkreidtrw73rx3b6rdvdl32qxlusrggsbijrfhdmnhofhch6zodaqzpoe`). All three validators signed each session; 2 signatures were submitted. `verify_evidence.py` OK on all three. Grading used the subprocess sandbox, not Docker |
 | Same bridge seed 7 before the hint change | 5 attempts, all stuck at hidden 7/8, because the retry text said to keep the fix minimal |
 
 **Failure analysis (two benchmark bugs, both fixed in PR #11).**
@@ -206,18 +207,18 @@ What a pass means: one sandboxed grader, on one machine, accepted one patch agai
 | Contract owner | `setSigner`, `commitSeed`, `revealSeed`, pause, set URI | forge a `MintAuth` once the signer has been rotated to a different key |
 | Anyone | recompute `submissionHash` from an evidence bundle and re-run `scripts/verify_evidence.py` | recover a batch seed before `revealSeed` |
 
-The default sandbox is a resource-limited offline subprocess: `ffi` off, `FOUNDRY_OFFLINE`, a wall-clock timeout, and POSIX `rlimit` on CPU, address space, file size, and process count. `AXVIGIL_SANDBOX=docker` runs the same forge test in `axvigil-sandbox:1.8.7` with `--network none`, a read-only root, uid 1000, CPU/memory/pid limits, and a tmpfs workdir (`verifier/docker/Dockerfile`). The subprocess runner remains the fallback when the env is unset or `subprocess`. Neither mode is a TEE or a zkVM.
+The sandbox that graded the live BSC runs, including the three threshold mints, was the resource-limited offline subprocess: `ffi` off, `FOUNDRY_OFFLINE`, a wall-clock timeout, and POSIX `rlimit` on CPU, address space, file size, and process count. Docker was not installed on that machine and was not used. `AXVIGIL_SANDBOX=docker` is implemented (`verifier/docker/Dockerfile`, image `axvigil-sandbox:1.8.7`: `--network none`, read-only root, uid 1000, CPU/memory/pid limits, tmpfs workdir) and is the mode you opt into. Unset or `subprocess` is the runner that actually graded. Neither mode is a TEE or a zkVM. The Docker image check in CI is skipped until the image is built.
 
 Known false-pass gap: **none known** on the two real-incident mothers after the negative controls (an `address(0)`-only bridge patch, and `require(shares > 0)` on the vault, both fail). That is not a proof that no other false-pass exists.
 
 ### 4.7 Decentralisation roadmap
 
-**In this repository, before the hackathon deadline (operator transactions still pending):**
+**On BSC testnet now:**
 
-- Key separation: `setSigner` is on the deployed collectible. `scripts/rotate_signer.sh` sends it. Placeholder: `signerRotationTx: null`.
-- Threshold prototype (2-of-3): `mint(auth, bytes[])` checks k distinct validator signatures. The owner adds and removes validators and sets the threshold. This needs a new deploy (`script/DeployThreshold.s.sol`). Placeholder addresses are `thresholdRedeploy` in the deployment file; they are null until the operator broadcasts.
-- Evidence bundles: every graded `/v1/submit` writes canonical JSON, a local CIDv1, and optional `IPFS_PIN_URL` pinning. The CID is returned on submit and authorize. The on-chain tie is the existing `Minted.submissionHash`, not a new field.
-- Seed reveal: `scripts/reveal_and_recompute.py` can dry-run against the testnet with no key. Batch 2 reveal is pending. Placeholder: `batch2RevealTx: null`.
+- Key separation on the original collectible `0x0658…4658`: signer is `0x91Ae…e081`, set by [`0xaea5242f…`](https://testnet.bscscan.com/tx/0xaea5242f066736eae950daf093a8cfe44e863e2341e97ab4e08e406f1cea2d3b). Owner remains `0x4E38…1Ef8`.
+- Threshold collectible [`0x0e8755245231b66FdcE3a625b764dc1Bb597C8eB`](https://testnet.bscscan.com/address/0x0e8755245231b66FdcE3a625b764dc1Bb597C8eB), skill [`0xE165C8B4826b6eF7aE84dfe3B1b27017aF1b5F59`](https://testnet.bscscan.com/address/0xE165C8B4826b6eF7aE84dfe3B1b27017aF1b5F59). Threshold 2 of 3. Validators `0xc32d…95F9`, `0xD5f5…4645`, `0x133F…ec7f`. Owner `0x94aC…f6E9` is not a validator. Deploy [`0xd3717767…`](https://testnet.bscscan.com/tx/0xd3717767483596a9aeba2ceea15a7613d227344e93d077b17db7c57540aaac4b). Three Muse Spark mints are in §4.5. Grading was subprocess, not Docker.
+- Evidence bundles: each of those three submits has a CID, and `scripts/verify_evidence.py` returned OK (CID, submissionHash, seed commitment, forge re-grade).
+- Batch 2 on the original collectible is revealed. Replay mismatches: 0. Seed is public on-chain (`0xb1f8de1b…7f6b`).
 
 **After the deadline (not built):**
 
@@ -228,8 +229,9 @@ Known false-pass gap: **none known** on the two real-incident mothers after the 
 
 ### 4.8 Limitations and known issues
 
-- The live signer, owner, and deployer are one address until the operator rotation.
-- Batch 2 is committed and not revealed. Token #2 `tokenURI` is still `ipfs://unrevealed.json`.
+- On the original collectible the signer is now a dedicated key. The owner is still the deployer address. On the threshold collectible the owner is a different address and is not a validator.
+- Batch 2 on the original collectible is revealed (token #2 is LEGENDARY, artId 320000). The three threshold-collectible tokens are still `ipfs://unrevealed.json` because that contract's batch seed has not been revealed.
+- The Docker sandbox is in the repo and was not used for the live grades.
 - `MockAgentID` is an open mint. It is not the SPACE ID Agent ID registry.
 - The backend refuses a third reward session. The contract reverts a third mint. They are not the same counter: an abandoned session spends a backend attempt and does not mint.
 - Skill art can show a new emblem per class passed, but a single Agent ID can record at most two solves, because each solve is written by a mint and mints are capped at two.
@@ -461,8 +463,8 @@ We would rather ship a smaller claim we can back with code than a larger one we 
 
 | Phase | Window | Focus | Acceptance |
 |---|---|---|---|
-| **Phase 0 — Crucible** | to 2026-11-05 | hackathon finish: collection art and a demo video are still open. Hidden is live. Evidence bundles and the reveal/rotate scripts are in the repo. The rotation tx and the batch-2 reveal tx are pending the operator | demo reproducible; offline bank 20/20 per mother; live deal reference-checks when the flag is on |
-| **Phase 1 — hardening** | after the hackathon, no calendar promise | operator sends signer rotation; batch-2 reveal; move off `MockAgentID`; external review of the grader. VRF and a legal opinion are not scheduled as if they were already underway | rotation tx mined; batch 2 revealed; a written review of the grader, not a claim that one exists today |
+| **Phase 0 — Crucible** | to 2026-11-05 | collection art and a demo video are still open. Hidden, signer rotation, batch-2 reveal, the 2-of-3 collectible, and three threshold Muse Spark mints are on BSC testnet. Docker grading was not part of that run | demo reproducible; offline bank 20/20 per mother; live deal reference-checks when the flag is on |
+| **Phase 1 — hardening** | after the hackathon, no calendar promise | move off `MockAgentID`; external review of the grader; reveal the threshold collectible's batch. VRF and a legal opinion are not scheduled as if they were already underway | a written review of the grader, not a claim that one exists today |
 | **Phase 2 — Defense Alpha** | 2027 Q1 (conditional) | mainnet; first real-scan pilots (3–5 protocols) | ≥100 licensed agents; ≥1 paying scan customer |
 | **Phase 3 — flywheel** | 3–6 mo post-mainnet | library to 15–20 mothers; bounty-platform integration; B2B pricing | monthly scan revenue covers opex; first bounty settled |
 | **Later** | conditional | decentralized verification, conditional token, agent marketplace, cross-chain | — |
@@ -561,7 +563,7 @@ AXVIGIL_COLLECTIBLE=0x06580BFc1626f7DD3d7B841FD304e6f2B23e4658 \
 python3 scripts/reveal_and_recompute.py --dry-run
 ```
 
-Signer rotation and batch-2 reveal need the owner key and the batch-2 seed file. They are written up in `docs/operator-runbook.md`. Those transactions are not in the deployment record yet (`signerRotationTx` and `batch2RevealTx` are pending).
+Signer rotation and batch-2 reveal on the original collectible are mined (`signerRotationTx` `0xaea5242f…`, `batch2RevealTx` `0xf83f0829…`). The threshold deploy and the three Muse Spark mints are in `deployments/bsc-testnet-97.json`. Commands for a further mint are in `docs/operator-runbook.md`. Live grading used the subprocess sandbox, not Docker.
 
 Model loop, when `META_API_KEY` is set:
 

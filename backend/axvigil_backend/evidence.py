@@ -96,12 +96,19 @@ def verifier_version_hash(verifier_pkg: Path) -> str:
 
 
 def repo_commit(repo_root: Path) -> str | None:
+    """HEAD sha, with ``-dirty`` when the worktree has staged, unstaged, or untracked files."""
     try:
-        out = subprocess.check_output(
+        head = subprocess.check_output(
             ["git", "-C", str(repo_root), "rev-parse", "HEAD"],
             text=True, timeout=5, stderr=subprocess.DEVNULL,
+        ).strip()
+        if not head:
+            return None
+        status = subprocess.check_output(
+            ["git", "-C", str(repo_root), "status", "--porcelain"],
+            text=True, timeout=5, stderr=subprocess.DEVNULL,
         )
-        return out.strip() or None
+        return head + ("-dirty" if status.strip() else "")
     except (subprocess.SubprocessError, OSError):
         return None
 

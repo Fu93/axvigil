@@ -25,57 +25,79 @@ import {IAxVigilSkill} from "../src/interfaces/IAxVigilSkill.sol";
 contract DeployThreshold is Script {
     uint256 internal constant BSC_TESTNET = 97;
 
+    struct Cfg {
+        uint256 pk;
+        address deployer;
+        address signer;
+        address owner;
+        address registryAddr;
+        uint256 hourlyCap;
+        string baseURI;
+        string unrevealedURI;
+        bytes32 seedHash;
+        address validator2;
+        address validator3;
+        uint256 k;
+    }
+
     function run() external {
         require(block.chainid == BSC_TESTNET, "DeployThreshold: BSC testnet (97) only");
+        Cfg memory c = _cfg();
 
-        uint256 pk = vm.envUint("PRIVATE_KEY");
-        address deployer = vm.addr(pk);
-        address signer = vm.envAddress("SIGNER");
-        address owner = vm.envOr("OWNER", deployer);
-        address registryAddr = vm.envOr("AGENT_REGISTRY", address(0));
-        uint256 hourlyCap = vm.envOr("HOURLY_CAP", uint256(50));
-        string memory baseURI = vm.envOr("BASE_URI", string(""));
-        string memory unrevealedURI = vm.envOr("UNREVEALED_URI", string("ipfs://unrevealed.json"));
-        bytes32 seedHash = vm.envOr("SEED_HASH", bytes32(0));
-        address validator2 = vm.envOr("VALIDATOR_2", address(0));
-        address validator3 = vm.envOr("VALIDATOR_3", address(0));
-        uint256 k = vm.envOr("THRESHOLD", uint256(2));
+        vm.startBroadcast(c.pk);
 
-        uint256[5] memory tiers = [uint256(5444), 1555, 622, 152, 4];
-
-        vm.startBroadcast(pk);
-
-        if (registryAddr == address(0)) {
-            registryAddr = address(new MockAgentID());
-            console2.log("MockAgentID:", registryAddr);
+        if (c.registryAddr == address(0)) {
+            c.registryAddr = address(new MockAgentID());
+            console2.log("MockAgentID:", c.registryAddr);
         }
 
-        AxVigilSkill skill = new AxVigilSkill(IAgentRegistry(registryAddr), deployer);
-        AxVigilCollectible nft = new AxVigilCollectible(
-            IAgentRegistry(registryAddr), IAxVigilSkill(address(skill)), signer, deployer, tiers, hourlyCap
-        );
+        AxVigilSkill skill = new AxVigilSkill(IAgentRegistry(c.registryAddr), c.deployer);
+        AxVigilCollectible nft = _deployCollectible(c, address(skill));
         skill.grantRole(skill.MINTER_ROLE(), address(nft));
 
-        if (validator2 != address(0)) nft.addValidator(validator2);
-        if (validator3 != address(0)) nft.addValidator(validator3);
-        if (validator2 != address(0) && validator3 != address(0)) nft.setThreshold(k);
+        if (c.validator2 != address(0)) nft.addValidator(c.validator2);
+        if (c.validator3 != address(0)) nft.addValidator(c.validator3);
+        if (c.validator2 != address(0) && c.validator3 != address(0)) nft.setThreshold(c.k);
 
-        if (bytes(baseURI).length > 0 || bytes(unrevealedURI).length > 0) nft.setBaseURI(baseURI, unrevealedURI);
-        if (seedHash != bytes32(0)) nft.commitSeed(seedHash);
+        if (bytes(c.baseURI).length > 0 || bytes(c.unrevealedURI).length > 0) nft.setBaseURI(c.baseURI, c.unrevealedURI);
+        if (c.seedHash != bytes32(0)) nft.commitSeed(c.seedHash);
 
-        if (owner != deployer) {
-            skill.grantRole(skill.DEFAULT_ADMIN_ROLE(), owner);
-            skill.renounceRole(skill.DEFAULT_ADMIN_ROLE(), deployer);
-            nft.transferOwnership(owner);
+        if (c.owner != c.deployer) {
+            skill.grantRole(skill.DEFAULT_ADMIN_ROLE(), c.owner);
+            skill.renounceRole(skill.DEFAULT_ADMIN_ROLE(), c.deployer);
+            nft.transferOwnership(c.owner);
         }
 
         vm.stopBroadcast();
 
         console2.log("AxVigilSkill:", address(skill));
         console2.log("AxVigilCollectible:", address(nft));
-        console2.log("Agent registry:", registryAddr);
-        console2.log("Validator 1 / legacy signer:", signer);
+        console2.log("Agent registry:", c.registryAddr);
+        console2.log("Validator 1 / legacy signer:", c.signer);
         console2.log("Threshold:", nft.threshold());
         console2.log("PENDING: write these addresses into deployments/bsc-testnet-97.json thresholdRedeploy");
+    }
+
+    /// @dev Env is read into a struct so run() stays under the legacy-codegen stack limit (via_ir = false).
+    function _cfg() internal view returns (Cfg memory c) {
+        c.pk = vm.envUint("PRIVATE_KEY");
+        c.deployer = vm.addr(c.pk);
+        c.signer = vm.envAddress("SIGNER");
+        c.owner = vm.envOr("OWNER", c.deployer);
+        c.registryAddr = vm.envOr("AGENT_REGISTRY", address(0));
+        c.hourlyCap = vm.envOr("HOURLY_CAP", uint256(50));
+        c.baseURI = vm.envOr("BASE_URI", string(""));
+        c.unrevealedURI = vm.envOr("UNREVEALED_URI", string("ipfs://unrevealed.json"));
+        c.seedHash = vm.envOr("SEED_HASH", bytes32(0));
+        c.validator2 = vm.envOr("VALIDATOR_2", address(0));
+        c.validator3 = vm.envOr("VALIDATOR_3", address(0));
+        c.k = vm.envOr("THRESHOLD", uint256(2));
+    }
+
+    function _deployCollectible(Cfg memory c, address skill) internal returns (AxVigilCollectible) {
+        uint256[5] memory tiers = [uint256(5444), 1555, 622, 152, 4];
+        return new AxVigilCollectible(
+            IAgentRegistry(c.registryAddr), IAxVigilSkill(skill), c.signer, c.deployer, tiers, c.hourlyCap
+        );
     }
 }

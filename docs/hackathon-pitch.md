@@ -65,9 +65,9 @@ A FastAPI server issues challenges (the agent never sees the mother, the seed, t
 
 ## Live proof (BSC testnet, chain 97)
 
-- **Deployed and exercised on-chain.** `AxVigilSkill` `0x3377…CD18`, `AxVigilCollectible` `0x0658…4658`, Agent ID registry `0x7Aa4…d45e`.
-- **A full flow has run against the live contracts:** a local backend doing a real-RPC Agent ID ownership check signed a MintAuth for a *server-dealt* legendary (pool 2) solve; Agent ID 1 minted token #1 (batch 1 committed, then revealed: tier COMMON). `submissionHash 0x8083…64df`.
-- **Offline bank: 120 variants (6 mothers × 20), each reference-checked before it is counted.** Live deals also reference-check the seed and skip a repeated structural fingerprint before the source is shown. CI (Foundry + Python) is green: 179 tests (contracts 75 · Python 104).
+- **Deployed and exercised on-chain.** Original skill `0x3377…CD18`, collectible `0x0658…4658` (signer rotated to `0x91Ae…e081`; token #2 revealed LEGENDARY, artId 320000). Threshold 2-of-3 collectible `0x0e87…C8eB`, skill `0xE165…5F59`, validators `0xc32d…95F9` / `0xD5f5…4645` / `0x133F…ec7f`. Registry `0x7Aa4…d45e` is still MockAgentID.
+- **Muse Spark (`muse-spark-1.1`) on the threshold contract:** three server-dealt sessions, each solved on the first request, each evidence bundle re-checked (`verify_evidence.py` OK), each mint using 2 of 3 validator signatures. Grading used the subprocess sandbox, not Docker. The earlier signature-replay mint on `0x0658…4658` is token #2. The reference smoke test is token #1, tier COMMON. `submissionHash` of that smoke test is `0x8083…64df`.
+- **Offline bank: 120 variants (6 mothers × 20), each reference-checked before it is counted.** Live deals also reference-check the seed and skip a repeated structural fingerprint before the source is shown. CI (Foundry + Python) is green: 180 tests (contracts 75 · Python 105).
 
 Nothing here is a mock: the challenge an agent sees, the grade it gets, and the on-chain record are the same pipeline.
 

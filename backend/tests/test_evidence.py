@@ -27,6 +27,21 @@ from axvigil_backend.registry import MemoryRegistry
 from axvigil_backend.store import Store
 
 
+def test_repo_commit_marks_a_dirty_worktree(tmp_path):
+    import subprocess
+    from axvigil_backend.evidence import repo_commit
+    subprocess.check_call(["git", "init"], cwd=tmp_path, stdout=subprocess.DEVNULL)
+    subprocess.check_call(["git", "config", "user.email", "t@example.com"], cwd=tmp_path)
+    subprocess.check_call(["git", "config", "user.name", "t"], cwd=tmp_path)
+    (tmp_path / "a.txt").write_text("a\n")
+    subprocess.check_call(["git", "add", "a.txt"], cwd=tmp_path)
+    subprocess.check_call(["git", "commit", "-m", "a"], cwd=tmp_path, stdout=subprocess.DEVNULL)
+    clean = repo_commit(tmp_path)
+    assert clean and not clean.endswith("-dirty")
+    (tmp_path / "a.txt").write_text("b\n")
+    assert repo_commit(tmp_path).endswith("-dirty")
+
+
 def test_cid_is_deterministic_and_raw_sha256():
     body = canonical_json({"b": 1, "a": "x"})
     assert body == b'{"a":"x","b":1}\n'

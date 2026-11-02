@@ -1,6 +1,6 @@
 # Operator runbook
 
-These steps need the owner key and, for a new mint, the backend signer key. They are not run from this repository's CI. Placeholders below stay empty until the transactions are mined.
+These steps need the owner key and, for a new mint, the backend signer key. They are not run from this repository's CI. The BSC testnet (chain 97) broadcast listed under "Done" is already in `deployments/bsc-testnet-97.json`. The commands below are how to repeat a rotation, a reveal, or another mint.
 
 Live contracts (no redeploy required for signer rotation; `setSigner` is already deployed):
 
@@ -11,14 +11,32 @@ Live contracts (no redeploy required for signer rotation; `setSigner` is already
 | MockAgentID | `0x7Aa441477f0246353bdAe504cF0F9B3027D6d45e` |
 | Current owner and signer | `0x4E38ec3f38D5c947B60E7e1273890Eea51501Ef8` |
 
-Pending:
+Done on BSC testnet (chain 97):
 
-- `signerRotationTx`: null
-- `batch2RevealTx`: null
+- Original collectible signer rotation: `0xaea5242f066736eae950daf093a8cfe44e863e2341e97ab4e08e406f1cea2d3b` (now `0x91AeE1253D3EF16864FEfC8EFF3431959c86e081`)
+- Batch 2 reveal: `0xf83f082999ea63a7bef5f4eacc105e1aa2d648c2be38af1a5ff7fabdb978d597` and revealTokens `0x343f3a8ca91b5c31b5441381900eddf7478e9ed01deeb4e9900338c6273f6ef2`. Recompute mismatches: 0. Token #2 is LEGENDARY, artId 320000.
+- Threshold collectible `0x0e8755245231b66FdcE3a625b764dc1Bb597C8eB`, skill `0xE165C8B4826b6eF7aE84dfe3B1b27017aF1b5F59`, threshold 2 of 3. Validators `0xc32d95193F489EF0ACBE767D387509a8a3C495F9`, `0xD5f579698CdbFD0FA1C7d1F36127b8276F5c4645`, `0x133Fa4314da9a90aEB8a7AB9F281149F4d0Dec7f`. Owner `0x94aC129e81ababD2153093b33ec4B2920d11f6E9` is not a validator. Deploy `0xd3717767483596a9aeba2ceea15a7613d227344e93d077b17db7c57540aaac4b`.
+- Three Muse Spark threshold mints, each first-request pass, `verify_evidence.py` OK. Grading used `AXVIGIL_SANDBOX=subprocess`. Docker was not used.
 
-## 0. Deploy the threshold collectible (new bytecode)
+Another mint uses `scripts/run_threshold.sh` (below). Keys come from env files you do not commit.
 
-The live collectible does not have `mint(auth, bytes[])`. This is a new deploy, not an upgrade of token #1 and token #2. Those tokens stay on `0x06580BFc1626f7DD3d7B841FD304e6f2B23e4658`. After broadcast, fill `thresholdRedeploy` in `deployments/bsc-testnet-97.json`. The fields are null until then.
+## Coordinator (`scripts/run_threshold.sh`)
+
+Posts one evidence bundle to the three validators, keeps two signatures, and sends `mint(auth, bytes[])`. Default gas price is 1 gwei (`GAS_PRICE=1000000000`).
+
+```bash
+export META_API_KEY=...
+export AXVIGIL_DEPLOY_ENV=/path/to/deploy.env          # SIGNER_KEY here is the player
+export AXVIGIL_BACKEND_SIGNER_ENV=/path/to/backend.env # dedicated SIGNER_KEY
+export AXVIGIL_VALIDATORS_ENV=/path/to/validators.env  # VALIDATOR_KEY_1/2/3
+./scripts/run_threshold.sh /tmp/axv-threshold-run
+```
+
+Do not commit those env files. The live three mints already used this flow with the subprocess sandbox.
+
+## 0. Deploy the threshold collectible (already broadcast; repeat only for a new chain)
+
+The original collectible does not have `mint(auth, bytes[])`. The threshold pair is a separate deploy, not an upgrade of token #1 and token #2. Those tokens stay on `0x06580BFc1626f7DD3d7B841FD304e6f2B23e4658`. `thresholdRedeploy` in `deployments/bsc-testnet-97.json` is filled (`status` `live`). Repeat the script only for a new chain, then record the new addresses the same way.
 
 ```bash
 export PRIVATE_KEY=0x<deployer, also the initial owner>
@@ -81,7 +99,7 @@ AXVIGIL_REFERENCE_CHECK=1
 # IPFS_PIN_TOKEN=        # optional
 ```
 
-Record the transaction hash as `signerRotationTx` in `deployments/bsc-testnet-97.json` after it is mined. Until then the deployer address remains the signer.
+The live rotation is already mined: `signerRotationTx` `0xaea5242f066736eae950daf093a8cfe44e863e2341e97ab4e08e406f1cea2d3b`. The signer is `0x91AeE1253D3EF16864FEfC8EFF3431959c86e081`. Record any later rotation the same way.
 
 ## 2. Redeploy
 
@@ -89,7 +107,7 @@ Not required for signer rotation. A redeploy is required only if the collectible
 
 ## 3. Reveal batch 2
 
-The seed is the preimage of the hash committed in `0xc48b3866605adac8328dad2bfff467ba9918c2a4c91271d9257c5b12fbaef222`. It is not in this repo. Write it to a file that is not committed, one hex line.
+Batch 2 is already revealed. The seed is public on chain and recorded in `deployments/bsc-testnet-97.json` (`0xb1f8de1b66cb064e9f72e5afaaa3ad3ee4e62cf9db43930268d8ba134cf67f6b`). `revealSeed` is `0xf83f082999ea63a7bef5f4eacc105e1aa2d648c2be38af1a5ff7fabdb978d597`. `revealTokens` is `0x343f3a8ca91b5c31b5441381900eddf7478e9ed01deeb4e9900338c6273f6ef2`. Recompute mismatches: 0. A later batch still needs its seed in a file you do not commit, one hex line. The commitment for batch 2 was `0xc48b3866605adac8328dad2bfff467ba9918c2a4c91271d9257c5b12fbaef222`.
 
 ```bash
 export RPC_URL=https://bsc-testnet-rpc.publicnode.com
@@ -104,7 +122,7 @@ export OWNER_KEY=0x<owner key>
 python3 scripts/reveal_and_recompute.py
 ```
 
-The script calls `revealSeed` then `revealTokens`, then replays tier and artId from chain data and compares `tokenURI`. Dry-run with no `SEED_FILE` only reads the deployment. Record the reveal transaction as `batch2RevealTx`. It is null until this is sent.
+The script calls `revealSeed` then `revealTokens`, then replays tier and artId from chain data and compares `tokenURI`. Dry-run with no `SEED_FILE` only reads the deployment. `batch2RevealTx` is the mined `revealSeed` transaction above. Record a later reveal the same way.
 
 ## 4. Evidence-bundled Muse Spark mint
 
@@ -124,4 +142,4 @@ Recompute locally:
 python3 scripts/verify_evidence.py "$EVIDENCE_DIR/<submissionHash>/manifest.json"
 ```
 
-A fresh Muse Spark mint after this PR is not in the deployment file yet. The mint already on chain is `museSparkMint` (token #2, signature-replay). The reference-solution smoke test remains `smokeTest` (token #1).
+The three threshold Muse Spark mints are `museSparkThresholdMint` (tokens #1–#3 on `0x0e87…C8eB`). Their `tokenURI` is still `ipfs://unrevealed.json`. The earlier signature-replay mint is `museSparkMint` (token #2 on `0x0658…4658`, revealed LEGENDARY). The reference-solution smoke test remains `smokeTest` (token #1).

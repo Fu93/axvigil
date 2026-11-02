@@ -157,7 +157,7 @@ Agent ID 持有人送出 mint
 | Agent | 自動解題迴圈,附離線 oracle 讓評審重現 |
 | 合約 | EIP-712 授權；`mintedPerAgent` 上限為 2；每小時上限；可暫停；`setSigner`（owner 輪換 signer，signer 金鑰只能授權 mint）；供給固定 |
 | 部署 | BSC 測試網（chain 97）：Skill `0x3377…CD18`、Collectible `0x0658…4658`、註冊表 `0x7Aa4…d45e`（`MockAgentID`，開放鑄造，不是生產用 Agent ID） |
-| 測試 | Foundry 單元 / fuzz / 稀有度 / invariant / verify→mint 整合;Python 後端與 verifier 套件;179 項測試綠燈（合約 75 · Python 104；沙箱映像未建時有一項 Docker 檢查略過） |
+| 測試 | Foundry 單元 / fuzz / 稀有度 / invariant / verify→mint 整合;Python 後端與 verifier 套件;180 項測試綠燈（合約 75 · Python 105；沙箱映像未建時有一項 Docker 檢查略過） |
 
 ### 4.4 鏈上實證（Muse Spark 鑄造）
 
@@ -169,13 +169,13 @@ Agent ID 持有人送出 mint
 | 題目 | 伺服器發放的 `signature-replay`（傳奇）。類別是 2，因為 `NUM_CLASSES = 3`；簽名重放歸在權限控制之下 |
 | 模型呼叫 | 1 次請求、4,947 個 completion token、第一次就通過 |
 | 評分 | 伺服器隱藏測試通過 |
-| Signer | `0x4E38ec3f38D5c947B60E7e1273890Eea51501Ef8`（目前仍同時是 deployer、owner 與 admin；輪換尚未送出） |
-| Mint | 交易 `0x8f135d51462a5a5ad98dc3af3df0838f5f3eabc1207210fc22041f876281c177`，區塊 140439816，331,623 gas |
-| 收藏品 | token #2，`tokenURI` 為 `ipfs://unrevealed.json`，batch 2 |
+| 鑄造當下的 Signer | `0x4E38ec3f38D5c947B60E7e1273890Eea51501Ef8`（deployer）。之後輪換為 `0x91AeE1253D3EF16864FEfC8EFF3431959c86e081`，交易 [`setSigner`](https://testnet.bscscan.com/tx/0xaea5242f066736eae950daf093a8cfe44e863e2341e97ab4e08e406f1cea2d3b)（30,781 gas）。這把金鑰不是 owner，也不是門檻驗證者 |
+| Mint | 交易 [`0x8f135d51…`](https://testnet.bscscan.com/tx/0x8f135d51462a5a5ad98dc3af3df0838f5f3eabc1207210fc22041f876281c177)，區塊 140439816，331,623 gas |
+| 收藏品 | `0x0658…4658` 上的 token #2。揭示後為 tier LEGENDARY、artId 320000、`tokenURI` `320000` |
 | 技能 | token #7，`locked() == true` |
 | submissionHash | `0x93eb0753c8c9022acfa604e06a7fa89c4f19b04730c049acba261fce092b7094`（在 `Minted` 事件：vulnClass 2、difficulty 2、pool 2、batch 2） |
-| Batch 2 commit | `0xc48b3866605adac8328dad2bfff467ba9918c2a4c91271d9257c5b12fbaef222` |
-| Batch 2 揭示 | **尚未執行。** seed 不在本倉庫。`revealTx` 在操作者跑 `scripts/reveal_and_recompute.py` 之前維持空值 |
+| Batch 2 commit | [`0xc48b3866…`](https://testnet.bscscan.com/tx/0xc48b3866605adac8328dad2bfff467ba9918c2a4c91271d9257c5b12fbaef222) |
+| Batch 2 揭示 | [`revealSeed`](https://testnet.bscscan.com/tx/0xf83f082999ea63a7bef5f4eacc105e1aa2d648c2be38af1a5ff7fabdb978d597)（77,699 gas）與 [`revealTokens`](https://testnet.bscscan.com/tx/0x343f3a8ca91b5c31b5441381900eddf7478e9ed01deeb4e9900338c6273f6ef2)（102,912 gas）。重算吻合 token #1（tier 0、artId 20000）與 token #2（tier 3、artId 320000）。0 筆不符 |
 
 次要紀錄留在 `deployments/bsc-testnet-97.json` 的 `smokeTest`：參考解答為一次伺服器發放的傳奇 session 鑄出 token #1（Agent ID 1）。Batch 1 之後揭示為 tier COMMON、artId 20000，`submissionHash 0x8083…64df`。
 
@@ -187,7 +187,8 @@ Agent 迴圈是提案、評分、把評分日誌餵回去、再試（`agent/axvi
 |---|---|
 | `bridge-phantom-deposit` seed 7（合約 `Tunnel`），PR #11 提示語改完之後 | 第 0 次：只擋 `address(0)`，隱藏測試 7/8。第 1 次：加上 `token.code.length > 0`，通過。16,250 token，45 秒，2 次嘗試 |
 | `access-control` seed 1（角色被渲染成 `custodian`），隱藏測試修正之後 | 第一次就通過。3,487 token，16 秒 |
-| BSC 測試網上伺服器發放的 `signature-replay` | 第一次就通過（1 次請求、4,947 token），接著是 §4.4 的鑄造 |
+| 原收藏品上伺服器發放的 `signature-replay` | 第一次就通過（1 次請求、4,947 token），接著是 §4.4 的鑄造，之後揭示為 LEGENDARY、artId 320000 |
+| `0x0e87…C8eB` 上三次 2-of-3 門檻鑄造 | 每一次 `muse-spark-1.1` 都在第一次請求通過。price-manipulation token #1（completion 5,067／合計 5,938，[鑄造](https://testnet.bscscan.com/tx/0x720f135e0af68e9dd1b908fc428153cffb0351e173b3b8f9b741b83045d7e3ab)，CID `bafkreick5qyty6dxfa6w6p2immr5jg2bj2buvvjvdeohnj7j2eui3fguly`）；access-control token #2（3,336／3,992，[鑄造](https://testnet.bscscan.com/tx/0xf30d90b0f6edddcd61d5674ff2a3bd66592c69a21c11b1158d087d1992505cd1)，CID `bafkreib5fwr5qggt3wrxev7u7uhi4tvclkcgjhe4nf4hva7tsmfhhbmbcm`）；price-manipulation token #3（4,560／5,491，[鑄造](https://testnet.bscscan.com/tx/0xfb058e4daeec61cf5a711335a3d61b6bf95faf5e0e1d5b887c33952aad3b11dd)，CID `bafkreidtrw73rx3b6rdvdl32qxlusrggsbijrfhdmnhofhch6zodaqzpoe`）。每一次三個驗證者都簽名，送出其中 2 個。三份 `verify_evidence.py` 皆 OK。評分用子程序沙箱，不是 Docker |
 | 同一道 bridge seed 7，提示語修改之前 | 5 次都停在隱藏測試 7/8，因為重試文字要求把修補維持在最小範圍 |
 
 **失敗分析（兩個由實跑找到、並在 PR #11 修好的基準錯誤）。**
@@ -206,18 +207,18 @@ Agent 迴圈是提案、評分、把評分日誌餵回去、再試（`agent/axvi
 | 合約 owner | `setSigner`、`commitSeed`、`revealSeed`、暫停、設定 URI | 在 signer 已輪換到另一把金鑰之後，偽造 `MintAuth` |
 | 任何人 | 用證據包重算 `submissionHash`，並重跑 `scripts/verify_evidence.py` | 在 `revealSeed` 之前還原 batch seed |
 
-預設沙箱是一個有資源上限的離線子程序：`ffi` 關閉、`FOUNDRY_OFFLINE`、牆鐘逾時，以及 POSIX `rlimit`（CPU、位址空間、檔案大小、程序數）。`AXVIGIL_SANDBOX=docker` 改在映像 `axvigil-sandbox:1.8.7` 裡跑同一份 forge 測試，帶 `--network none`、唯讀根檔案系統、uid 1000、CPU／記憶體／程序數上限，以及 tmpfs 工作目錄（`verifier/docker/Dockerfile`）。環境變數未設或設成 `subprocess` 時，仍用子程序。兩種都不是 TEE，也不是 zkVM。
+BSC 上的實跑，包括三次門檻鑄造，用的是有資源上限的離線子程序：`ffi` 關閉、`FOUNDRY_OFFLINE`、牆鐘逾時，以及 POSIX `rlimit`（CPU、位址空間、檔案大小、程序數）。那台機器沒有安裝 Docker，也沒有使用它。`AXVIGIL_SANDBOX=docker` 已實作（`verifier/docker/Dockerfile`，映像 `axvigil-sandbox:1.8.7`：`--network none`、唯讀根檔案系統、uid 1000、CPU／記憶體／程序數上限、tmpfs 工作目錄），要自己打開才會用。未設定或設成 `subprocess` 才是實際評分用的執行器。兩種都不是 TEE，也不是 zkVM。映像還沒建好時，CI 裡那一項 Docker 檢查會略過。
 
 已知的誤放行缺口：**目前沒有已知的誤放行**。兩道真實事件母題的負向控制已拒絕只擋 `address(0)` 的橋接修補，以及金庫上只加 `require(shares > 0)` 的修補。這不是「所有可能的修補都已枚舉」的證明。
 
 ### 4.7 去中心化路線圖
 
-**本倉庫在黑客松截止前已有的部分（鏈上交易仍待操作者送出）：**
+**目前已在 BSC 測試網上：**
 
-- 金鑰分離：已部署的收藏品合約上已有 `setSigner`。`scripts/rotate_signer.sh` 會送出它。佔位：`signerRotationTx: null`。
-- 門檻原型（2-of-3）：`mint(auth, bytes[])` 檢查 k 個不同驗證者的簽名。Owner 新增、移除驗證者並設定門檻。這需要新的部署（`script/DeployThreshold.s.sol`）。位址佔位在部署檔的 `thresholdRedeploy`，廣播之前是 null。舊的 token 留在目前的合約上。
-- 證據包：每一次評分過的 `/v1/submit` 寫入規範 JSON、本地 CIDv1，並可選用 `IPFS_PIN_URL` 釘選。CID 在 submit 與 authorize 的回應裡。鏈上的對應是既有的 `Minted.submissionHash`，沒有新增欄位。
-- Seed 揭示：`scripts/reveal_and_recompute.py` 可以在沒有金鑰的情況下對測試網做 dry-run。Batch 2 的揭示尚未送出。佔位：`batch2RevealTx: null`。
+- 原收藏品 `0x0658…4658` 的金鑰分離：signer 是 `0x91Ae…e081`，交易 [`0xaea5242f…`](https://testnet.bscscan.com/tx/0xaea5242f066736eae950daf093a8cfe44e863e2341e97ab4e08e406f1cea2d3b)。Owner 仍是 `0x4E38…1Ef8`。
+- 門檻收藏品 [`0x0e8755245231b66FdcE3a625b764dc1Bb597C8eB`](https://testnet.bscscan.com/address/0x0e8755245231b66FdcE3a625b764dc1Bb597C8eB)，技能 [`0xE165C8B4826b6eF7aE84dfe3B1b27017aF1b5F59`](https://testnet.bscscan.com/address/0xE165C8B4826b6eF7aE84dfe3B1b27017aF1b5F59)。門檻 2／3。驗證者 `0xc32d…95F9`、`0xD5f5…4645`、`0x133F…ec7f`。Owner `0x94aC…f6E9` 不是驗證者。部署 [`0xd3717767…`](https://testnet.bscscan.com/tx/0xd3717767483596a9aeba2ceea15a7613d227344e93d077b17db7c57540aaac4b)。三次 Muse Spark 鑄造見 §4.5。評分用子程序，不是 Docker。
+- 證據包：這三次提交各有一個 CID，`scripts/verify_evidence.py` 皆回 OK（CID、submissionHash、seed 承諾、forge 重跑）。
+- 原收藏品的 batch 2 已揭示。重算不符筆數：0。Seed 已在鏈上公開（`0xb1f8de1b…7f6b`）。
 
 **截止之後（尚未建造）：**
 
@@ -228,8 +229,9 @@ Agent 迴圈是提案、評分、把評分日誌餵回去、再試（`agent/axvi
 
 ### 4.8 限制與已知問題
 
-- 在操作者完成輪換之前，線上的 signer、owner 與 deployer 是同一個地址。
-- Batch 2 已 commit、尚未揭示。Token #2 的 `tokenURI` 仍是 `ipfs://unrevealed.json`。
+- 原收藏品的 signer 已是另一把金鑰。Owner 仍是 deployer 地址。門檻收藏品的 owner 是另一個地址，而且不是驗證者。
+- 原收藏品的 batch 2 已揭示（token #2 為 LEGENDARY、artId 320000）。門檻收藏品上的三個 token 仍是 `ipfs://unrevealed.json`，因為那份合約的 batch seed 還沒揭示。
+- Docker 沙箱在倉庫裡，實跑沒有用它。
 - `MockAgentID` 是開放鑄造，不是 SPACE ID 的 Agent ID 註冊表。
 - 後端拒絕第三次獎勵 session。合約拒絕第三次 `mint`。兩者不是同一個計數器：放棄的 session 花掉後端嘗試，但不鑄造。
 - 技能圖可以依通過的類別長出新紋章，但單一 Agent ID 最多記錄兩次 solve，因為每次 solve 都由一次 mint 寫入，而 mint 上限是兩次。
@@ -461,8 +463,8 @@ Agent 迴圈是提案、評分、把評分日誌餵回去、再試（`agent/axvi
 
 | 階段 | 時間窗口 | 重點 | 驗收標準 |
 |---|---|---|---|
-| **Phase 0 — 熔爐** | 至 2026-11-05 | 黑客松收尾：收藏美術與 demo 影片仍未完成。Hidden 已上線。證據包與揭示／輪換腳本已在倉庫。輪換交易與 batch 2 揭示交易待操作者送出 | demo 可重跑；離線題庫每個母題 20/20；旗標開啟時線上發題會先做參考解檢查 |
-| **Phase 1 — 加固** | 黑客松之後，不預告日曆 | 操作者送出 signer 輪換；揭示 batch 2；離開 `MockAgentID`；對評分器做外部審閱。VRF 與法律意見沒有被排成「正在進行」 | 輪換交易已上鏈；batch 2 已揭示；有一份對評分器的書面審閱，而不是宣稱今天已經有審計報告 |
+| **Phase 0 — 熔爐** | 至 2026-11-05 | 黑客松收尾：收藏美術與 demo 影片仍未完成。Hidden、signer 輪換、batch 2 揭示、2-of-3 收藏品，以及三次 Muse Spark 門檻鑄造已在 BSC 測試網。那次實跑沒有用 Docker 評分 | demo 可重跑；離線題庫每個母題 20/20；旗標開啟時線上發題會先做參考解檢查 |
+| **Phase 1 — 加固** | 黑客松之後，不預告日曆 | 離開 `MockAgentID`；對評分器做外部審閱；揭示門檻收藏品的 batch。VRF 與法律意見沒有被排成「正在進行」 | 有一份對評分器的書面審閱，而不是宣稱今天已經有審計報告 |
 | **Phase 2 — 防禦 Alpha** | 2027 Q1(視條件) | 主網;首批實戰掃描試點(3–5 家協議) | ≥100 個持牌 agent;≥1 個付費掃描客戶 |
 | **Phase 3 — 飛輪** | 主網後 3–6 個月 | 題庫擴至 15–20 母題;對接賞金平台;B2B 定價 | 月掃描收入覆蓋營運成本;首筆賞金結算完成 |
 | **之後** | 視條件 | 去中心化驗證、條件式代幣、agent 市集、跨鏈 | — |
@@ -561,7 +563,7 @@ AXVIGIL_COLLECTIBLE=0x06580BFc1626f7DD3d7B841FD304e6f2B23e4658 \
 python3 scripts/reveal_and_recompute.py --dry-run
 ```
 
-Signer 輪換與 batch 2 揭示需要 owner 金鑰與 batch 2 的 seed 檔。步驟寫在 `docs/operator-runbook.md`。這兩筆交易還沒寫進部署紀錄（`signerRotationTx` 與 `batch2RevealTx` 仍待送出）。
+原收藏品的 signer 輪換與 batch 2 揭示已上鏈（`signerRotationTx` `0xaea5242f…`，`batch2RevealTx` `0xf83f0829…`）。門檻部署與三次 Muse Spark 鑄造寫在 `deployments/bsc-testnet-97.json`。再鑄一枚的指令在 `docs/operator-runbook.md`。實跑評分用子程序沙箱，不是 Docker。
 
 有 `META_API_KEY` 時的模型迴圈：
 

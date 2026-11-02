@@ -7,7 +7,7 @@
   "sourceNote": "PR #8 contracts: 2 mints per Agent ID, pool bound to difficulty, Hidden drawable only from pool 2 at a fixed HIDDEN_CHANCE_BPS=25 (cap 30), 7773 public pieces + up to 4 Hidden (maxSupply 7777).",
   "deployer": "0x4E38ec3f38D5c947B60E7e1273890Eea51501Ef8",
   "owner": "0x4E38ec3f38D5c947B60E7e1273890Eea51501Ef8",
-  "signer": "0x4E38ec3f38D5c947B60E7e1273890Eea51501Ef8",
+  "signer": "0x91AeE1253D3EF16864FEfC8EFF3431959c86e081",
   "agentRegistry": {
     "name": "MockAgentID",
     "address": "0x7Aa441477f0246353bdAe504cF0F9B3027D6d45e",
@@ -76,19 +76,50 @@
   },
   "gasPriceWei": "200000000",
   "thresholdRedeploy": {
-    "status": "pending",
-    "note": "Not broadcast. The live collectible above is still the single-signer PR #8 bytecode. Deploy script/DeployThreshold.s.sol, then fill these fields. Old tokens stay on the current collectible.",
-    "collectible": null,
-    "skill": null,
+    "status": "live",
+    "note": "Fresh 2-of-3 threshold deploy (script/DeployThreshold.s.sol, run from PR #12 head 7034c9e with the stack-too-deep fix to the script only). Old tokens #1 and #2 stay on the PR #8 collectible above.",
+    "collectible": "0x0e8755245231b66FdcE3a625b764dc1Bb597C8eB",
+    "skill": "0xE165C8B4826b6eF7aE84dfe3B1b27017aF1b5F59",
     "agentRegistry": "0x7Aa441477f0246353bdAe504cF0F9B3027D6d45e",
+    "deployer": "0x4E38ec3f38D5c947B60E7e1273890Eea51501Ef8",
+    "owner": "0x94aC129e81ababD2153093b33ec4B2920d11f6E9",
+    "ownerIsValidator": false,
     "threshold": 2,
-    "validators": [null, null, null],
-    "deployTx": null,
-    "signerRotationTx": null
+    "validators": [
+      "0xc32d95193F489EF0ACBE767D387509a8a3C495F9",
+      "0xD5f579698CdbFD0FA1C7d1F36127b8276F5c4645",
+      "0x133Fa4314da9a90aEB8a7AB9F281149F4d0Dec7f"
+    ],
+    "legacySigner": "0xc32d95193F489EF0ACBE767D387509a8a3C495F9",
+    "deployTx": "0xd3717767483596a9aeba2ceea15a7613d227344e93d077b17db7c57540aaac4b",
+    "skillDeployTx": "0xec2e75ace9156383ae67b1654e38cd0b8b4473eb428f19c3964af641f67adc6d",
+    "deployBlock": 140446298,
+    "postDeployTxs": {
+      "grantMinterRole": "0x0b0d8ed0e55196821989b5721d3cabea0a2023a4c4e943c0e3f9174bc5d93a89",
+      "addValidator2": "0xd5a002fe863cce06173a8292fe19b95b5d15f9968569d7c89e9bc9138715bef4",
+      "addValidator3": "0xf1a58731bf8202382802deee5d9ecac5e1d38eaab040828c4e8c04ad9dc109a5",
+      "setThreshold": "0x69cce506e05a3ec01788f874a6fdb5768b3a05210e965968aa2790c3e9d73ed1",
+      "setBaseURI": "0xa16c5cc6dd75b4594cda9faf1fa0eff1056517aecb60a3fe8256039c1802c615",
+      "commitSeedBatch1": "0x97782bf98ec14b2552735756a52c81d936b781e7d3543d063300c2f8c3497dff",
+      "grantSkillAdminToOwner": "0x1a025399615d746c0541982393c5ba15d7c6a586d3592b5ed4203f18066e9881",
+      "renounceDeployerSkillAdmin": "0xdc8aca403e21fa236f84ea337e4637a810469e4de127e3c98d5de82b265ec323",
+      "transferOwnership": "0x12bae3ae1e64ffa3eff894d68d116ad1525a4283d18f74550a883f22346d01ad",
+      "acceptOwnership": "0x8a8359f245a81f935857b195264ec5877f31ad0f9ace33137f5636d42266dd30"
+    },
+    "fundingTxs": {
+      "owner": "0x8e79c7c7b6a1627c347a295aeebcd27de3a1dcd3cc5ceaf01b7a24e387b67fcc",
+      "validator1": "0xaf40cb62975f3e1b5ff3fcdf111d0435c2bf90fd9be4166ac96fbd274f32dac5",
+      "validator2": "0xc6d0cac265ee9d36e8d599549fe2c6a8bc804413b472c5b2bc5a6a0919294f19",
+      "validator3": "0xc3b8dcd81fca8dae4f0bf69c68a5e0d0257bdd5d8c39ef6443254dfee0f25cb6"
+    },
+    "batch1SeedHash": "0xc305765ac739e06702f2a133756ec3737d272e9833e9ccf284851803a0955677",
+    "deployCostTBNB": 0.006907515,
+    "signerRotationTx": null,
+    "signerRotationNote": "Not applicable here: this collectible has no single backend signer in the mint path (threshold 2). The rotation on the PR #8 collectible is the top-level signerRotationTx."
   },
   "museSparkMint": {
     "label": "Muse Spark live solve. Not the reference-solution smoke test below.",
-    "description": "Server-dealt signature-replay (legendary, pool 2) solved by muse-spark-1.1 on the first model request. Backend signed MintAuth. The same wallet is still deployer, owner, admin, and signer; signer rotation has not been sent.",
+    "description": "Server-dealt signature-replay (legendary, pool 2) solved by muse-spark-1.1 on the first model request. Backend signed MintAuth. Signed by the deployer key at the time; the signer was rotated afterwards (signerRotationTx).",
     "model": "muse-spark-1.1",
     "modelRequests": 1,
     "completionTokens": 4947,
@@ -104,13 +135,17 @@
     "mintTx": "0x8f135d51462a5a5ad98dc3af3df0838f5f3eabc1207210fc22041f876281c177",
     "mintBlock": 140439816,
     "gasUsed": 331623,
-    "tokenURI": "ipfs://unrevealed.json",
+    "tokenURI": "320000",
     "skillTokenId": 7,
     "skillLocked": true,
     "commitSeedTx": "0xc48b3866605adac8328dad2bfff467ba9918c2a4c91271d9257c5b12fbaef222",
-    "batchRevealed": false,
-    "revealTx": null,
-    "note": "PENDING operator: batch 2 seed is not in this repo and has not been revealed. scripts/reveal_and_recompute.py --dry-run reads this state. The reveal transaction is not sent by this record."
+    "batchRevealed": true,
+    "revealTx": "0xf83f082999ea63a7bef5f4eacc105e1aa2d648c2be38af1a5ff7fabdb978d597",
+    "note": "Batch 2 revealed; scripts/reveal_and_recompute.py recomputes tier 3 / artId 320000 from chain data and matches tokenURI.",
+    "tier": 3,
+    "tierName": "LEGENDARY",
+    "artId": 320000,
+    "revealTokensTx": "0x343f3a8ca91b5c31b5441381900eddf7478e9ed01deeb4e9900338c6273f6ef2"
   },
   "smokeTest": {
     "label": "Reference-solution smoke test (token #1). Kept separate from museSparkMint.",
@@ -309,5 +344,140 @@
         "The demo seed is intentionally kept local and is not stored in this manifest."
       ]
     }
+  },
+  "signerRotationTx": "0xaea5242f066736eae950daf093a8cfe44e863e2341e97ab4e08e406f1cea2d3b",
+  "signerRotation": {
+    "from": "0x4E38ec3f38D5c947B60E7e1273890Eea51501Ef8",
+    "to": "0x91AeE1253D3EF16864FEfC8EFF3431959c86e081",
+    "tx": "0xaea5242f066736eae950daf093a8cfe44e863e2341e97ab4e08e406f1cea2d3b",
+    "block": 140446894,
+    "gasUsed": 30781,
+    "script": "scripts/rotate_signer.sh",
+    "note": "Dedicated backend signer; not the owner, not the seed holder, not a threshold validator."
+  },
+  "batch2RevealTx": "0xf83f082999ea63a7bef5f4eacc105e1aa2d648c2be38af1a5ff7fabdb978d597",
+  "batch2Reveal": {
+    "revealSeedTx": "0xf83f082999ea63a7bef5f4eacc105e1aa2d648c2be38af1a5ff7fabdb978d597",
+    "revealSeedBlock": 140446945,
+    "revealTokensTx": "0x343f3a8ca91b5c31b5441381900eddf7478e9ed01deeb4e9900338c6273f6ef2",
+    "revealTokensBlock": 140446950,
+    "seed": "0xb1f8de1b66cb064e9f72e5afaaa3ad3ee4e62cf9db43930268d8ba134cf67f6b",
+    "seedHash": "0x24006fb940085840c535558dfab0c5ac1f01ae0d74fecea81ab27ae2811addcc",
+    "recompute": "scripts/reveal_and_recompute.py: token 1 tier 0 artId 20000 match; token 2 tier 3 artId 320000 match; mismatches 0"
+  },
+  "museSparkThresholdMint": {
+    "label": "Muse Spark live solves minted through the 2-of-3 threshold collectible. Server-dealt (reference-checked) challenges, evidence bundle per submission, 3 validators re-graded independently (RECHECK=1, subprocess sandbox) and all 3 signed; 2 signatures submitted.",
+    "collectible": "0x0e8755245231b66FdcE3a625b764dc1Bb597C8eB",
+    "verifyEvidence": "scripts/verify_evidence.py: OK for all three bundles (CID, submissionHash, seedCommitment, forge re-grade match)",
+    "primary": {
+      "tokenId": 1,
+      "agentId": 8,
+      "skillTokenId": 8,
+      "motherId": "price-manipulation",
+      "vulnClass": 1,
+      "difficulty": 1,
+      "pool": 1,
+      "model": "muse-spark-1.1",
+      "modelRequests": 1,
+      "completionTokens": 5067,
+      "totalTokens": 5938,
+      "submissionHash": "0xfb18e408a932f7573e8b05e3aa2c817318c902863f2d0afeb3d47d72caa9c081",
+      "evidenceCid": "bafkreick5qyty6dxfa6w6p2immr5jg2bj2buvvjvdeohnj7j2eui3fguly",
+      "validatorSigners": [
+        "0xc32d95193F489EF0ACBE767D387509a8a3C495F9",
+        "0xD5f579698CdbFD0FA1C7d1F36127b8276F5c4645",
+        "0x133Fa4314da9a90aEB8a7AB9F281149F4d0Dec7f"
+      ],
+      "signaturesUsed": 2,
+      "mintTx": "0x720f135e0af68e9dd1b908fc428153cffb0351e173b3b8f9b741b83045d7e3ab",
+      "mintBlock": 140446622,
+      "gasUsed": 394190,
+      "tokenURI": "ipfs://unrevealed.json",
+      "batchId": 1,
+      "skillLocked": true
+    },
+    "all": [
+      {
+        "tokenId": 1,
+        "agentId": 8,
+        "skillTokenId": 8,
+        "motherId": "price-manipulation",
+        "vulnClass": 1,
+        "difficulty": 1,
+        "pool": 1,
+        "model": "muse-spark-1.1",
+        "modelRequests": 1,
+        "completionTokens": 5067,
+        "totalTokens": 5938,
+        "submissionHash": "0xfb18e408a932f7573e8b05e3aa2c817318c902863f2d0afeb3d47d72caa9c081",
+        "evidenceCid": "bafkreick5qyty6dxfa6w6p2immr5jg2bj2buvvjvdeohnj7j2eui3fguly",
+        "validatorSigners": [
+          "0xc32d95193F489EF0ACBE767D387509a8a3C495F9",
+          "0xD5f579698CdbFD0FA1C7d1F36127b8276F5c4645",
+          "0x133Fa4314da9a90aEB8a7AB9F281149F4d0Dec7f"
+        ],
+        "signaturesUsed": 2,
+        "mintTx": "0x720f135e0af68e9dd1b908fc428153cffb0351e173b3b8f9b741b83045d7e3ab",
+        "mintBlock": 140446622,
+        "gasUsed": 394190,
+        "tokenURI": "ipfs://unrevealed.json",
+        "batchId": 1,
+        "skillLocked": true
+      },
+      {
+        "tokenId": 2,
+        "agentId": 9,
+        "skillTokenId": 9,
+        "motherId": "access-control",
+        "vulnClass": 2,
+        "difficulty": 0,
+        "pool": 0,
+        "model": "muse-spark-1.1",
+        "modelRequests": 1,
+        "completionTokens": 3336,
+        "totalTokens": 3992,
+        "submissionHash": "0x9d9b8892743649014f8cc993e0cf260f3b340dc029f91d25c6dafde21ae1c421",
+        "evidenceCid": "bafkreib5fwr5qggt3wrxev7u7uhi4tvclkcgjhe4nf4hva7tsmfhhbmbcm",
+        "validatorSigners": [
+          "0xc32d95193F489EF0ACBE767D387509a8a3C495F9",
+          "0xD5f579698CdbFD0FA1C7d1F36127b8276F5c4645",
+          "0x133Fa4314da9a90aEB8a7AB9F281149F4d0Dec7f"
+        ],
+        "signaturesUsed": 2,
+        "mintTx": "0xf30d90b0f6edddcd61d5674ff2a3bd66592c69a21c11b1158d087d1992505cd1",
+        "mintBlock": 140446708,
+        "gasUsed": 325555,
+        "tokenURI": "ipfs://unrevealed.json",
+        "batchId": 1,
+        "skillLocked": true
+      },
+      {
+        "tokenId": 3,
+        "agentId": 10,
+        "skillTokenId": 10,
+        "motherId": "price-manipulation",
+        "vulnClass": 1,
+        "difficulty": 1,
+        "pool": 1,
+        "model": "muse-spark-1.1",
+        "modelRequests": 1,
+        "completionTokens": 4560,
+        "totalTokens": 5491,
+        "submissionHash": "0xc265f36d8c358a16ccaf754a2921a659d8ed287e5ce7824fb23cd35c7f927d0c",
+        "evidenceCid": "bafkreidtrw73rx3b6rdvdl32qxlusrggsbijrfhdmnhofhch6zodaqzpoe",
+        "validatorSigners": [
+          "0xc32d95193F489EF0ACBE767D387509a8a3C495F9",
+          "0xD5f579698CdbFD0FA1C7d1F36127b8276F5c4645",
+          "0x133Fa4314da9a90aEB8a7AB9F281149F4d0Dec7f"
+        ],
+        "signaturesUsed": 2,
+        "mintTx": "0xfb058e4daeec61cf5a711335a3d61b6bf95faf5e0e1d5b887c33952aad3b11dd",
+        "mintBlock": 140446800,
+        "gasUsed": 325790,
+        "tokenURI": "ipfs://unrevealed.json",
+        "batchId": 1,
+        "skillLocked": true
+      }
+    ]
   }
 }

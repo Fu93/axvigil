@@ -35,7 +35,7 @@ fi
 : "${OWNER_KEY:?Set OWNER_KEY to broadcast, or DRY_RUN=1 to read only}"
 
 # BSC testnet still expects legacy transactions. GAS_PRICE is wei; default 1 gwei.
-GAS_PRICE="${GAS_PRICE:-100000000}"
+GAS_PRICE="${GAS_PRICE:-1000000000}"
 cast send "$AXVIGIL_COLLECTIBLE" "setSigner(address)" "$NEW_SIGNER" \
   --private-key "$OWNER_KEY" \
   --rpc-url "$RPC_URL" \
@@ -44,4 +44,4 @@ cast send "$AXVIGIL_COLLECTIBLE" "setSigner(address)" "$NEW_SIGNER" \
 
 after="$(cast call "$AXVIGIL_COLLECTIBLE" "signer()(address)" --rpc-url "$RPC_URL")"
 echo "signer after:   $after"
-echo "Pending until this tx is sent: the live testnet signer is still the deployer."
+echo "setSigner broadcast complete."

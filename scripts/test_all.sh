@@ -6,6 +6,7 @@ set -euo pipefail
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 export PATH="${HOME}/.foundry/bin:${PATH}"
 
+echo "== forge build (src + script) ==" && (cd "$ROOT/contracts" && forge build && forge build script)
 echo "== contracts =="            && (cd "$ROOT/contracts" && forge test)
 echo "== verifier =="             && (cd "$ROOT/verifier"  && python3 -m pytest -q)
 echo "== variantgen =="           && (cd "$ROOT/variantgen" && PYTHONPATH=. python3 -m pytest -q)

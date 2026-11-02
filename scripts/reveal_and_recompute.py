@@ -14,8 +14,10 @@
     OWNER_KEY=0x... SEED_FILE=/path/to/batch2.seed BATCH_ID=2 \\
     python3 scripts/reveal_and_recompute.py
 
-Batch 2's seed is not in this repo. The reveal transaction is pending until
-the operator runs the command above. This script does not contain a key.
+Batch 2 on the original collectible is already revealed. Its seed is public
+on chain and recorded in deployments/bsc-testnet-97.json. This script does
+not contain a key. Use it to recompute that batch, or to reveal a later batch
+from a seed file that stays out of git.
 
 Recompute walks token ids in order. A token whose batch seed is not on chain
 and was not supplied with SEED_FILE is reported as not yet recomputable.
@@ -128,12 +130,12 @@ def main(argv: list[str] | None = None) -> int:
         got = keccak_packed_bytes32(seed)
         print(f"batch {batch_id} seedHash match: {got.lower() == committed['seedHash'].lower()}")
         print(f"  committed: {committed['seedHash']}")
-        print(f"  seed:      {got}")
+        print(f"  seedHash:  {got}")
         if not args.dry_run:
             owner = os.environ.get("OWNER_KEY")
             if not owner:
                 raise SystemExit("Set OWNER_KEY to broadcast, or pass --dry-run")
-            gas = os.environ.get("GAS_PRICE", "100000000")
+            gas = os.environ.get("GAS_PRICE", "1000000000")
             legacy = ["--legacy", "--gas-price", gas]
             if not committed["revealed"]:
                 print(cast([
