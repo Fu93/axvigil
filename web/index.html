@@ -5,15 +5,16 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>AxVigil — Verifiable on-chain capability records</title>
 <meta name="description" content="AxVigil redirects AI compute from puzzle-solving toward smart-contract exploits, and writes a verifiable on-chain capability record when the fix holds.">
-<meta name="theme-color" content="#070B0A">
+<meta name="theme-color" content="#1C1D1A">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M1 5V1h4M11 1h4v4M15 11v4h-4M5 15H1v-4' fill='none' stroke='%23EFEEEC' stroke-width='1.4'/%3E%3C/svg%3E">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=Space+Grotesk:wght@400;500;600;700&display=swap" media="print" onload="this.media='all'">
-<noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=Space+Grotesk:wght@400;500;600;700&display=swap"></noscript>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;700;800&family=IBM+Plex+Mono:wght@400;500&display=swap" media="print" onload="this.media='all'">
+<noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;700;800&family=IBM+Plex+Mono:wght@400;500&display=swap"></noscript>
 <link rel="stylesheet" href="assets/site.css">
 </head>
 <body>
+<div class="column-frame" aria-hidden="true"></div>
 <!--
   FACTS: edit this block when numbers change. site.js copies [data-fact] from it.
   Source: main @ 891774b (PR #12) and deployments/bsc-testnet-97.json.
@@ -45,11 +46,11 @@
   "deadline": "5 Nov 2026, 02:00 UK",
   "heroCopy": {
     "en": {
-      "kicker": "BSC testnet · chain 97",
+      "kicker": "[ Every inference ]",
       "sub": "Sandbox fix, deterministic grade, validator co-sign, on-chain record."
     },
     "zh-TW": {
-      "kicker": "BSC 測試網 · 鏈 97",
+      "kicker": "［每一次推理］",
       "sub": "沙盒裡修復，確定性評分，驗證者連署，留下鏈上紀錄。"
     }
   },
@@ -123,53 +124,33 @@
         <button type="button" data-lang="en" aria-pressed="true">EN</button>
         <button type="button" data-lang="zh-TW" aria-pressed="false">繁體中文</button>
       </div>
-      <a class="btn accent" href="#proof" data-i18n="cta.records">See live records</a>
+      <a class="btn yellow desktop-cta" href="#proof" data-i18n="cta.records">See live records</a>
     </div>
   </div>
 </header>
 
 <main id="content">
-  <section class="hero" id="top">
+  <section class="hero dark" id="top">
     <div class="atmo" aria-hidden="true">
       <div class="wash"></div>
-      <div class="grain"></div>
+      <div class="glow" id="hero-glow"></div>
     </div>
-    <div class="hero-grid">
+    <div class="hero-layout">
       <div class="hero-copy">
-        <p class="eyebrow" data-i18n="hero.kicker">BSC testnet · chain 97</p>
-        <h1>
+        <p class="bracket" data-i18n="hero.kicker">[ Every inference ]</p>
+        <h1 class="display">
           <span>Every inference,</span>
           <span class="accent">a line of defense.</span>
         </h1>
-        <p class="zh-line"><span>每一次推理，</span><span class="accent">都是一道防線。</span></p>
-        <p class="sub" data-i18n="hero.sub">Sandbox fix, deterministic grade, validator co-sign, on-chain record.</p>
+        <p class="zh-line display"><span>每一次推理，</span><span class="accent">都是一道防線。</span></p>
+        <p class="hero-sub" data-i18n="hero.sub">Sandbox fix, deterministic grade, validator co-sign, on-chain record.</p>
         <div class="hero-actions">
-          <a class="btn accent" href="#proof" data-i18n="cta.records">See live records</a>
+          <a class="btn yellow" href="#proof" data-i18n="cta.records">See live records</a>
           <a class="btn ghost" data-fact-href="chain.thresholdCollectible" href="https://testnet.bscscan.com/address/0x0e8755245231b66FdcE3a625b764dc1Bb597C8eB" target="_blank" rel="noopener" data-i18n="cta.scan">Verify on BscScan ↗</a>
         </div>
       </div>
-      <div class="hero-object" aria-hidden="true">
-        <svg viewBox="0 0 420 420">
-          <defs>
-            <radialGradient id="orb" cx="50%" cy="50%" r="50%">
-              <stop offset="0%" stop-color="#d4e36a" stop-opacity="0.28"/>
-              <stop offset="55%" stop-color="#1f3b3a" stop-opacity="0.18"/>
-              <stop offset="100%" stop-color="#070b0a" stop-opacity="0"/>
-            </radialGradient>
-          </defs>
-          <circle class="ring-glow" cx="210" cy="210" r="168" fill="url(#orb)"/>
-          <circle cx="210" cy="210" r="132" fill="none" stroke="rgba(212,227,106,0.28)" stroke-width="1"/>
-          <g class="ring-spin">
-            <path d="M210 82 L321 274 L99 274 Z" fill="none" stroke="rgba(239,238,236,0.28)" stroke-width="1"/>
-            <circle cx="210" cy="82" r="7" fill="#d4e36a"/>
-            <circle cx="321" cy="274" r="7" fill="#d4e36a"/>
-            <circle cx="99" cy="274" r="7" fill="#d4e36a"/>
-          </g>
-          <circle cx="210" cy="210" r="5" fill="rgba(239,238,236,0.7)"/>
-        </svg>
-      </div>
     </div>
-    <div class="stat-strip" aria-label="Project figures">
+    <div class="stats stat-strip" aria-label="Project figures">
       <div class="stat">
         <div class="n" data-fact="stats.recordsMinted" data-count="4">4</div>
         <div class="l" data-i18n="stat.records">Records minted</div>
@@ -194,10 +175,11 @@
     </div>
   </section>
 
-  <section id="problem">
+  <canvas class="dither" data-from="#1C1D1A" data-to="#EFEEEC" aria-hidden="true"></canvas>
+  <section class="light" id="problem">
     <div class="wrap">
-      <p class="eyebrow" data-i18n="problem.kicker">01  The problem</p>
-      <h2 data-i18n="problem.h">Compute is spent on puzzles. Exploits are not.</h2>
+      <p class="bracket" data-i18n="problem.kicker">01  The problem</p>
+      <h2 class="display" data-i18n="problem.h">Compute is spent on puzzles. Exploits are not.</h2>
       <p class="lede" data-i18n="problem.line">Web3 still spends AI compute on puzzles that only mint a souvenir. AxVigil points that compute at exploit fixes.</p>
       <ol class="sources">
         <li><a href="https://www.chainalysis.com/blog/crypto-hacking-stolen-funds-2026/">Chainalysis, 2025 Crypto Theft Reaches $3.4 Billion</a> <span data-i18n="problem.s1">More than $3.4 billion stolen through early December 2025. The largest service losses sit in a few attacks on private-key infrastructure.</span></li>
@@ -207,10 +189,11 @@
     </div>
   </section>
 
-  <section id="how">
+  <canvas class="dither" data-from="#EFEEEC" data-to="#1C1D1A" aria-hidden="true"></canvas>
+  <section class="dark" id="how">
     <div class="wrap">
-      <p class="eyebrow" data-i18n="how.kicker">02  How it works</p>
-      <h2 data-i18n="how.h">Four steps, from challenge to record.</h2>
+      <p class="bracket" data-i18n="how.kicker">02  How it works</p>
+      <h2 class="display" data-i18n="how.h">Four steps, from challenge to record.</h2>
       <ol class="steps">
         <li class="card step">
           <span class="num">01</span>
@@ -236,10 +219,11 @@
     </div>
   </section>
 
-  <section id="proof">
+  <canvas class="dither" data-from="#1C1D1A" data-to="#EFEEEC" aria-hidden="true"></canvas>
+  <section class="light" id="proof">
     <div class="wrap">
-      <p class="eyebrow" data-i18n="proof.kicker">03  Proof</p>
-      <h2 data-i18n="proof.h">Live records.</h2>
+      <p class="bracket" data-i18n="proof.kicker">03  Proof</p>
+      <h2 class="display" data-i18n="proof.h">Live records.</h2>
       <p class="lede" data-i18n="proof.lede">Muse Spark is the first model with public records here. The four rows are on BSC testnet. Three minted on the 2-of-3 collectible, each on the first request. The earlier signature-replay mint is on the first collectible, later revealed LEGENDARY.</p>
       <div class="table-wrap">
         <table>
@@ -288,10 +272,11 @@
     </div>
   </section>
 
-  <section id="roadmap">
+  <canvas class="dither" data-from="#EFEEEC" data-to="#1C1D1A" aria-hidden="true"></canvas>
+  <section class="dark" id="roadmap">
     <div class="wrap">
-      <p class="eyebrow" data-i18n="road.kicker">04  Roadmap</p>
-      <h2 data-i18n="road.h">What is live, and what is not.</h2>
+      <p class="bracket" data-i18n="road.kicker">04  Roadmap</p>
+      <h2 class="display" data-i18n="road.h">What is live, and what is not.</h2>
       <div class="chips">
         <span class="chip on" data-i18n="chip.testnet">Testnet</span>
         <span class="chip" data-i18n="chip.perm">Permissioned · 3 validators · 2-of-3</span>
@@ -330,10 +315,10 @@
     </div>
   </section>
 
-  <section id="faq">
+  <section class="dark" id="faq">
     <div class="wrap">
-      <p class="eyebrow" data-i18n="faq.kicker">05  FAQ</p>
-      <h2 data-i18n="faq.h">Straight answers.</h2>
+      <p class="bracket" data-i18n="faq.kicker">05  FAQ</p>
+      <h2 class="display" data-i18n="faq.h">Straight answers.</h2>
       <div class="faq">
         <details open>
           <summary data-i18n="faq.q1">Who are the validators?</summary>
@@ -355,18 +340,18 @@
     </div>
   </section>
 
-  <section class="close" id="close">
+  <section class="dark close" id="close">
     <div class="wrap">
-      <h2 data-i18n="close.h">The records are on testnet. Recompute them.</h2>
+      <h2 class="display" data-i18n="close.h">The records are on testnet. Recompute them.</h2>
       <div class="hero-actions">
-        <a class="btn accent" href="#proof" data-i18n="cta.records">See live records</a>
+        <a class="btn yellow" href="#proof" data-i18n="cta.records">See live records</a>
         <a class="btn ghost" data-fact-href="chain.thresholdCollectible" href="https://testnet.bscscan.com/address/0x0e8755245231b66FdcE3a625b764dc1Bb597C8eB" target="_blank" rel="noopener" data-i18n="cta.scan">Verify on BscScan ↗</a>
       </div>
     </div>
   </section>
 </main>
 
-<footer id="footer">
+<footer class="dark" id="footer">
   <div class="wrap">
     <div class="fgrid">
       <div>
@@ -406,6 +391,7 @@
   </div>
 </footer>
 <p id="copied" aria-live="polite"></p>
+<script src="assets/dither.js" defer></script>
 <script src="assets/site.js" defer></script>
 <script src="assets/motion.js" defer></script>
 </body>

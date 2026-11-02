@@ -25,6 +25,15 @@
   }
 
   if (!reduce && fine) {
+    document.querySelectorAll("a.btn.yellow").forEach(function (btn) {
+      btn.addEventListener("pointermove", function (event) {
+        var rect = btn.getBoundingClientRect();
+        var x = event.clientX - (rect.left + rect.width / 2);
+        var y = event.clientY - (rect.top + rect.height / 2);
+        btn.style.transform = "translate(" + (x * 0.22).toFixed(1) + "px," + (y * 0.28).toFixed(1) + "px)";
+      });
+      btn.addEventListener("pointerleave", function () { btn.style.transform = ""; });
+    });
     document.querySelectorAll(".card").forEach(function (card) {
       card.addEventListener("pointermove", function (event) {
         var rect = card.getBoundingClientRect();
@@ -40,26 +49,71 @@
     });
   }
 
-  var revealNodes = document.querySelectorAll(".hero-copy, .stat, .eyebrow, h2, .lede, .steps, .card, .sources li, .note, .recompute, .timeline li, .faq details, .chips, .close .wrap");
-  if (!reduce && "IntersectionObserver" in window) {
+  var glow = document.getElementById("hero-glow");
+  var hero = document.querySelector(".hero");
+  if (glow && hero && !reduce && fine) {
+    var tx = 0.72;
+    var ty = 0.28;
+    var cx = 0.72;
+    var cy = 0.28;
+    var raf = 0;
+    function tick() {
+      cx += (tx - cx) * 0.055;
+      cy += (ty - cy) * 0.055;
+      glow.style.left = (cx * 100).toFixed(2) + "%";
+      glow.style.top = (cy * 100).toFixed(2) + "%";
+      if (Math.abs(tx - cx) + Math.abs(ty - cy) > 0.0015) raf = requestAnimationFrame(tick);
+      else raf = 0;
+    }
+    hero.addEventListener("pointermove", function (event) {
+      var rect = hero.getBoundingClientRect();
+      tx = (event.clientX - rect.left) / rect.width;
+      ty = (event.clientY - rect.top) / rect.height;
+      if (!raf) raf = requestAnimationFrame(tick);
+    });
+  }
+
+  var revealSelector = ".hero-copy, .stat, .bracket, h2, .lede, .card, .sources li, .note, .recompute, .timeline li, .faq details, .chips, .close .hero-actions";
+  var revealNodes = Array.prototype.filter.call(document.querySelectorAll(revealSelector), function (node) {
+    return !(node.parentElement && node.parentElement.closest(revealSelector));
+  });
+  if (!reduce && revealNodes.length && "IntersectionObserver" in window) {
     document.documentElement.classList.add("motion");
     var groups = new Map();
     revealNodes.forEach(function (node) {
+      node.setAttribute("data-reveal", "");
       node.classList.add("reveal");
       var parent = node.parentElement;
-      if (!groups.has(parent)) groups.set(parent, 0);
-      var index = groups.get(parent);
+      var index = groups.get(parent) || 0;
       groups.set(parent, index + 1);
-      node.style.transitionDelay = Math.min(index, 6) * 60 + "ms";
+      node.style.transitionDelay = Math.min(index, 2) * 40 + "ms";
     });
-    var seen = new IntersectionObserver(function (entries) {
-      entries.forEach(function (entry) {
-        if (!entry.isIntersecting) return;
-        entry.target.classList.add("in");
-        seen.unobserve(entry.target);
+    function show(node) {
+      if (node.classList.contains("in")) return;
+      node.classList.add("in");
+      var steps = node.closest(".steps");
+      if (steps) steps.classList.add("line-in");
+    }
+    function sweep() {
+      var limit = window.innerHeight * 1.15;
+      revealNodes.forEach(function (node) {
+        if (node.classList.contains("in")) return;
+        if (node.getBoundingClientRect().top < limit) show(node);
       });
-    }, { rootMargin: "0px 0px -8% 0px", threshold: 0.12 });
+    }
+    var idle = 0;
+    function armIdle() {
+      window.clearTimeout(idle);
+      idle = window.setTimeout(function () { revealNodes.forEach(show); }, 1500);
+    }
+    var seen = new IntersectionObserver(function () { sweep(); }, {
+      rootMargin: "0px 0px 15% 0px",
+      threshold: 0
+    });
     revealNodes.forEach(function (node) { seen.observe(node); });
+    sweep();
+    window.addEventListener("scroll", function () { sweep(); armIdle(); }, { passive: true });
+    armIdle();
   }
 
   function count(el) {
