@@ -62,6 +62,7 @@ class Platform:
             settings.agent_registry, settings.rpc_url,
         )
         self.breaker = CircuitBreaker(store)
+        self._fingerprints: dict[str, set[str]] = {}
         _ensure_paths(settings)
         from variantgen.render import Mother  # noqa: E402
         self._Mother = Mother
@@ -107,6 +108,47 @@ class Platform:
         }
 
     # ---- issuance ----
+    def _deal(self, mother) -> tuple[int, Path, dict, str]:
+        """Issue one variant whose fingerprint is new for this process.
+
+        When ``reference_check`` is on, the reference solution must pass the
+        real grader before the source is shown. That is the live form of
+        "checked before it ships". Fingerprint rejection is the live form of
+        discarding a look-alike. Both are skipped only for a seed that fails;
+        the loop draws another seed.
+        """
+        from variantgen.fingerprint import fingerprint
+
+        seen = self._fingerprints.setdefault(mother.mother_id, set())
+        for _ in range(12):
+            seed = secrets.randbelow(1 << 31)
+            out, meta = self._render(mother, seed)
+            source = (out / "src" / meta["targetFile"]).read_text()
+            fp = fingerprint(source)
+            if fp in seen:
+                continue
+            if self.s.reference_check and not self._reference_ok(out, seed):
+                continue
+            seen.add(fp)
+            return seed, out, meta, source
+        raise ProtocolError(
+            503,
+            "Could not deal a structurally new variant whose reference solution passes. Retry.",
+        )
+
+    def _reference_ok(self, challenge_dir: Path, seed: int) -> bool:
+        from axvigil_verifier.grader import grade
+        try:
+            res = grade(
+                challenge_dir, challenge_dir / "solution", seed=seed,
+                forge_bin=self.s.forge_bin, solc=self.s.solc_bin,
+                timeout_s=self.s.grade_timeout_s,
+            )
+        except Exception:
+            logger.exception("reference check failed")
+            return False
+        return bool(res.passed)
+
     def _render(self, mother, seed: int) -> tuple[Path, dict]:
         from variantgen.render import render_challenge
         challenge_id = f"{mother.mother_id}-{seed}"
@@ -187,9 +229,7 @@ class Platform:
             )
 
         mother = secrets.choice(candidates)
-        seed = secrets.randbelow(1 << 31)
-        out, meta = self._render(mother, seed)
-        source = (out / "src" / meta["targetFile"]).read_text()
+        seed, out, meta, source = self._deal(mother)
 
         now = time.time()
         session_id = uuid.uuid4().hex
@@ -339,12 +379,21 @@ class Platform:
             })
         result = redact_public_grade(res.to_json(), public_challenge_id(session_id))
         result["solveSeconds"] = solve_seconds
+        source = (out / "src" / target).read_text()
+        payload = res.to_json() if hasattr(res, "to_json") else {}
+        log = getattr(res, "log", None) or payload.get("log") or ""
+        evidence = self._write_evidence(
+            mother_id=sess["mother_id"], challenge_id=meta["challengeId"], seed=sess["seed"],
+            source=source, patch=patch, poc=poc, log=log, result=res,
+        )
         return {
             "passed": res.passed,
             "result": result,
             "summary": feedback_summary(result),
             "authorizable": bool(res.passed and sess["reward"] and self.signer is not None),
             "quotaMessage": self.quota_message(sess["agent_id"]),
+            "evidenceCid": evidence["evidenceCid"] if evidence else None,
+            "seedCommitment": evidence["seedCommitment"] if evidence else None,
         }
 
     # ---- reward ----
@@ -413,9 +462,13 @@ class Platform:
                 "Practice sessions are not reward-bearing and cannot be minted. "
                 + self.quota_message(sess["agent_id"]),
             ) from e
+        evidence = self._evidence_public(sub)
         return {
             "action": signed.kind, "auth": signed.auth, "signature": signed.signature,
             "signer": signed.signer, "quotaMessage": self.quota_message(sess["agent_id"]),
+            "evidenceCid": evidence.get("evidenceCid"),
+            "seedCommitment": evidence.get("seedCommitment"),
+            "submissionHash": sub,
         }
 
     # ---- status ----
@@ -444,6 +497,67 @@ class Platform:
             f"Mints remaining: {mints_left} of {MAX_REWARD_ATTEMPTS}. "
             "A reward attempt is spent when the session opens."
         )
+
+    def _evidence_root(self) -> Path:
+        if self.s.evidence_dir is not None:
+            return Path(self.s.evidence_dir)
+        return Path(self.s.challenge_cache_dir) / "evidence"
+
+    def _write_evidence(self, *, mother_id: str, challenge_id: str, seed: int,
+                        source: str, patch: str, poc: str, log: str, result) -> dict | None:
+        if not result.submissionHash:
+            return None
+        from .evidence import write_bundle
+        mother = self.mothers.get(mother_id)
+        mother_dir = mother.dir if mother is not None else self.s.mothers_dir / mother_id
+        repo_root = Path(__file__).resolve().parents[2]
+        payload = result.to_json() if hasattr(result, "to_json") else {}
+
+        def _flag(name: str) -> bool:
+            if hasattr(result, name):
+                return bool(getattr(result, name))
+            return bool(payload.get(name))
+
+        try:
+            return write_bundle(
+                self._evidence_root(),
+                challenge_id=challenge_id,
+                mother_id=mother_id,
+                mother_dir=mother_dir,
+                seed=seed,
+                source=source,
+                patch=patch,
+                poc=poc,
+                grader_log=log,
+                checks={
+                    "pocProvesBug": _flag("pocProvesBug"),
+                    "pocFailsAfterPatch": _flag("pocFailsAfterPatch"),
+                    "hiddenTestsPass": _flag("hiddenTestsPass"),
+                    "patchWithinLimits": _flag("patchWithinLimits"),
+                    "passed": _flag("passed"),
+                },
+                submission_hash=result.submissionHash,
+                forge_bin=self.s.forge_bin,
+                verifier_pkg=self.s.verifier_dir / "axvigil_verifier",
+                repo_root=repo_root,
+                pin_url=self.s.ipfs_pin_url,
+                pin_token=self.s.ipfs_pin_token,
+            )
+        except Exception:
+            logger.exception("evidence bundle was not written")
+            return None
+
+    def _evidence_public(self, submission_hash: str) -> dict:
+        cid_path = self._evidence_root() / submission_hash / "cid.txt"
+        manifest_path = self._evidence_root() / submission_hash / "manifest.json"
+        if not cid_path.is_file() or not manifest_path.is_file():
+            return {}
+        import json
+        manifest = json.loads(manifest_path.read_text())
+        return {
+            "evidenceCid": cid_path.read_text().strip(),
+            "seedCommitment": manifest.get("seedCommitment"),
+        }
 
     def _owned_session(self, session_id: str, address: str) -> dict:
         sess = self.store.get_session(session_id)
@@ -486,8 +600,11 @@ def feedback_summary(result: dict) -> str:
         reasons.append("the PoC did not pass on the original contract, so it does not prove the bug")
     if result.get("pocFailsAfterPatch") is False:
         reasons.append("the PoC still passed after the patch, so the bug still works")
-    if result.get("hiddenTestsPass") is False:
-        reasons.append("the patch broke required behavior")
+        if result.get("hiddenTestsPass") is False:
+            reasons.append(
+                "hidden tests failed: either intended behaviour changed, or the fix "
+                "does not fully cover the vulnerability class"
+            )
     if result.get("patchWithinLimits") is False:
         reasons.append("the patch is outside the size limit or drops the contract name or a public function")
     if not reasons:

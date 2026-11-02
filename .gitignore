@@ -8,6 +8,7 @@ __pycache__/
 .env
 backend/axvigil.db
 backend/axvigil.db-*
+backend/evidence/
 /tmp/axvigil-challenges/
 verifier/out/
 variantgen/out/

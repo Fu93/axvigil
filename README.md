@@ -98,7 +98,7 @@ The full production-supply distribution test mints and reveals all 7,777 tokens 
 forge test --match-test test_publicQuotasFillWhenHiddenHits
 ```
 
-`scripts/test_all.sh` runs the Foundry suite (including that full-supply test) plus the Python packages. Last green run: 156 tests (contracts 66 · Python 90).
+`scripts/test_all.sh` runs the Foundry suite (including that full-supply test) plus the Python packages. Last green run: 180 tests (contracts 75 · Python 105). One Docker image check is skipped until `axvigil-sandbox:1.8.7` is built. The live server reference-checks a dealt seed before showing it (`AXVIGIL_REFERENCE_CHECK`, default on) and writes an evidence bundle with a local CIDv1 on each grade. The mined signer rotation, batch-2 reveal, and 2-of-3 mint are recorded in [`docs/operator-runbook.md`](docs/operator-runbook.md). Repeating them still needs keys that stay out of git.
 
 See [`contracts/README.md`](contracts/README.md) for the contract interface, deployment parameters, rarity rules, limitations and BSC testnet deployment instructions.
 
@@ -141,7 +141,9 @@ For BSC testnet deployment, first run [`scripts/bsc_preflight.sh`](scripts/bsc_p
 
 ## BSC testnet deployment (chain 97)
 
-The current testnet deployment runs the contracts from PR #8: 2 mints per Agent ID, pool bound to difficulty, and Hidden drawable only from pool 2 at a fixed 0.25% (`HIDDEN_CHANCE_BPS` 25, cap 30). There are 7,773 public pieces plus up to 4 Hidden (`maxSupply` 7777). It reuses the demo `MockAgentID` registry and a 50 mint-per-hour cap. Batch 1 was committed, a smoke-test mint (token `1`, Agent ID `1`, a pool-2 legendary solve) succeeded, and the batch-1 seed was then revealed with [`contracts/script/BscReveal.s.sol`](contracts/script/BscReveal.s.sol): token `1` drew tier **COMMON** (artId `20000`). Reveal txs: [`revealSeed`](https://testnet.bscscan.com/tx/0x130571a235fc52f11a9615f3f485b49cde1f24c29a1e255314b0a19c8e7e2072), [`revealTokens`](https://testnet.bscscan.com/tx/0x8db5db92734979ee36dbc916e76b67c7f3f24ad9d570027f0ddbdc4f69be294b). Revealing closed batch 1, so new mints need the owner to commit the next batch seed.
+The PR #8 collectible [`0x0658…4658`](https://testnet.bscscan.com/address/0x06580BFc1626f7DD3d7B841FD304e6f2B23e4658) is still the home of token #1 (COMMON, artId 20000) and the Muse Spark signature-replay token #2, now revealed LEGENDARY, artId 320000 (`tokenURI` `320000`). Batch 2 reveal: [`revealSeed`](https://testnet.bscscan.com/tx/0xf83f082999ea63a7bef5f4eacc105e1aa2d648c2be38af1a5ff7fabdb978d597), [`revealTokens`](https://testnet.bscscan.com/tx/0x343f3a8ca91b5c31b5441381900eddf7478e9ed01deeb4e9900338c6273f6ef2). Recompute mismatches: 0. Its signer was rotated to `0x91Ae…e081` ([`setSigner`](https://testnet.bscscan.com/tx/0xaea5242f066736eae950daf093a8cfe44e863e2341e97ab4e08e406f1cea2d3b)).
+
+A separate 2-of-3 collectible is live: [`0x0e87…C8eB`](https://testnet.bscscan.com/address/0x0e8755245231b66FdcE3a625b764dc1Bb597C8eB), skill [`0xE165…5F59`](https://testnet.bscscan.com/address/0xE165C8B4826b6eF7aE84dfe3B1b27017aF1b5F59). Validators `0xc32d…95F9`, `0xD5f5…4645`, `0x133F…ec7f`. Owner `0x94aC…f6E9` is not a validator. Three Muse Spark (`muse-spark-1.1`) sessions each passed on the first request and minted with 2 of 3 signatures (tokens #1–#3, gas 325,555–394,190). `verify_evidence.py` was OK for all three CIDs. Those grades used the subprocess sandbox. Docker isolation is in the repo and was not used on this run.
 
 | Contract | Address | Explorer |
 |---|---|---|

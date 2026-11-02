@@ -126,6 +126,27 @@ class AuthSigner:
         out["submissionHash"] = submission_hash
         return SignedAuth("mint", out, sig, self.address, digest)
 
+    def sign_prepared_mint(self, message: dict) -> SignedAuth:
+        """Sign a MintAuth whose nonce and deadline were chosen by the coordinator.
+
+        Every validator must sign these same fields. A fresh nonce here would
+        not meet the threshold.
+        """
+        msg = {
+            "agentId": int(message["agentId"]),
+            "to": to_checksum_address(message["to"]),
+            "vulnClass": int(message["vulnClass"]),
+            "difficulty": int(message["difficulty"]),
+            "pool": int(message["pool"]),
+            "submissionHash": _b32(message["submissionHash"]),
+            "nonce": int(message["nonce"]),
+            "deadline": int(message["deadline"]),
+        }
+        sig, digest = self._sign(_MINT_TYPES, msg)
+        out = dict(msg)
+        out["submissionHash"] = message["submissionHash"] if str(message["submissionHash"]).startswith("0x") else "0x" + message["submissionHash"]
+        return SignedAuth("mint", out, sig, self.address, digest)
+
 
 def _b32(h: str) -> bytes:
     h = h[2:] if h.startswith("0x") else h

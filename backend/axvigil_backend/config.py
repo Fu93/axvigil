@@ -52,10 +52,22 @@ class Settings:
     rpc_url: str | None = None
     # Local dev only. Production must leave this false and set AGENT_REGISTRY + RPC_URL.
     dev_skip_ownership: bool = False
+    # Live deals reference-check the variant before it is issued. Unit tests that
+    # construct Settings() directly leave this false so opening a session stays cheap.
+    reference_check: bool = False
+    evidence_dir: Path | None = None
+    ipfs_pin_url: str | None = None
+    ipfs_pin_token: str | None = None
 
     @classmethod
     def from_env(cls) -> "Settings":
         skip = os.environ.get("AXVIGIL_DEV_SKIP_OWNERSHIP", "").strip().lower() in ("1", "true", "yes")
+        check_raw = os.environ.get("AXVIGIL_REFERENCE_CHECK")
+        if check_raw is None or check_raw.strip() == "":
+            reference_check = True
+        else:
+            reference_check = check_raw.strip().lower() in ("1", "true", "yes")
+        evidence = os.environ.get("EVIDENCE_DIR")
         return cls(
             signer_key=os.environ.get("SIGNER_KEY"),
             chain_id=int(os.environ.get("CHAIN_ID", "97")),
@@ -77,6 +89,10 @@ class Settings:
             agent_registry=os.environ.get("AGENT_REGISTRY") or None,
             rpc_url=os.environ.get("RPC_URL") or os.environ.get("BSC_TESTNET_RPC") or None,
             dev_skip_ownership=skip,
+            reference_check=reference_check,
+            evidence_dir=Path(evidence) if evidence else REPO_ROOT / "backend" / "evidence",
+            ipfs_pin_url=os.environ.get("IPFS_PIN_URL") or None,
+            ipfs_pin_token=os.environ.get("IPFS_PIN_TOKEN") or None,
         )
 
     @property

@@ -32,8 +32,10 @@ jobs:
       - name: Install Foundry
         uses: foundry-rs/foundry-toolchain@v1
 
-      - name: Build
-        run: forge build
+      - name: Build src, tests, and scripts
+        run: |
+          forge build
+          forge build script
 
       - name: Run fast test suite
         run: forge test --no-match-test test_publicQuotasFillWhenHiddenHits

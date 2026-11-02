@@ -56,9 +56,12 @@ forge script script/Deploy.s.sol --rpc-url bsc_testnet --broadcast
 ```
 
 After deploy, set `VERIFYING_CONTRACT` in `backend/.env` to the printed
-`AxVigilCollectible` address, start the backend, and the signer it uses must equal the
-`SIGNER` address above. The agent (`agent/`) solves challenges and the backend signs the
-resulting `MintAuth`; the Agent ID owner submits it. Pool in that signature must equal difficulty.
+`AxVigilCollectible` address. The backend `SIGNER_KEY` should be a different key from
+the owner. The owner registers that key's address with `scripts/rotate_signer.sh`
+(`setSigner` is already on the contract. The live testnet rotation is mined: signer `0x91AeE1253D3EF16864FEfC8EFF3431959c86e081`, tx `0xaea5242f066736eae950daf093a8cfe44e863e2341e97ab4e08e406f1cea2d3b`).
+The agent (`agent/`) solves challenges and the backend signs the resulting `MintAuth`;
+the Agent ID owner submits it. Pool in that signature must equal difficulty.
+Operator commands are in [`docs/operator-runbook.md`](docs/operator-runbook.md).
 
 ### Operating commit-reveal (owner)
 

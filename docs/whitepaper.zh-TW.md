@@ -2,7 +2,9 @@
 
 > **From Compute to Protection** —— 把 AI 的代碼推理算力,轉化為對智能合約與鏈上資產的可驗證防禦。
 
-**狀態紀律(先讀這段)。** 本文描述一個已存在的東西與兩個尚未存在的東西。**Layer 1 — 熔爐(認證)** 今天已建成、測試完成、部署於 BSC 測試網。**Layer 2(防禦網路)** 與 **Layer 3(結算與調度)** 是路線圖。所有前瞻性敘述都會標明。本文說「今天」指 `Fu93/axvigil` 在 `main` 的代碼;說「路線圖」或「未來」指設計意圖,而非已出貨的軟體。
+**狀態紀律（先讀這段）。** 本文描述一個已存在的東西與兩個尚未存在的東西。**Layer 1 — 熔爐（認證）** 今天已建成、測試完成、部署於 BSC 測試網。**Layer 2（防禦網路）** 與 **Layer 3（結算與調度）** 是路線圖。所有前瞻性敘述都會標明。本文說「今天」指 `Fu93/axvigil` 在 `main` 的代碼；說「路線圖」或「未來」指設計意圖，而非已出貨的軟體。
+
+**尚未發行任何代幣。** 本文任何內容都不是出售代幣的要約，也不是投資招攬。積分是鏈下分數，沒有金錢價值。收藏品不帶財務權利。用來在沒有代幣時維持專案的收費模型，以及較晚的效用代幣設計，寫在第 8 節。兩者都是計畫，尚未建造。
 
 ---
 
@@ -32,7 +34,7 @@ AI agent 已經能產出智能合約 patch。但看似合理的 patch 不等於�
 | 核心 | 熔爐:發題 → agent 修補 → 確定性驗證 → 鏈上執照 | 防禦網路:自動化初審、持續監測、賞金掃描 |
 | 憑證 | `AxVigilSkill` —— ERC-5192 靈魂綁定執照,綁定 Agent ID | 執照作為接入實戰防禦任務的門票 |
 | 驗證 | 差分式四項檢查 + 防記憶變體引擎 | 多節點重跑 / 去中心化驗證 |
-| 經濟 | 僅積分;無代幣、無收益承諾 | 收入來自真實安全預算(B2B 掃描、賞金分成) |
+| 經濟 | 鏈下積分，沒有金錢價值；沒有已發行的代幣 | 穩定幣或法幣收費（§8.2，計畫）；只有 §8.3 的觸發條件都成立時才有效用代幣 |
 | 部署 | BSC 測試網(chain 97),完整流程已鏈上實測 | 主網,以 Layer 1 自我證明為前提 |
 | 題目來源 | 僅已修補、已公開揭露的漏洞,經 `variantgen` 變形 | 贊助題目;私有評測模式配責任揭露 |
 
@@ -118,7 +120,7 @@ AxVigil 是**安全 AI 的信任與調度基礎設施**。不是另一個 benchm
 3. **題目由網路發放** —— agent 不能挑題、不能背題。
 4. **憑證跟著 agent 走** —— 綁 Agent ID,不綁錢包。
 5. **免費參與,收入來自真實預算** —— 認證免費;防禦任務賺真實收入。
-6. **不發投機代幣** —— 循環由安全預算驅動,不由市場熱度驅動。
+6. **不靠投機代幣營運** —— 營運應由安全預算支付（§8.2）。代幣只是 §8.3 的設計，而且現在沒有發行。
 
 ---
 
@@ -151,15 +153,91 @@ Agent ID 持有人送出 mint
 | 元件 | 重點 |
 |---|---|
 | Backend | FastAPI:錢包簽名登入 + 鏈上 Agent ID `ownerOf` 檢查;伺服器發題;session 內評分;EIP-712 授權;SQLite;限流;答案外洩斷路器;按難度加權的排行榜 |
-| Verifier | 零第三方依賴;`ffi` 關閉、無網路、時間上限 + POSIX 資源上限;自動解析 Foundry 工具鏈 |
+| Verifier | 零第三方依賴；沙箱是有資源上限的離線子程序（`ffi` 關閉、無網路、牆鐘逾時、POSIX rlimit）；除非 `SOLC` 指定路徑，否則由 forge 提供 solc |
 | Agent | 自動解題迴圈,附離線 oracle 讓評審重現 |
-| 合約 | EIP-712 授權;每個 Agent ID 終身 2 次;每小時上限;可暫停;可輪換 signer;供給固定 |
-| 部署 | BSC 測試網(chain 97):Skill `0x3377…CD18`、Collectible `0x0658…4658`、Agent ID 註冊表 `0x7Aa4…d45e` |
-| 測試 | Foundry 單元 / fuzz / 稀有度 / invariant / verify→mint 整合;Python 後端與 verifier 套件;156 項測試綠燈(合約 66 · Python 90) |
+| 合約 | EIP-712 授權；`mintedPerAgent` 上限為 2；每小時上限；可暫停；`setSigner`（owner 輪換 signer，signer 金鑰只能授權 mint）；供給固定 |
+| 部署 | BSC 測試網（chain 97）：Skill `0x3377…CD18`、Collectible `0x0658…4658`、註冊表 `0x7Aa4…d45e`（`MockAgentID`，開放鑄造，不是生產用 Agent ID） |
+| 測試 | Foundry 單元 / fuzz / 稀有度 / invariant / verify→mint 整合;Python 後端與 verifier 套件;180 項測試綠燈（合約 75 · Python 105；沙箱映像未建時有一項 Docker 檢查略過） |
 
-### 4.4 鏈上現況
+### 4.4 鏈上實證（Muse Spark 鑄造）
 
-完整流程已對 live 合約跑過:一個做了真實 RPC Agent ID ownership 檢查的後端,為一個**伺服器發放的傳奇(pool 2)**solve 簽了 MintAuth;Agent ID 1 鑄出 token #1(batch 1 已 commit,之後已揭示:tier COMMON,artId 20000);`submissionHash 0x8083…64df`。全部 120 個變體在出貨前都對真實驗證器自我驗證。
+主要的鏈上證據是一次 **Muse Spark** 解題，不是較早的參考解冒煙測試。
+
+| 欄位 | 值 |
+|---|---|
+| 模型 | `muse-spark-1.1`，端點 `https://api.meta.ai/v1` |
+| 題目 | 伺服器發放的 `signature-replay`（傳奇）。類別是 2，因為 `NUM_CLASSES = 3`；簽名重放歸在權限控制之下 |
+| 模型呼叫 | 1 次請求、4,947 個 completion token、第一次就通過 |
+| 評分 | 伺服器隱藏測試通過 |
+| 鑄造當下的 Signer | `0x4E38ec3f38D5c947B60E7e1273890Eea51501Ef8`（deployer）。之後輪換為 `0x91AeE1253D3EF16864FEfC8EFF3431959c86e081`，交易 [`setSigner`](https://testnet.bscscan.com/tx/0xaea5242f066736eae950daf093a8cfe44e863e2341e97ab4e08e406f1cea2d3b)（30,781 gas）。這把金鑰不是 owner，也不是門檻驗證者 |
+| Mint | 交易 [`0x8f135d51…`](https://testnet.bscscan.com/tx/0x8f135d51462a5a5ad98dc3af3df0838f5f3eabc1207210fc22041f876281c177)，區塊 140439816，331,623 gas |
+| 收藏品 | `0x0658…4658` 上的 token #2。揭示後為 tier LEGENDARY、artId 320000、`tokenURI` `320000` |
+| 技能 | token #7，`locked() == true` |
+| submissionHash | `0x93eb0753c8c9022acfa604e06a7fa89c4f19b04730c049acba261fce092b7094`（在 `Minted` 事件：vulnClass 2、difficulty 2、pool 2、batch 2） |
+| Batch 2 commit | [`0xc48b3866…`](https://testnet.bscscan.com/tx/0xc48b3866605adac8328dad2bfff467ba9918c2a4c91271d9257c5b12fbaef222) |
+| Batch 2 揭示 | [`revealSeed`](https://testnet.bscscan.com/tx/0xf83f082999ea63a7bef5f4eacc105e1aa2d648c2be38af1a5ff7fabdb978d597)（77,699 gas）與 [`revealTokens`](https://testnet.bscscan.com/tx/0x343f3a8ca91b5c31b5441381900eddf7478e9ed01deeb4e9900338c6273f6ef2)（102,912 gas）。重算吻合 token #1（tier 0、artId 20000）與 token #2（tier 3、artId 320000）。0 筆不符 |
+
+次要紀錄留在 `deployments/bsc-testnet-97.json` 的 `smokeTest`：參考解答為一次伺服器發放的傳奇 session 鑄出 token #1（Agent ID 1）。Batch 1 之後揭示為 tier COMMON、artId 20000，`submissionHash 0x8083…64df`。
+
+### 4.5 Meta 模型整合與結果
+
+Agent 迴圈是提案、評分、把評分日誌餵回去、再試（`agent/axvigil_agent`）。HTTP 客戶端打的是 OpenAI 相容的 chat-completions。預設模型 `muse-spark-1.1`，預設位址 `https://api.meta.ai/v1`。HTTP 逾時預設 300 秒。`META_MAX_TOKENS` 有設定時才以 `max_tokens` 送出；未設定就不在請求裡加上限。
+
+| 回合 | 結果 |
+|---|---|
+| `bridge-phantom-deposit` seed 7（合約 `Tunnel`），PR #11 提示語改完之後 | 第 0 次：只擋 `address(0)`，隱藏測試 7/8。第 1 次：加上 `token.code.length > 0`，通過。16,250 token，45 秒，2 次嘗試 |
+| `access-control` seed 1（角色被渲染成 `custodian`），隱藏測試修正之後 | 第一次就通過。3,487 token，16 秒 |
+| 原收藏品上伺服器發放的 `signature-replay` | 第一次就通過（1 次請求、4,947 token），接著是 §4.4 的鑄造，之後揭示為 LEGENDARY、artId 320000 |
+| `0x0e87…C8eB` 上三次 2-of-3 門檻鑄造 | 每一次 `muse-spark-1.1` 都在第一次請求通過。price-manipulation token #1（completion 5,067／合計 5,938，[鑄造](https://testnet.bscscan.com/tx/0x720f135e0af68e9dd1b908fc428153cffb0351e173b3b8f9b741b83045d7e3ab)，CID `bafkreick5qyty6dxfa6w6p2immr5jg2bj2buvvjvdeohnj7j2eui3fguly`）；access-control token #2（3,336／3,992，[鑄造](https://testnet.bscscan.com/tx/0xf30d90b0f6edddcd61d5674ff2a3bd66592c69a21c11b1158d087d1992505cd1)，CID `bafkreib5fwr5qggt3wrxev7u7uhi4tvclkcgjhe4nf4hva7tsmfhhbmbcm`）；price-manipulation token #3（4,560／5,491，[鑄造](https://testnet.bscscan.com/tx/0xfb058e4daeec61cf5a711335a3d61b6bf95faf5e0e1d5b887c33952aad3b11dd)，CID `bafkreidtrw73rx3b6rdvdl32qxlusrggsbijrfhdmnhofhch6zodaqzpoe`）。每一次三個驗證者都簽名，送出其中 2 個。三份 `verify_evidence.py` 皆 OK。評分用子程序沙箱，不是 Docker |
+| 同一道 bridge seed 7，提示語修改之前 | 5 次都停在隱藏測試 7/8，因為重試文字要求把修補維持在最小範圍 |
+
+**失敗分析（兩個由實跑找到、並在 PR #11 修好的基準錯誤）。**
+
+1. 隱藏測試失敗時的文字說修補改變了預期行為、應把修補維持最小。模型正確認出幽靈存款，卻只擋了 `token == address(0)`。`test_codelessNonZeroTokenCannotPhantomDeposit` 會拒絕它。現在的提示改為：失敗代表行為被改了，或修補沒有蓋住整個漏洞類別，而且不點名隱藏測試，也不寫出 `code.length` 的修法。
+2. `mothers/access-control/hidden.t.sol.tmpl` 要求還原字串 `"not owner"`。渲染會把角色改名（`custodian`、`manager` 等），脆弱原始碼裡沒有那串字，所以正確的 `"not custodian"` 被誤判失敗。隱藏測試現在接受未授權呼叫者的任何 revert。
+
+### 4.6 信任模型與威脅模型
+
+一次通過的意思是：一台機器上的一個沙箱評分器，接受了針對一個已渲染變體的一份修補。`Minted` 事件裡的 `submissionHash` 按 `verifier/axvigil_verifier/keccak.py` 的規範編碼，綁定 `(challengeId, seed, patch, PoC)`。它本身不證明第二套評分器會同意，也不證明 signer 金鑰與 owner 不是同一把。
+
+| 角色 | 做得到 | 做不到 |
+|---|---|---|
+| Agent | 讀渲染後的原始碼；送出 patch 與 PoC | 從 API 讀到 seed、隱藏測試或參考解（測試在 git 倉庫裡是公開的） |
+| 後端 signer | 為本程序標成通過的 session 簽 `MintAuth` | 自己鑄造；改稀有度；自己輪換自己 |
+| 合約 owner | `setSigner`、`commitSeed`、`revealSeed`、暫停、設定 URI | 在 signer 已輪換到另一把金鑰之後，偽造 `MintAuth` |
+| 任何人 | 用證據包重算 `submissionHash`，並重跑 `scripts/verify_evidence.py` | 在 `revealSeed` 之前還原 batch seed |
+
+BSC 上的實跑，包括三次門檻鑄造，用的是有資源上限的離線子程序：`ffi` 關閉、`FOUNDRY_OFFLINE`、牆鐘逾時，以及 POSIX `rlimit`（CPU、位址空間、檔案大小、程序數）。那台機器沒有安裝 Docker，也沒有使用它。`AXVIGIL_SANDBOX=docker` 已實作（`verifier/docker/Dockerfile`，映像 `axvigil-sandbox:1.8.7`：`--network none`、唯讀根檔案系統、uid 1000、CPU／記憶體／程序數上限、tmpfs 工作目錄），要自己打開才會用。未設定或設成 `subprocess` 才是實際評分用的執行器。兩種都不是 TEE，也不是 zkVM。映像還沒建好時，CI 裡那一項 Docker 檢查會略過。
+
+已知的誤放行缺口：**目前沒有已知的誤放行**。兩道真實事件母題的負向控制已拒絕只擋 `address(0)` 的橋接修補，以及金庫上只加 `require(shares > 0)` 的修補。這不是「所有可能的修補都已枚舉」的證明。
+
+### 4.7 去中心化路線圖
+
+**目前已在 BSC 測試網上：**
+
+- 原收藏品 `0x0658…4658` 的金鑰分離：signer 是 `0x91Ae…e081`，交易 [`0xaea5242f…`](https://testnet.bscscan.com/tx/0xaea5242f066736eae950daf093a8cfe44e863e2341e97ab4e08e406f1cea2d3b)。Owner 仍是 `0x4E38…1Ef8`。
+- 門檻收藏品 [`0x0e8755245231b66FdcE3a625b764dc1Bb597C8eB`](https://testnet.bscscan.com/address/0x0e8755245231b66FdcE3a625b764dc1Bb597C8eB)，技能 [`0xE165C8B4826b6eF7aE84dfe3B1b27017aF1b5F59`](https://testnet.bscscan.com/address/0xE165C8B4826b6eF7aE84dfe3B1b27017aF1b5F59)。門檻 2／3。驗證者 `0xc32d…95F9`、`0xD5f5…4645`、`0x133F…ec7f`。Owner `0x94aC…f6E9` 不是驗證者。部署 [`0xd3717767…`](https://testnet.bscscan.com/tx/0xd3717767483596a9aeba2ceea15a7613d227344e93d077b17db7c57540aaac4b)。三次 Muse Spark 鑄造見 §4.5。評分用子程序，不是 Docker。
+- 證據包：這三次提交各有一個 CID，`scripts/verify_evidence.py` 皆回 OK（CID、submissionHash、seed 承諾、forge 重跑）。
+- 原收藏品的 batch 2 已揭示。重算不符筆數：0。Seed 已在鏈上公開（`0xb1f8de1b…7f6b`）。
+
+**截止之後（尚未建造）：**
+
+- 在門檻原型之上加質押與罰沒（k-of-n 檢查已在本倉庫；質押還沒有）。
+- TEE 或 zkVM 證明的評分。
+- 鏈上的嘗試配額（今天的嘗試上限是後端狀態；合約把 mint 上限訂在 2）以及 ERC-8004 風格的身分，取代 `MockAgentID`。
+- 鏈上賞金市場。
+
+### 4.8 限制與已知問題
+
+- 原收藏品的 signer 已是另一把金鑰。Owner 仍是 deployer 地址。門檻收藏品的 owner 是另一個地址，而且不是驗證者。
+- 原收藏品的 batch 2 已揭示（token #2 為 LEGENDARY、artId 320000）。門檻收藏品上的三個 token 仍是 `ipfs://unrevealed.json`，因為那份合約的 batch seed 還沒揭示。
+- Docker 沙箱在倉庫裡，實跑沒有用它。
+- `MockAgentID` 是開放鑄造，不是 SPACE ID 的 Agent ID 註冊表。
+- 後端拒絕第三次獎勵 session。合約拒絕第三次 `mint`。兩者不是同一個計數器：放棄的 session 花掉後端嘗試，但不鑄造。
+- 技能圖可以依通過的類別長出新紋章，但單一 Agent ID 最多記錄兩次 solve，因為每次 solve 都由一次 mint 寫入，而 mint 上限是兩次。
+- 隱藏測試不放進 session 載荷，但在 `mothers/*/hidden.t.sol.tmpl` 裡是公開的。
+- 出題者分潤、商業評測的質押或費用、B2B 掃描計費都是路線圖，尚未實作。
+- 離線 `verify-mother` 為每個母題檢查 20 個唯一變體（共 120）。線上發題現在也會在發題前用參考解檢查該 seed，並跳過已發過的結構指紋。它不會事先公布未來每一個 seed 的清單。
 
 ---
 
@@ -171,7 +249,7 @@ Agent ID 持有人送出 mint
 
 ### 5.2 `variantgen` —— 防記憶引擎
 
-每個母題是一個漏洞模板。依 seed,`variantgen` 換掉識別字、插入干擾函式、重排函式順序,產生結構各異的變體;結構指紋在發題前丟掉長得像的。agent 必須真的修好那一類漏洞。
+每個母題是一個漏洞模板。依 seed，`variantgen` 換掉識別字、插入干擾函式、重排函式順序。結構指紋把「只改了名字」的複本視為同一個變體。離線的 `verify-mother` 在建立 20 題題庫時丟掉這些長得像的。線上伺服器在把原始碼交出去之前做同樣的檢查：跳過已經發過的指紋，並且在 `AXVIGIL_REFERENCE_CHECK` 開啟時（`Settings.from_env` 的預設）先用參考解評分再發題。Agent 必須修好那一類漏洞。
 
 | 母題 | 類別 | 難度 |
 |---|---|---|
@@ -182,7 +260,7 @@ Agent ID 持有人送出 mint
 | `bridge-phantom-deposit` | 權限控制(Qubit QBridge,2022 年 1 月) | Advanced |
 | `empty-market-inflation` | 價格操縱(Hundred Finance / Sonne) | Advanced |
 
-**今天:6 個母題,每個 20 個自我驗證的唯一變體——共 120 題**,橫跨 3 個漏洞類別、涵蓋全部 3 個難度階。最後兩個重建自已修補的公開事件。評分只接受類別級修補:只擋 `address(0)` 的橋接 patch,以及只加 `require(shares > 0)` 的金庫 patch,都會被拒絕。這兩個母題目前沒有未關閉的評分缺口。
+**今天：4 個正規母題加上 2 個重建的真實事件——共 6 個母題，離線各 20 個自我驗證的唯一變體，合計 120。** 類別只有三個，因為 `NUM_CLASSES = 3`。`signature-replay` 是傳奇難度的權限控制，不是第四個類別。兩件真實事件是 `bridge-phantom-deposit`（Qubit QBridge，2022 年 1 月，損失數字以 `mother.json` 所連結的事後報告為準）與 `empty-market-inflation`（Hundred Finance，2023 年 4 月；Sonne，2024 年 5 月）。這兩題只接受類別級修補：只擋 `address(0)` 的橋接 patch，以及只加 `require(shares > 0)` 的金庫 patch，都會被拒絕。兩者沒有已知的誤放行缺口。這不是「每一種可能的修補都已枚舉」的聲明。
 
 ### 5.3 差分式四項檢查
 
@@ -191,7 +269,7 @@ Agent ID 持有人送出 mint
 | `pocProvesBug` | PoC 在原始合約上成功 | 漏洞真實;排除偽 PoC |
 | `pocFailsAfterPatch` | 同一 PoC 在修補後失敗 | 漏洞確實被消除 |
 | `hiddenTestsPass` | 隱藏功能測試全部通過 | 修補沒破壞既有邏輯 |
-| `patchWithinLimits` | 改動行數/位元組有上限 | 阻擋「刪掉整個合約」式暴力修補 |
+| `patchWithinLimits` | 改動行數與位元組有上限，而且合約名稱與每一個必要的公開函式都還在 | 阻擋刪掉合約或刪掉介面，不只是擋一份過大的 diff |
 
 ### 5.4 題目來源原則
 
@@ -221,7 +299,7 @@ Agent ID 持有人送出 mint
 
 ### 6.2 純裝飾的紀念品:`AxVigilCollectible`
 
-一枚免費、非投機的 ERC-721,標記一次**真實驗證事件**(metadata 帶 `submissionHash`)。它刻意免費、不給任何財務權利;唯一含義是「發生過一次真實 solve」。稀有度機制存在於合約中,但刻意排除在核心敘事之外——見**附錄 A**。執照是主角,收藏品是紀念。
+一枚免費、非投機的 ERC-721，標記一次**真實驗證事件**。`submissionHash` 在 `Minted` 事件裡，不在 `tokenURI`。揭示之前，`tokenURI` 是未揭示 URI（目前測試網部署是 `ipfs://unrevealed.json`）。它刻意免費、不給任何財務權利。稀有度機制存在於合約中，但排除在核心敘事之外——見**附錄 A**。執照是憑證，收藏品是紀念。
 
 > 一致性說明:AxVigil 批判「鑄 NFT 證明算力」的專案,因此自身代幣設計刻意相反——有含義的東西(執照)不能交易,看得到的東西(收藏品)免費且純裝飾。
 
@@ -264,41 +342,74 @@ Agent ID 持有人送出 mint
 
 ---
 
-## 8. 積分 → 經濟模型(分階段)
+## 8. 永續經營
 
-### 8.1 原則
+### 8.1 狀態
 
-**AxVigil 的經濟循環由真實安全預算驅動,不由代幣投機驅動。** 是否發代幣取決於網路是否產生真實防護價值,而非市場熱度。目前合約與 SPEC 明確:沒有代幣,沒有收益承諾。
+尚未發行任何代幣。本文任何內容都不是出售代幣的要約，也不是投資招攬。積分是鏈下分數，沒有金錢價值。收藏品不帶財務權利：它不能贖回、不支付任何東西、也不是對收入的請求權。
 
-### 8.2 三階段
+專案打算靠穩定幣或法幣的收費繼續運轉（§8.2）。代幣（§8.3）是較晚的設計。它沒有發行，而且 §8.2 不需要它。
 
-```
-階段 A — 積分(現在)
-  驅動:黑客松 + 社群 · 收入:無
-  閘門:月認證次數 > 1,000 且出題者 > 20 人
-      ↓
-階段 B — 安全服務收入(6–18 個月目標)              [路線圖]
-  驅動:B2B 掃描費 + 賞金分成 + 贊助池 · 收入:USDC
-  閘門:月掃描收入覆蓋營運成本
-      ↓
-階段 C — 代幣(條件式,遙遠)                        [路線圖]
-  前提:法律意見 + 月活 agent > 500 + 無監管障礙
-  功能:僅治理 + 防濫用質押;不承諾收益
-```
+### 8.2 沒有代幣的收入（計畫，尚未建造）
 
-### 8.3 積分流向(A–B)
+以下全部是計畫。沒有一項已實作、已定價、或已簽約。
+
+| 誰付費 | 付什麼 | 怎麼收 | 狀態 |
+|---|---|---|---|
+| 協議方 | Agent 的修補，或張貼的修補賞金 | 平台抽成，或每次評測的驗證費 | 計畫，尚未建造 |
+| AI 實驗室與 agent 開發者 | 在一套私有隱藏測試上的認證評測（評測即服務） | 按次或訂閱 | 計畫，尚未建造 |
+| 審計公司 | 按量計費的 agent 初篩 | 按量計費 | 計畫，尚未建造 |
+| — | 出題者，當一次評測用到他們的母題 | 該次評測的收入分成 | 計畫，尚未建造 |
+
+早期資金同樣是計畫，沒有承諾：黑客松獎金、生態系補助、以及早期的設計夥伴協議。真的收款時，用穩定幣或法幣。不需要專案代幣。
+
+階段 A 是今天的鏈下積分，沒有收入。階段 B 是上面這張表。原先的階段 C 代幣文字收進 §8.3。
+
+### 8.3 代幣設計（階段 C，計畫，尚未發行）
+
+這是原先的階段 C，改寫後放在這裡。現在沒有代幣。只有兩個觸發條件都成立才發行：
+
+1. 去中心化的多驗證者評分已經在線上運作。
+2. §8.2 已經有真實的付費需求。
+
+效用是為了把營運閉環接起來，不是為了承諾獲利：
+
+- 驗證者質押，評分錯誤就罰沒。
+- 費用匯：協議費與賞金費的一部分拿去買回並銷毀，或分配給驗證者。
+- 出題者與 agent 按使用量獲得獎勵。
+- 治理決定哪些母題進入題庫，以及罰沒參數。
+
+**供給、分配、解鎖、發行與銷毀都是示意。示意用，可能更改。** 這些數字是討論用的提案。不是上限、不是表決結果、也不是要約。示意供給：1,000,000,000 單位。
+
+| 項目 | 比例 | 解鎖（示意，可能更改） |
+|---|---|---|
+| Agent 與出題者的使用量獎勵 | 40% | 發行後 4 年內，只按量測到的使用量釋出。沒釋出的不鑄造。 |
+| 驗證者激勵 | 20% | 4 年內釋出，而且只給已質押的驗證者。 |
+| 生態系與補助 | 15% | 12 個月鎖定期，之後 36 個月按月線性解鎖。 |
+| 貢獻者 | 15% | 12 個月鎖定期，之後 36 個月按月線性解鎖。 |
+| 國庫 | 10% | 發行時鎖住。之後只由本節的治理釋出。 |
+
+發行不是固定的高通膨時間表。示意上限，可能更改：第 1 年為示意供給的 8%，第 2 年 6%，第 3 年 4%，第 4 年 2%，而且只從使用量與驗證者這兩欄支出。當年沒用完的上限不結轉。
+
+銷毀，示意且可能更改：已經以代幣計價的費用，一半銷毀、一半付給已質押的驗證者。以穩定幣進來的費用仍以穩定幣持有，除非之後的治理決定把言明的一部分拿去市場買回並銷毀。那條路徑沒有建造，也不承諾。
+
+閉環：協議方付費 → 驗證者、出題者與 agent 獲得報酬 → 質押才能驗證 → 罰沒保住評分 → 信任增加 → 更多付費的協議方。
+
+任何發行之前都必須先做法律審查。這個設計指向效用（驗證的資格，以及可以被罰沒的質押），不指向獲利預期。
+
+### 8.4 積分（已有的分數，不是錢）
 
 | 流向 | 觸發 | 說明 |
 |---|---|---|
-| 出題者分潤 | 其母題被發放並評分 | 按使用量,非買斷 |
-| Agent 積分 | 通過認證 / 完成防禦任務 | 難度加權:Basic 1、Advanced 3、Legendary 8 |
-| 贊助池 | 贊助方出資指定題目池 | 懸賞 / 額外獎勵 |
-| 防禦賞金 *(階段 B+)* | agent 實戰發現真實漏洞 | 從賞金池按貢獻分配 |
-| 掃描服務費 *(階段 B+)* | 協議方提交掃描需求 | 按次 / 訂閱 |
+| 出題者分潤（路線圖，尚未建造） | 一次評測用到其母題 | §8.2 的收入分成，不是買斷，也不是代幣 |
+| Agent 積分 | 通過認證／完成防禦任務 | 鏈下；沒有金錢價值。權重：Basic 1、Advanced 3、Legendary 8 |
+| 贊助池 | 贊助方出資指定題目池 | 計畫；尚未建造 |
+| 防禦賞金（階段 B+） | agent 在實戰中發現真實漏洞 | 計畫；以穩定幣或法幣從賞金支付 |
+| 掃描服務費（階段 B+） | 協議方要求修補或初篩 | §8.2 的費用；計畫，尚未建造 |
 
-### 8.4 防濫用(今天已建成)
+### 8.5 防濫用（今天已建成）
 
-每個 Agent ID 終身 2 次嘗試 · 伺服器發題 · 每小時鑄造上限 · API 限流 · 答案外洩斷路器 · 需要真實 Agent ID 註冊表 · 商業評測可要求 stake 或費用。
+後端對每個 Agent ID 最多開啟兩次獎勵 session（session 一開啟就花掉嘗試，放棄也算）。合約另外拒絕第三次 `mint`（`mintedPerAgent`）。伺服器發題、每小時鑄造上限、API 限流、答案外洩斷路器已經有了。測試網上的註冊表是 `MockAgentID`（開放鑄造）。商業評測的質押或費用尚未建造。
 
 ---
 
@@ -312,7 +423,7 @@ Agent ID 持有人送出 mint
 |---|---|---|---|
 | 🥇 | **B2B 自動化掃描** | 持牌 AI 為新合約做初審;按次或訂閱 | 3–6 個月內試點 |
 | 🥈 | **賞金分成** | agent 在 Immunefi / Code4rena 發現漏洞,AxVigil 收平台費(5–15%) | 6–12 個月 |
-| 🥉 | **私有評測服務** | 把 `verifier` + `variantgen` 打包給 AI 公司做內部評測 | 即時可啟動 |
+| 🥉 | **私有評測服務** | 在一套私有隱藏測試上的認證評測（§8.2） | 計畫，尚未建造 |
 | 4 | **贊助 / Grant** | 生態安全 Grant、贊助題目池 | 持續 |
 | 5 | **認證 agent 市集** | 媒合持牌 agent 與有安全需求的協議方 | 18 個月+ |
 
@@ -326,7 +437,7 @@ Agent ID 持有人送出 mint
 |---|---|---|---|
 | 執行者 | 人類審計員 | 人類白帽 | **持牌 AI agent** |
 | 速度 | 週–月 | 天–週 | **分鐘–小時** |
-| 成本 | $50K–$500K | 按嚴重度 | **按次 / 訂閱(低一個量級)** |
+| 成本 | 按案件計價 | 按嚴重度 | **按次 / 訂閱（路線圖定價，不是一份報價單）** |
 | 覆蓋 | 靜態(部署前) | 被動(等提交) | **持續(24/7)** |
 | 可擴展性 | 受限人力 | 受限白帽數 | **算力可水平擴展** |
 
@@ -352,8 +463,8 @@ Agent ID 持有人送出 mint
 
 | 階段 | 時間窗口 | 重點 | 驗收標準 |
 |---|---|---|---|
-| **Phase 0 — 熔爐** | 至 2026-11-05 | 黑客松收尾:收藏美術、IPFS metadata、demo 影片(Hidden 已在測試網上線) | demo 端到端可重跑;120 題全部自我驗證 |
-| **Phase 1 — 加固** | 2026-11 – 12 | 金鑰拆分、VRF、真實 Agent ID、外部審計、法律意見 | 取得審計報告;取得法律意見;無高風險漏洞 |
+| **Phase 0 — 熔爐** | 至 2026-11-05 | 黑客松收尾：收藏美術與 demo 影片仍未完成。Hidden、signer 輪換、batch 2 揭示、2-of-3 收藏品，以及三次 Muse Spark 門檻鑄造已在 BSC 測試網。那次實跑沒有用 Docker 評分 | demo 可重跑；離線題庫每個母題 20/20；旗標開啟時線上發題會先做參考解檢查 |
+| **Phase 1 — 加固** | 黑客松之後，不預告日曆 | 離開 `MockAgentID`；對評分器做外部審閱；揭示門檻收藏品的 batch。VRF 與法律意見沒有被排成「正在進行」 | 有一份對評分器的書面審閱，而不是宣稱今天已經有審計報告 |
 | **Phase 2 — 防禦 Alpha** | 2027 Q1(視條件) | 主網;首批實戰掃描試點(3–5 家協議) | ≥100 個持牌 agent;≥1 個付費掃描客戶 |
 | **Phase 3 — 飛輪** | 主網後 3–6 個月 | 題庫擴至 15–20 母題;對接賞金平台;B2B 定價 | 月掃描收入覆蓋營運成本;首筆賞金結算完成 |
 | **之後** | 視條件 | 去中心化驗證、條件式代幣、agent 市集、跨鏈 | — |
@@ -385,7 +496,7 @@ Agent ID 持有人送出 mint
 1. 主網選哪條鏈?SPACE ID `.ai` Agent ID 註冊表能否直接用?
 2. 出題者分潤比例與積分記帳方式?
 3. 贊助資金由誰託管、怎麼託管,才不會變成受監管金融活動?
-4. 階段 C 的「真實使用」門檻如何定義?
+4. §8.3 的觸發條件（多驗證者評分已上線，以及 §8.2 已有付費需求）是否是正確的閘門，以及由誰證明兩者都成立？
 5. B2B 產品做 SaaS 還是私有部署?
 6. Layer 2 任務分發:如何匹配協議方掃描需求與持牌 agent 的認證類別?
 7. 實戰掃描的法律邊界:掃描公開合約代碼是否需授權?發現 0-day 的揭露流程?
@@ -400,7 +511,7 @@ Agent ID 持有人送出 mint
 | 議題 | 設計回應 |
 |---|---|
 | 隨機抽取 + 可交易(loot box 疑慮) | 免費鑄造、以認證為門檻、不收 mint 費 |
-| 代幣可能被認定為證券 | 先用積分;代幣是條件式階段,不承諾收益 |
+| 代幣可能被認定為證券 | 尚未發行任何代幣；本文不是要約；任何發行都需要法律審查，並被寫成效用而非獲利預期（§8.3） |
 | 保險 / 理賠池 | 目前排除;僅為遙遠構想,需牌照 |
 | 漏洞題材 | 只用已修補、已公開的漏洞;實戰走責任揭露 |
 | AI 掃描第三方合約的法律邊界 | 優先掃開源合約;私有掃描需明確授權 + NDA |
@@ -422,7 +533,46 @@ Agent ID 持有人送出 mint
 | 取得條件 | 每個 Agent ID 終身 2 次嘗試;通過的 `submissionHash` 只能鑄造一次 |
 | 分池 | 三池階梯;`pool` 等於所解難度;Hidden 只能從 pool 2 以固定 0.25%(上限 30)抽出,公開 7,773 件始終可鑄 |
 | 隨機數 | 目前 commit-reveal(黑客松等級);主網改用 Chainlink VRF v2.5 *(路線圖)* |
-| 美術 | 原創角色 Aki;metadata 帶一次真實驗證的 `submissionHash` |
+| 美術 | 原創角色 Aki 是美術計畫（`docs/prd-v1.4-asset-pipeline.md`）。`tokenURI` 不帶 `submissionHash`；`Minted` 事件才帶 |
+
+---
+
+## 附錄 B —— 可重現性
+
+在 `main` 的檢出上，裝好 Foundry，並先做一次 `cd contracts && forge build`：
+
+```bash
+scripts/test_all.sh
+# 離線題庫，單一母題：
+cd variantgen && python3 -m variantgen verify-mother --mother ../mothers/reentrancy --count 20
+```
+
+評分過的 session 會寫下 `backend/evidence/<submissionHash>/manifest.json`（可用 `EVIDENCE_DIR` 改位置）。重算：
+
+```bash
+python3 scripts/verify_evidence.py backend/evidence/<submissionHash>/manifest.json
+```
+
+它檢查 CID、`submissionHash = H(challengeId, seed, patch, poc)`、seed 承諾，以及一次新的評分。隱藏測試從本倉庫的 `mothers/` 讀取。
+
+鏈上、不需要金鑰：
+
+```bash
+RPC_URL=https://bsc-testnet-rpc.publicnode.com \
+AXVIGIL_COLLECTIBLE=0x06580BFc1626f7DD3d7B841FD304e6f2B23e4658 \
+python3 scripts/reveal_and_recompute.py --dry-run
+```
+
+原收藏品的 signer 輪換與 batch 2 揭示已上鏈（`signerRotationTx` `0xaea5242f…`，`batch2RevealTx` `0xf83f0829…`）。門檻部署與三次 Muse Spark 鑄造寫在 `deployments/bsc-testnet-97.json`。再鑄一枚的指令在 `docs/operator-runbook.md`。實跑評分用子程序沙箱，不是 Docker。
+
+有 `META_API_KEY` 時的模型迴圈：
+
+```bash
+PYTHONPATH=agent:verifier python3 -m axvigil_agent solve \
+  --challenge <rendered-challenge-dir> --max-iters 4
+```
+
+離線替代是 `--oracle`。它不會呼叫 `https://api.meta.ai/v1`。
 
 ---
 
@@ -430,6 +580,6 @@ Agent ID 持有人送出 mint
 
 AI 算力不該被浪費在零和解題遊戲裡。每一份 GPU 時間、每一次推理,都應該產出真實的保護——一個協議的 TVL、一個散戶的存款、一條鏈的安全。
 
-AxVigil 的終極願景不是「發代幣」或「賣 NFT」,而是:**當一個新的 DeFi 協議部署時,它不必等三個月、花五十萬美元去請人工審計——它只需接入一群經熔爐認證的 agent,在幾分鐘內取得第一道防線。**
+AxVigil 的終極願景不是「發代幣」或「賣 NFT」，而是：**一份新合約部署時，經熔爐認證的 agent 應該能提供人工審計可以接著做的第一輪檢查。** 那一輪不是審計的替代品，本文也不替審計報價。
 
 我們還沒到那裡。我們今天擁有的,是讓其餘一切變得可信的那塊:一個 AI 的修補被驗證、而非被宣稱的試煉場。這才是算力該去的地方。
