@@ -27,6 +27,8 @@ class Mother:
         self.src_tmpl = (self.dir / "src.sol.tmpl").read_text()
         self.hidden_tmpl = (self.dir / "hidden.t.sol.tmpl").read_text()
         self.poc_tmpl = (self.dir / "poc.t.sol.tmpl").read_text()
+        inv = self.dir / "invariant.t.sol.tmpl"
+        self.invariant_tmpl = inv.read_text() if inv.is_file() else None
 
     @property
     def mother_id(self) -> str:
@@ -109,6 +111,7 @@ def render_challenge(mother: Mother, seed: int, out_dir: Path) -> dict:
     patched_src = FIXES[mother.meta["fixId"]](rendered_src, ctx)
     hidden = _substitute_ids(mother.hidden_tmpl, ctx["ids"])
     poc = _substitute_ids(mother.poc_tmpl, ctx["ids"])
+    invariant = _substitute_ids(mother.invariant_tmpl, ctx["ids"]) if mother.invariant_tmpl else None
 
     (out_dir / "src").mkdir(parents=True, exist_ok=True)
     (out_dir / "test").mkdir(parents=True, exist_ok=True)
@@ -119,6 +122,8 @@ def render_challenge(mother: Mother, seed: int, out_dir: Path) -> dict:
     (out_dir / "test" / "Hidden.t.sol").write_text(hidden)
     (out_dir / "solution" / "patched" / target_file).write_text(patched_src)
     (out_dir / "solution" / "poc" / "Poc.t.sol").write_text(poc)
+    if invariant is not None:
+        (out_dir / "test" / "Invariant.t.sol").write_text(invariant)
 
     required = [ctx["ids"][s] for s in mother.meta.get("requiredFunctionSentinels", [])]
     challenge = {
@@ -136,5 +141,9 @@ def render_challenge(mother: Mother, seed: int, out_dir: Path) -> dict:
         "title": mother.meta.get("title", mother.mother_id),
         "summary": mother.meta.get("summary", ""),
     }
+    if invariant is not None:
+        challenge["invariantTests"] = "Invariant.t.sol"
+    if mother.meta.get("track"):
+        challenge["track"] = mother.meta["track"]
     (out_dir / "challenge.json").write_text(json.dumps(challenge, indent=2))
     return challenge

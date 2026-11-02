@@ -71,6 +71,11 @@ def test_reference_solution_passes():
     res = _grade(CH / "solution")
     assert res.passed, res.log
     assert res.pocProvesBug and res.pocFailsAfterPatch and res.hiddenTestsPass and res.patchWithinLimits
+    # The static vault has no invariant suite. The fifth check is recorded and
+    # does not change the verdict.
+    assert res.invariantsHold is True
+    assert res.invariantApplied is False
+    assert "invariantsHold: not configured" in res.log
     hidden = (CH / "test" / "Hidden.t.sol").read_text()
     # Names of the hidden tests must not be echoed into the log the agent retries on.
     for line in hidden.splitlines():

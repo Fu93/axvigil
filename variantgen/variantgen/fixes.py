@@ -132,6 +132,65 @@ def fix_share_inflation(src: str, ctx: dict) -> str:
     return pattern.sub(f"{book_fn}()", src)
 
 
+def fix_platypus_order(src: str, ctx: dict) -> str:
+    """Platypus Finance, Feb 2023. emergencyWithdraw checked solvency before the
+    stake was reduced, so the check still saw the pre-withdraw collateral.
+    Reduce the stake first, then require the position to still be solvent —
+    the same order the ordinary withdraw path already uses."""
+    ids = _ids(ctx)
+    stake = ids["vzzStake"]
+    total = ids["vzzTotalStake"]
+    solvent = ids["fzzSolvent"]
+    old = (
+        f'        require({solvent}(msg.sender), "not solvent");\n'
+        f"        {stake}[msg.sender] -= amount;\n"
+        f"        {total} -= amount;\n"
+    )
+    new = (
+        f"        {stake}[msg.sender] -= amount;\n"
+        f"        {total} -= amount;\n"
+        f'        require({solvent}(msg.sender), "not solvent");\n'
+    )
+    if old not in src:
+        raise ValueError("platypus fix: could not locate the pre-update solvency check")
+    return src.replace(old, new, 1)
+
+
+def fix_nomad_zero_root(src: str, ctx: dict) -> str:
+    """Nomad Replica, Aug 2022. An unproven message reads as root bytes32(0), and
+    initialize pre-approved that zero root, so acceptableRoot returned true.
+    Refuse the zero root even when confirmAt says it is confirmed."""
+    name = _ids(ctx)["fzzAcceptable"]
+    pat = re.compile(rf"(function {re.escape(name)}\(bytes32 root\)[^{{]*\{{\n)")
+    m = pat.search(src)
+    if not m:
+        raise ValueError("nomad fix: could not locate the acceptable-root function")
+    guard = "        if (root == bytes32(0)) return false;\n"
+    return src[: m.end()] + guard + src[m.end():]
+
+
+def fix_beanstalk_snapshot(src: str, ctx: dict) -> str:
+    """Beanstalk, Apr 2022. emergencyCommit counted live voting power, so a
+    same-transaction deposit (a flash loan) could pass a supermajority and
+    execute. Count the checkpoint from the start of the block instead."""
+    ids = _ids(ctx)
+    votes = ids["vzzVotes"]
+    total = ids["vzzTotal"]
+    prior = ids["fzzPrior"]
+    prior_total = ids["fzzPriorTotal"]
+    old = (
+        f"        uint256 power = {votes}[msg.sender];\n"
+        f"        uint256 tot = {total};\n"
+    )
+    new = (
+        f"        uint256 power = {prior}(msg.sender);\n"
+        f"        uint256 tot = {prior_total}();\n"
+    )
+    if old not in src:
+        raise ValueError("beanstalk fix: could not locate the live-vote tally")
+    return src.replace(old, new, 1)
+
+
 FIXES = {
     "reentrancy_cei": fix_reentrancy_cei,
     "access_control": fix_access_control,
@@ -139,4 +198,7 @@ FIXES = {
     "sig_replay": fix_sig_replay,
     "bridge_phantom_deposit": fix_bridge_phantom_deposit,
     "share_inflation": fix_share_inflation,
+    "platypus_order": fix_platypus_order,
+    "nomad_zero_root": fix_nomad_zero_root,
+    "beanstalk_snapshot": fix_beanstalk_snapshot,
 }

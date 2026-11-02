@@ -15,6 +15,7 @@ sys.path.insert(0, str(REPO / "variantgen"))
 
 from axvigil_backend.config import Settings
 from axvigil_backend.evidence import (
+    bundle_grade_matches,
     canonical_json,
     cid_v1_raw_sha256,
     recompute_submission_hash,
@@ -64,7 +65,9 @@ def test_bundle_submission_hash_and_seed_commitment(tmp_path):
         poc="contract T {}\n",
         grader_log="hiddenTestsPass: 1/1 tests passed",
         checks={"pocProvesBug": True, "pocFailsAfterPatch": True, "hiddenTestsPass": True,
-                "patchWithinLimits": True, "passed": True},
+                "patchWithinLimits": True, "invariantsHold": True, "passed": True,
+                "invariantFuzzSeed": 659918, "invariantFuzzRuns": 2000,
+                "invariantRuns": 256, "invariantDepth": 32, "invariantApplied": True},
         submission_hash="0x" + "11" * 32,
         forge_bin="forge",
         verifier_pkg=REPO / "verifier" / "axvigil_verifier",
@@ -81,6 +84,36 @@ def test_bundle_submission_hash_and_seed_commitment(tmp_path):
     assert recompute_submission_hash(manifest) == manifest["submissionHash"]
     assert info["evidenceCid"].startswith("bafkrei")
     assert info["seedCommitment"] == seed_commitment(7)
+    assert manifest["bundleVersion"] == 2
+    assert manifest["checks"]["invariantsHold"] is True
+    assert manifest["invariantProfile"] == {
+        "fuzzSeed": 659918, "fuzzRuns": 2000, "invariantRuns": 256,
+        "invariantDepth": 32, "applied": True,
+    }
+
+
+def test_v1_bundle_skips_the_invariant_check():
+    checks = {"passed": True, "pocProvesBug": True, "pocFailsAfterPatch": True,
+              "hiddenTestsPass": True, "patchWithinLimits": True}
+    manifest = {"bundleVersion": 1, "checks": checks}
+    grade = dict(checks, invariantsHold=False, invariantProfile={
+        "fuzzSeed": 1, "fuzzRuns": 1, "invariantRuns": 1, "invariantDepth": 1, "applied": True,
+    })
+    rows = bundle_grade_matches(manifest, grade)
+    assert "invariantsHold" not in {key for key, _ in rows}
+    assert all(ok for _, ok in rows)
+
+
+def test_v2_bundle_requires_the_invariant_schedule():
+    profile = {"fuzzSeed": 659918, "fuzzRuns": 2000, "invariantRuns": 256,
+               "invariantDepth": 32, "applied": True}
+    checks = {"passed": True, "pocProvesBug": True, "pocFailsAfterPatch": True,
+              "hiddenTestsPass": True, "patchWithinLimits": True, "invariantsHold": True}
+    manifest = {"bundleVersion": 2, "checks": checks, "invariantProfile": profile}
+    assert all(ok for _, ok in bundle_grade_matches(manifest, {"invariantProfile": profile, **checks}))
+    drifted = dict(profile, fuzzSeed=1)
+    rows = bundle_grade_matches(manifest, {"invariantProfile": drifted, **checks})
+    assert ("invariantProfile.fuzzSeed", False) in rows
 
 
 def test_weight_and_hidden_roll_match_the_contract():

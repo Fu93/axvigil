@@ -1,0 +1,60 @@
+// SPDX-License-Identifier: MIT
+pragma solidity 0.8.28;
+
+import {Test} from "forge-std/Test.sol";
+import {Czz} from "../src/Czz.sol";
+
+contract Handler {
+    Czz public bridge;
+    bool public broken;
+
+    constructor(Czz b) {
+        bridge = b;
+    }
+
+    function process(uint256 salt, uint256 amount) external {
+        amount = (amount % 1000) + 1;
+        if (amount > bridge.vzzEscrow()) return;
+        bytes32 hash = keccak256(abi.encodePacked(salt, amount));
+        try bridge.fzzProcess(hash, address(this), amount) {
+            if (bridge.vzzRootOf(hash) == bytes32(0)) broken = true;
+        } catch {}
+    }
+}
+
+contract InvariantTest is Test {
+    Czz internal bridge;
+    Handler internal handler;
+    address internal updater = makeAddr("updater");
+    uint256 internal constant FUNDED = 5000;
+
+    function setUp() public {
+        bridge = new Czz(updater);
+        bridge.fzzFund(FUNDED);
+        handler = new Handler(bridge);
+        handler.process(1, FUNDED);
+
+        excludeContract(address(this));
+        excludeContract(address(bridge));
+        targetContract(address(handler));
+        bytes4[] memory sels = new bytes4[](1);
+        sels[0] = Handler.process.selector;
+        targetSelector(FuzzSelector({addr: address(handler), selectors: sels}));
+    }
+
+    function invariant_unprovenCannotRelease() public view {
+        assertFalse(handler.broken(), "unproven message released escrow");
+        assertEq(bridge.vzzEscrow(), FUNDED);
+        assertEq(bridge.vzzCredit(address(handler)), 0);
+    }
+
+    function testFuzz_unprovenCannotRelease(uint256 salt, uint96 amt) public {
+        amt = uint96(bound(amt, 1, 1000));
+        bytes32 hash = keccak256(abi.encodePacked("fuzz", salt));
+        vm.assume(bridge.vzzRootOf(hash) == bytes32(0));
+        uint256 before = bridge.vzzEscrow();
+        vm.expectRevert();
+        bridge.fzzProcess(hash, address(this), amt);
+        assertEq(bridge.vzzEscrow(), before);
+    }
+}

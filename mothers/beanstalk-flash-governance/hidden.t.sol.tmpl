@@ -1,0 +1,87 @@
+// SPDX-License-Identifier: MIT
+pragma solidity 0.8.28;
+
+import {Test} from "forge-std/Test.sol";
+import {Czz} from "../src/Czz.sol";
+
+contract HiddenTest is Test {
+    Czz internal gov;
+    address internal alice = makeAddr("alice");
+    address internal bob = makeAddr("bob");
+    address internal attacker = makeAddr("attacker");
+
+    function setUp() public {
+        gov = new Czz();
+    }
+
+    function test_depositCreditsVotes() public {
+        vm.deal(alice, 3 ether);
+        vm.prank(alice);
+        gov.fzzDeposit{value: 2 ether}();
+        assertEq(gov.vzzVotes(alice), 2 ether);
+        assertEq(gov.vzzTotal(), 2 ether);
+        assertEq(address(gov).balance, 2 ether);
+    }
+
+    function test_withdrawReturnsDeposit() public {
+        vm.deal(alice, 3 ether);
+        vm.prank(alice);
+        gov.fzzDeposit{value: 2 ether}();
+        uint256 before = alice.balance;
+        vm.prank(alice);
+        gov.fzzWithdraw(2 ether);
+        assertEq(alice.balance, before + 2 ether);
+        assertEq(gov.vzzVotes(alice), 0);
+        assertEq(gov.vzzTotal(), 0);
+    }
+
+    function test_fundDoesNotMintVotes() public {
+        gov.fzzFund{value: 1 ether}();
+        assertEq(gov.vzzTotal(), 0);
+        assertEq(address(gov).balance, 1 ether);
+    }
+
+    function test_sameBlockDepositorCannotExecute() public {
+        gov.fzzFund{value: 4 ether}();
+        vm.deal(attacker, 2 ether);
+        vm.startPrank(attacker);
+        gov.fzzDeposit{value: 2 ether}();
+        uint256 id = gov.fzzPropose(attacker, 4 ether);
+        vm.expectRevert();
+        gov.fzzEmergency(id);
+        vm.stopPrank();
+        assertEq(address(gov).balance, 6 ether, "treasury stays put");
+    }
+
+    function test_checkpointedSupermajorityCanExecute() public {
+        vm.deal(alice, 10 ether);
+        vm.prank(alice);
+        gov.fzzDeposit{value: 9 ether}();
+        vm.roll(block.number + 1);
+        gov.fzzFund{value: 5 ether}();
+        uint256 id = gov.fzzPropose(alice, 5 ether);
+        vm.prank(alice);
+        gov.fzzEmergency(id);
+        assertEq(alice.balance, 6 ether, "5 received, 9 still deposited, started with 10");
+        assertEq(address(gov).balance, 9 ether, "vote deposit remains");
+        vm.prank(alice);
+        vm.expectRevert();
+        gov.fzzEmergency(id);
+    }
+
+    function test_minorityCannotExecuteNextBlock() public {
+        vm.deal(alice, 2 ether);
+        vm.deal(bob, 2 ether);
+        vm.prank(alice);
+        gov.fzzDeposit{value: 1 ether}();
+        vm.prank(bob);
+        gov.fzzDeposit{value: 1 ether}();
+        vm.roll(block.number + 1);
+        gov.fzzFund{value: 3 ether}();
+        uint256 id = gov.fzzPropose(alice, 3 ether);
+        vm.prank(alice);
+        vm.expectRevert();
+        gov.fzzEmergency(id);
+        assertEq(address(gov).balance, 5 ether);
+    }
+}

@@ -5,7 +5,7 @@ This file is the repo-local contract for the demo. The longer product PRD is not
 
 ## Monorepo layout
 - contracts/   Foundry project: AxVigilSkill (ERC-5192), AxVigilCollectible (ERC-721), MockAgentID for tests
-- mothers/     six mother templates, 20 self-verified variants each (120)
+- mothers/     nine mother templates, 20 self-verified variants each (180)
 - variantgen/  seed variant generator
 - challenges/  two static fixtures: `reentrancy-001` (patch-graded live demo) and `reentrancy-vault` (verifier self-check)
 - verifier/    deterministic sandboxed grader (Python CLI)
@@ -21,8 +21,17 @@ Pool: equals difficulty — 0 basic, 1 advanced, 2 legendary.
 Verifier result JSON (stdout of `python -m axvigil_verifier grade ...`):
 { "challengeId": str, "seed": int, "vulnClass": int, "difficulty": int,
   "pocProvesBug": bool, "pocFailsAfterPatch": bool, "hiddenTestsPass": bool,
-  "patchWithinLimits": bool, "passed": bool, "solveSeconds": int|null,
+  "patchWithinLimits": bool, "invariantsHold": bool,
+  "invariantFuzzSeed": int, "invariantFuzzRuns": int, "invariantRuns": int,
+  "invariantDepth": int, "invariantApplied": bool,
+  "passed": bool, "solveSeconds": int|null,
   "submissionHash": "0x..." (keccak256 of canonical patch+poc), "log": str }
+`passed` is all five booleans. `invariantsHold` is vacuously true when the
+challenge has no invariant suite (`invariantApplied` false); the static
+`reentrancy-001` mint demo is in that set. Mother challenges pin Foundry to
+fuzz seed `0xA11CE` (659918), 2000 fuzz runs, 256 invariant runs, depth 32.
+Evidence bundles are schema version 2 and record that schedule. Version 1
+bundles still recompute; the new fields are compared only when the bundle has them.
 
 EIP-712 MintAuth (domain name "AxVigil", version "1", chainId, verifyingContract = AxVigilCollectible):
 MintAuth(uint256 agentId,address to,uint8 vulnClass,uint8 difficulty,uint8 pool,bytes32 submissionHash,uint256 nonce,uint256 deadline)

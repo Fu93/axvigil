@@ -44,7 +44,21 @@ def _live_grade(manifest: dict) -> dict:
     (sub / "patched" / meta["targetFile"]).write_text(manifest["patch"])
     (sub / "poc" / "Poc.t.sol").write_text(manifest["poc"])
     res = grade(rendered, sub, seed=int(manifest["seed"]))
-    return {"passed": res.passed}
+    return {
+        "passed": res.passed,
+        "pocProvesBug": res.pocProvesBug,
+        "pocFailsAfterPatch": res.pocFailsAfterPatch,
+        "hiddenTestsPass": res.hiddenTestsPass,
+        "patchWithinLimits": res.patchWithinLimits,
+        "invariantsHold": res.invariantsHold,
+        "invariantProfile": {
+            "fuzzSeed": res.invariantFuzzSeed,
+            "fuzzRuns": res.invariantFuzzRuns,
+            "invariantRuns": res.invariantRuns,
+            "invariantDepth": res.invariantDepth,
+            "applied": res.invariantApplied,
+        },
+    }
 
 
 def main() -> None:

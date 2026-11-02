@@ -23,6 +23,12 @@ from pathlib import Path
 
 logger = logging.getLogger("axvigil")
 
+# v1 bundles have the four original checks. v2 adds invariantsHold and the
+# pinned fuzz schedule. Readers still accept v1: the new fields are compared
+# only when the bundle records them.
+BUNDLE_VERSION = 2
+PROFILE_FIELDS = ("fuzzSeed", "fuzzRuns", "invariantRuns", "invariantDepth", "applied")
+
 VERIFIER_FILES = (
     "grader.py",
     "keccak.py",
@@ -147,6 +153,54 @@ def _pin(url: str, token: str | None, cid: str, body: bytes) -> str | None:
         return None
 
 
+def invariant_profile_from_checks(checks: dict) -> dict:
+    """Normalize the schedule stored on a grade into the bundle's profile object."""
+    raw = checks.get("invariantProfile")
+    if not isinstance(raw, dict):
+        raw = {
+            "fuzzSeed": checks.get("invariantFuzzSeed", 0),
+            "fuzzRuns": checks.get("invariantFuzzRuns", 0),
+            "invariantRuns": checks.get("invariantRuns", 0),
+            "invariantDepth": checks.get("invariantDepth", 0),
+            "applied": checks.get("invariantApplied", False),
+        }
+    return {
+        "fuzzSeed": int(raw.get("fuzzSeed") or 0),
+        "fuzzRuns": int(raw.get("fuzzRuns") or 0),
+        "invariantRuns": int(raw.get("invariantRuns") or 0),
+        "invariantDepth": int(raw.get("invariantDepth") or 0),
+        "applied": bool(raw.get("applied")),
+    }
+
+
+def bundle_grade_matches(manifest: dict, grade: dict) -> list[tuple[str, bool]]:
+    """Compare a bundle to a fresh grade.
+
+    v1 manifests (no invariantsHold key) keep the original four checks plus
+    `passed`. v2 manifests also compare invariantsHold and the fuzz schedule,
+    so a re-grade that used a different seed or depth does not verify.
+    """
+    checks = manifest.get("checks") or {}
+    version = int(manifest.get("bundleVersion") or 1)
+    keys = ["passed", "pocProvesBug", "pocFailsAfterPatch", "hiddenTestsPass", "patchWithinLimits"]
+    if version >= 2 or "invariantsHold" in checks:
+        keys.append("invariantsHold")
+    rows: list[tuple[str, bool]] = []
+    for key in keys:
+        rows.append((key, bool(checks.get(key)) == bool(grade.get(key))))
+    recorded = manifest.get("invariantProfile")
+    if version >= 2 or isinstance(recorded, dict):
+        actual = grade.get("invariantProfile") or {}
+        recorded = recorded or {}
+        for field in PROFILE_FIELDS:
+            if field == "applied":
+                same = bool(recorded.get(field)) == bool(actual.get(field))
+            else:
+                same = int(recorded.get(field) or 0) == int(actual.get(field) or 0)
+            rows.append((f"invariantProfile.{field}", same))
+    return rows
+
+
 def write_bundle(
     evidence_dir: Path,
     *,
@@ -181,8 +235,10 @@ def write_bundle(
         "poc.t.sol": sha256_bytes(poc.encode("utf-8")),
         "grader.log": sha256_bytes(grader_log.encode("utf-8")),
     }
+    profile = invariant_profile_from_checks(checks)
+    hold = checks["invariantsHold"] if "invariantsHold" in checks else False
     manifest = {
-        "bundleVersion": 1,
+        "bundleVersion": BUNDLE_VERSION,
         "challengeId": challenge_id,
         "motherId": mother_id,
         "motherHash": mother_content_hash(mother_dir),
@@ -196,11 +252,13 @@ def write_bundle(
         "toolchain": toolchain_versions(forge_bin),
         "verifierVersionHash": verifier_version_hash(verifier_pkg),
         "graderLog": grader_log,
+        "invariantProfile": profile,
         "checks": {
             "pocProvesBug": bool(checks.get("pocProvesBug")),
             "pocFailsAfterPatch": bool(checks.get("pocFailsAfterPatch")),
             "hiddenTestsPass": bool(checks.get("hiddenTestsPass")),
             "patchWithinLimits": bool(checks.get("patchWithinLimits")),
+            "invariantsHold": bool(hold),
             "passed": bool(checks.get("passed")),
         },
         "submissionHash": submission_hash,

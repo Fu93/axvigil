@@ -1,0 +1,92 @@
+// SPDX-License-Identifier: MIT
+pragma solidity 0.8.28;
+
+import {Test} from "forge-std/Test.sol";
+import {Czz} from "../src/Czz.sol";
+
+contract Attacker {
+    Czz public vault;
+    bool internal lock;
+
+    constructor(Czz v) {
+        vault = v;
+    }
+
+    function poke() external payable {
+        vault.fzzDeposit{value: msg.value}();
+        vault.fzzWithdraw();
+    }
+
+    receive() external payable {
+        if (lock) return;
+        if (vault.vzzBal(address(this)) == 0) return;
+        lock = true;
+        try vault.fzzWithdraw() {} catch {}
+        lock = false;
+    }
+}
+
+/// @dev Honest depositor. Not payable, so the fuzzer cannot attach value taken
+///      from the vault; it only moves ETH this contract already holds.
+contract User {
+    Czz public vault;
+
+    constructor(Czz v) payable {
+        vault = v;
+    }
+
+    receive() external payable {}
+
+    function step() external {
+        uint256 free = address(this).balance;
+        if (free > 0) {
+            uint256 amt = free > 1 ether ? 1 ether : free;
+            vault.fzzDeposit{value: amt}();
+        }
+        if (vault.vzzBal(address(this)) > 0) vault.fzzWithdraw();
+    }
+}
+
+contract InvariantTest is Test {
+    Czz internal vault;
+    Attacker internal attacker;
+    User internal user;
+    address internal victim = makeAddr("victim");
+
+    function setUp() public {
+        vault = new Czz();
+        vm.deal(victim, 6 ether);
+        vm.prank(victim);
+        vault.fzzDeposit{value: 6 ether}();
+        attacker = new Attacker(vault);
+        vm.deal(address(attacker), 6 ether);
+        attacker.poke{value: 6 ether}();
+        user = new User{value: 2 ether}(vault);
+
+        excludeContract(address(this));
+        excludeContract(address(vault));
+        excludeContract(address(attacker));
+        targetContract(address(user));
+        bytes4[] memory sels = new bytes4[](1);
+        sels[0] = User.step.selector;
+        targetSelector(FuzzSelector({addr: address(user), selectors: sels}));
+    }
+
+    function invariant_victimStillSolvent() public view {
+        assertGe(address(vault).balance, vault.vzzBal(victim), "victim credit exceeds cash");
+    }
+
+    function testFuzz_reentrancyCannotDrain(uint96 victimAmt, uint96 atkAmt) public {
+        victimAmt = uint96(bound(victimAmt, 5 ether + 1, 20 ether));
+        atkAmt = uint96(bound(atkAmt, 5 ether + 1, 10 ether));
+        Czz fresh = new Czz();
+        address user = makeAddr("user");
+        vm.deal(user, victimAmt);
+        vm.prank(user);
+        fresh.fzzDeposit{value: victimAmt}();
+        Attacker foe = new Attacker(fresh);
+        vm.deal(address(foe), atkAmt);
+        foe.poke{value: atkAmt}();
+        assertGe(address(fresh).balance, victimAmt, "victim deposit was drained");
+    }
+}

@@ -26,7 +26,7 @@ from axvigil_backend.app import app, platform, store  # noqa: E402
 from axvigil_backend import app as appmod  # noqa: E402
 from axvigil_backend import auth as authmod  # noqa: E402
 from axvigil_backend.config import Settings  # noqa: E402
-from axvigil_backend.protocol import redact_public_grade  # noqa: E402
+from axvigil_backend.protocol import feedback_summary, redact_public_grade  # noqa: E402
 from axvigil_backend.ratelimit import TokenBucket  # noqa: E402
 from axvigil_backend.registry import MemoryRegistry  # noqa: E402
 
@@ -83,6 +83,19 @@ def test_zero_address_does_not_enable_signing():
         auth_ttl_s=1, session_ttl_s=1, start_rate_per_min=1, submit_rate_per_min=1,
     )
     assert settings.can_sign is False
+
+
+def test_feedback_names_a_failed_invariant_check():
+    assert feedback_summary({"passed": True, "invariantsHold": True}) == "All checks passed."
+    text = feedback_summary({
+        "passed": False,
+        "pocProvesBug": True,
+        "pocFailsAfterPatch": True,
+        "hiddenTestsPass": True,
+        "patchWithinLimits": True,
+        "invariantsHold": False,
+    })
+    assert "fuzz or invariant" in text
 
 
 def test_public_grade_drops_seed_and_test_maps():

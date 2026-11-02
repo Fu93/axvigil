@@ -1,0 +1,41 @@
+{
+  "motherId": "nomad-unproven-message",
+  "vulnClass": 2,
+  "difficulty": 2,
+  "track": "real-incident",
+  "targetSentinel": "Czz",
+  "pragma": "0.8.28",
+  "fixId": "nomad_zero_root",
+  "identifiers": {
+    "Czz": "contract_bridge",
+    "vzzUpdater": "noun_updater",
+    "vzzConfirm": "noun_confirm",
+    "vzzRootOf": "noun_message_root",
+    "vzzDone": "noun_processed",
+    "vzzEscrow": "noun_escrow",
+    "vzzCredit": "noun_credit",
+    "fzzCommit": "verb_commit_root",
+    "fzzProve": "verb_prove",
+    "fzzProcess": "verb_process",
+    "fzzAcceptable": "fn_acceptable",
+    "fzzFund": "verb_fund_escrow"
+  },
+  "requiredFunctionSentinels": ["fzzCommit", "fzzProve", "fzzProcess", "fzzAcceptable", "fzzFund"],
+  "distractors": [1, 3],
+  "limits": { "maxChangedLines": 8, "maxBytes": 16000 },
+  "title": "Unproven Bridge Message",
+  "summary": "A message bridge releases escrowed value when a message is processed. Only a message proven under an accepted root may release funds. A message that was never proven must not pay, a processed message must not pay twice, and only the updater may commit or prove a root.",
+  "realWorld": {
+    "incident": "Nomad Bridge Replica process(), Ethereum, exploitation from 2022-08-01 21:32 UTC through 2022-08-02 05:49 UTC",
+    "lossReported": "Over $186M in ERC-20 tokens (Coinbase incident analysis, 9 Aug 2022). BlockSec estimated nearly $200M.",
+    "rootCause": "An unproven message reads as root bytes32(0). Replica.initialize pre-approved confirmAt[bytes32(0)] = 1 when the committed root was zero, so acceptableRoot(bytes32(0)) was true and process() released funds for messages that were never proven.",
+    "sources": [
+      "https://medium.com/nomad-xyz-blog/nomad-bridge-hack-root-cause-analysis-875ad2e5aacd",
+      "https://www.coinbase.com/blog/nomad-bridge-incident-analysis",
+      "https://blocksec.com/blog/how-unchecked-mapping-makes-200-M-losses-of-nomad-bridge",
+      "https://immunefi.com/blog/bug-fix-reviews/hack-analysis-nomad-bridge-august-2022/",
+      "https://github.com/SunWeb3Sec/DeFiHackLabs/blob/main/src/test/2022-08/NomadBridge_exp.sol"
+    ],
+    "note": "Minimal reproduction of the zero-root acceptance bug. Re-implemented from the public post-mortems. The DeFiHackLabs PoC is MIT and is cited only; none of its code is copied. No fork and no Replica bytecode."
+  }
+}

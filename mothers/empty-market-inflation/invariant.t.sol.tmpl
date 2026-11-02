@@ -1,0 +1,156 @@
+// SPDX-License-Identifier: MIT
+pragma solidity 0.8.28;
+
+import {Test} from "forge-std/Test.sol";
+import {Czz} from "../src/Czz.sol";
+
+contract MockERC20 {
+    mapping(address => uint256) public balanceOf;
+    mapping(address => mapping(address => uint256)) public allowance;
+
+    function mint(address to, uint256 a) external {
+        balanceOf[to] += a;
+    }
+
+    function approve(address s, uint256 a) external returns (bool) {
+        allowance[msg.sender][s] = a;
+        return true;
+    }
+
+    function transfer(address to, uint256 a) external returns (bool) {
+        balanceOf[msg.sender] -= a;
+        balanceOf[to] += a;
+        return true;
+    }
+
+    function transferFrom(address f, address to, uint256 a) external returns (bool) {
+        allowance[f][msg.sender] -= a;
+        balanceOf[f] -= a;
+        balanceOf[to] += a;
+        return true;
+    }
+}
+
+contract Handler {
+    Czz public vault;
+    MockERC20 public asset;
+    uint256 public deposited;
+    uint256 public redeemed;
+    bool public broken;
+
+    constructor(Czz v, MockERC20 a) {
+        vault = v;
+        asset = a;
+    }
+
+    function deposit(uint256 amt) external {
+        amt = amt % 1e18 + 1;
+        asset.mint(address(this), amt);
+        asset.approve(address(vault), amt);
+        try vault.fzzDeposit(amt) returns (uint256 shares) {
+            if (shares == 0) {
+                broken = true;
+                return;
+            }
+            deposited += amt;
+        } catch {}
+    }
+
+    function donate(uint256 amt) external {
+        amt = amt % 1e18;
+        if (amt == 0) return;
+        asset.mint(address(this), amt);
+        asset.transfer(address(vault), amt);
+    }
+
+    function redeemAll() external {
+        uint256 sh = vault.vzzShares(address(this));
+        if (sh == 0) return;
+        uint256 beforeBal = asset.balanceOf(address(this));
+        try vault.fzzRedeem(sh) returns (uint256) {
+            redeemed += asset.balanceOf(address(this)) - beforeBal;
+        } catch {}
+    }
+
+    function sharesLeft() external view returns (uint256) {
+        return vault.vzzShares(address(this));
+    }
+}
+
+contract InvariantTest is Test {
+    Czz internal vault;
+    MockERC20 internal asset;
+    Handler internal handler;
+    bool public canaryHolds;
+
+    function setUp() public {
+        asset = new MockERC20();
+        vault = new Czz(address(asset));
+        address attacker = makeAddr("attacker");
+        address bob = makeAddr("bob");
+        asset.mint(attacker, 2 + 50 ether);
+        asset.mint(bob, 80 ether);
+        vm.startPrank(attacker);
+        asset.approve(address(vault), type(uint256).max);
+        vault.fzzDeposit(2);
+        asset.transfer(address(vault), 50 ether);
+        vm.stopPrank();
+        vm.startPrank(bob);
+        asset.approve(address(vault), type(uint256).max);
+        uint256 bobShares = vault.fzzDeposit(80 ether);
+        vm.stopPrank();
+        uint256 atkShares = vault.vzzShares(attacker);
+        vm.prank(attacker);
+        vault.fzzRedeem(atkShares);
+        uint256 beforeBal = asset.balanceOf(bob);
+        vm.prank(bob);
+        vault.fzzRedeem(bobShares);
+        canaryHolds = asset.balanceOf(bob) - beforeBal >= 80 ether * 99 / 100;
+
+        handler = new Handler(vault, asset);
+        excludeContract(address(this));
+        excludeContract(address(vault));
+        excludeContract(address(asset));
+        targetContract(address(handler));
+        bytes4[] memory sels = new bytes4[](3);
+        sels[0] = Handler.deposit.selector;
+        sels[1] = Handler.donate.selector;
+        sels[2] = Handler.redeemAll.selector;
+        targetSelector(FuzzSelector({addr: address(handler), selectors: sels}));
+    }
+
+    function invariant_donationCannotSteal() public view {
+        assertTrue(canaryHolds, "donation seized a later deposit");
+        assertFalse(handler.broken());
+        if (handler.sharesLeft() == 0) {
+            assertEq(handler.redeemed(), handler.deposited());
+        }
+    }
+
+    function testFuzz_donationDoesNotSteal(uint128 donation, uint128 honest) public {
+        donation = uint128(bound(donation, 1, 1e24));
+        honest = uint128(bound(honest, 1e6, 1e24));
+        MockERC20 tok = new MockERC20();
+        Czz fresh = new Czz(address(tok));
+        address atk = address(0xA11CE);
+        address usr = address(0xB0B);
+        tok.mint(atk, 2 + donation);
+        tok.mint(usr, honest);
+        vm.startPrank(atk);
+        tok.approve(address(fresh), type(uint256).max);
+        fresh.fzzDeposit(2);
+        tok.transfer(address(fresh), donation);
+        vm.stopPrank();
+        vm.startPrank(usr);
+        tok.approve(address(fresh), type(uint256).max);
+        uint256 shares = fresh.fzzDeposit(honest);
+        vm.stopPrank();
+        uint256 atkShares = fresh.vzzShares(atk);
+        vm.prank(atk);
+        fresh.fzzRedeem(atkShares);
+        uint256 beforeBal = tok.balanceOf(usr);
+        vm.prank(usr);
+        fresh.fzzRedeem(shares);
+        assertGe(tok.balanceOf(usr) - beforeBal, uint256(honest) * 99 / 100);
+    }
+}

@@ -1,0 +1,76 @@
+// SPDX-License-Identifier: MIT
+pragma solidity 0.8.28;
+
+import {Test} from "forge-std/Test.sol";
+import {Czz} from "../src/Czz.sol";
+
+contract HiddenTest is Test {
+    Czz internal bridge;
+    address internal updater = makeAddr("updater");
+    address internal alice = makeAddr("alice");
+    address internal attacker = makeAddr("attacker");
+
+    function setUp() public {
+        bridge = new Czz(updater);
+    }
+
+    function test_provenMessagePaysOnce() public {
+        bytes32 root = keccak256("root-1");
+        bytes32 hash = keccak256("msg-1");
+        bridge.fzzFund(1000);
+        vm.prank(updater);
+        bridge.fzzCommit(root);
+        vm.prank(updater);
+        bridge.fzzProve(hash, root);
+        bridge.fzzProcess(hash, alice, 400);
+        assertEq(bridge.vzzCredit(alice), 400);
+        assertEq(bridge.vzzEscrow(), 600);
+        vm.expectRevert(bytes("processed"));
+        bridge.fzzProcess(hash, alice, 400);
+        assertEq(bridge.vzzCredit(alice), 400, "replay must not pay again");
+    }
+
+    function test_unprovenMessageReverts() public {
+        bridge.fzzFund(1000);
+        vm.expectRevert();
+        bridge.fzzProcess(keccak256("never-proven"), attacker, 1000);
+        assertEq(bridge.vzzEscrow(), 1000);
+        assertEq(bridge.vzzCredit(attacker), 0);
+    }
+
+    function test_secondUnprovenHashAlsoReverts() public {
+        bridge.fzzFund(250);
+        vm.expectRevert();
+        bridge.fzzProcess(keccak256("also-never-proven"), alice, 25);
+        assertEq(bridge.vzzCredit(alice), 0);
+        assertEq(bridge.vzzEscrow(), 250);
+    }
+
+    function test_nonUpdaterCannotCommitOrProve() public {
+        vm.startPrank(attacker);
+        vm.expectRevert(bytes("not updater"));
+        bridge.fzzCommit(keccak256("root-x"));
+        vm.expectRevert(bytes("not updater"));
+        bridge.fzzProve(keccak256("msg-x"), keccak256("root-x"));
+        vm.stopPrank();
+    }
+
+    function test_cannotCommitZeroRoot() public {
+        vm.prank(updater);
+        vm.expectRevert(bytes("zero root"));
+        bridge.fzzCommit(bytes32(0));
+    }
+
+    function test_cannotPayMoreThanEscrow() public {
+        bytes32 root = keccak256("root-2");
+        bytes32 hash = keccak256("msg-2");
+        bridge.fzzFund(10);
+        vm.prank(updater);
+        bridge.fzzCommit(root);
+        vm.prank(updater);
+        bridge.fzzProve(hash, root);
+        vm.expectRevert(bytes("insufficient escrow"));
+        bridge.fzzProcess(hash, alice, 11);
+        assertEq(bridge.vzzEscrow(), 10);
+    }
+}

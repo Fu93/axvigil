@@ -1,0 +1,43 @@
+{
+  "motherId": "beanstalk-flash-governance",
+  "vulnClass": 2,
+  "difficulty": 1,
+  "track": "real-incident",
+  "targetSentinel": "Czz",
+  "pragma": "0.8.28",
+  "fixId": "beanstalk_snapshot",
+  "identifiers": {
+    "Czz": "contract_gov",
+    "vzzVotes": "noun_votes",
+    "vzzStoredPrior": "noun_prior_votes",
+    "vzzPriorBlock": "noun_prior_block",
+    "vzzTotal": "noun_total_votes",
+    "vzzStoredPriorTotal": "noun_prior_total",
+    "vzzPriorTotalBlock": "noun_prior_total_block",
+    "fzzDeposit": "verb_deposit",
+    "fzzWithdraw": "verb_withdraw",
+    "fzzFund": "verb_fund_treasury",
+    "fzzPropose": "verb_propose",
+    "fzzEmergency": "verb_emergency_exec",
+    "fzzPrior": "fn_prior",
+    "fzzPriorTotal": "fn_prior_total",
+    "lzzOk": "noun_ok"
+  },
+  "requiredFunctionSentinels": ["fzzDeposit", "fzzWithdraw", "fzzFund", "fzzPropose", "fzzEmergency", "fzzPrior", "fzzPriorTotal"],
+  "distractors": [1, 3],
+  "limits": { "maxChangedLines": 10, "maxBytes": 16000 },
+  "title": "Flash-Loan Governance",
+  "summary": "A governor holds a treasury and can execute a proposal when the caller has a supermajority of votes. Voting power deposited in the same transaction must not count toward that supermajority. A depositor whose votes were already checkpointed can still execute, and ordinary deposits and withdrawals must keep working.",
+  "realWorld": {
+    "incident": "Beanstalk Farms governance exploit, Ethereum, 2022-04-17 about 12:24 UTC",
+    "lossReported": "Beanstalk reported about $77M of non-Bean user assets stolen. Elliptic reported the attacker obtained about $76M (just under 25,000 ETH) and that the protocol lost about $182M in value. Immunefi describes an about $181M incident of which about $77M was non-Bean assets.",
+    "rootCause": "emergencyCommit executed a proposal immediately once the caller held at least two-thirds of live Stalk. Stalk could be borrowed and deposited in that same transaction, so a flash loan was enough to pass and execute.",
+    "sources": [
+      "https://bean.money/blog/beanstalk-governance-exploit",
+      "https://immunefi.com/blog/bug-fix-reviews/hack-analysis-beanstalk-governance-attack-april-2022/",
+      "https://www.elliptic.co/insights/76-million-stolen-from-beanstalk-farms-defi-stablecoin-protocol/",
+      "https://github.com/SunWeb3Sec/DeFiHackLabs/blob/main/src/test/2022-04/Beanstalk_exp.sol"
+    ],
+    "note": "Minimal reproduction of same-transaction supermajority execution. The real BIP also had a one-day delay before emergencyCommit; the delay does not stop a flash loan at execution time, so this model keeps the live-vote bug and omits the unrelated delay. Re-implemented from the public post-mortems. The DeFiHackLabs PoC is MIT and is cited only; none of its code is copied."
+  }
+}

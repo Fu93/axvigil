@@ -1,0 +1,52 @@
+// SPDX-License-Identifier: MIT
+pragma solidity 0.8.28;
+
+import {Test} from "forge-std/Test.sol";
+import {Czz} from "../src/Czz.sol";
+
+contract Handler {
+    Czz public treasury;
+
+    constructor(Czz t) {
+        treasury = t;
+    }
+
+    function sweep(address to) external {
+        try treasury.fzzAdmin(to) {} catch {}
+    }
+}
+
+contract InvariantTest is Test {
+    Czz internal treasury;
+    Handler internal handler;
+    address internal owner = makeAddr("owner");
+
+    function setUp() public {
+        vm.prank(owner);
+        treasury = new Czz();
+        vm.deal(address(this), 3 ether);
+        treasury.fzzDeposit{value: 3 ether}();
+        handler = new Handler(treasury);
+        handler.sweep(address(handler));
+
+        excludeContract(address(this));
+        excludeContract(address(treasury));
+        targetContract(address(handler));
+        bytes4[] memory sels = new bytes4[](1);
+        sels[0] = Handler.sweep.selector;
+        targetSelector(FuzzSelector({addr: address(handler), selectors: sels}));
+    }
+
+    function invariant_nonOwnerCannotDrain() public view {
+        assertEq(treasury.fzzTotal(), 3 ether, "non-owner sweep moved funds");
+        assertEq(treasury.vzzOwner(), owner);
+    }
+
+    function testFuzz_strangerCannotSweep(address stranger) public {
+        vm.assume(stranger != owner);
+        vm.assume(stranger != address(0));
+        vm.prank(stranger);
+        vm.expectRevert();
+        treasury.fzzAdmin(stranger);
+    }
+}

@@ -1,0 +1,82 @@
+// SPDX-License-Identifier: MIT
+pragma solidity 0.8.28;
+
+import {Test} from "forge-std/Test.sol";
+import {Czz} from "../src/Czz.sol";
+
+contract HiddenTest is Test {
+    Czz internal pool;
+
+    function setUp() public {
+        pool = new Czz();
+    }
+
+    function test_depositRecordsStake() public {
+        pool.fzzDeposit(1000);
+        assertEq(pool.vzzStake(address(this)), 1000);
+        assertEq(pool.vzzTotalStake(), 1000);
+    }
+
+    function test_borrowWithinLimit() public {
+        pool.fzzDeposit(1000);
+        pool.fzzBorrow(950);
+        assertEq(pool.vzzDebt(address(this)), 950);
+        assertTrue(pool.fzzSolvent(address(this)));
+    }
+
+    function test_borrowOverLimitReverts() public {
+        pool.fzzDeposit(1000);
+        vm.expectRevert(bytes("over borrow"));
+        pool.fzzBorrow(951);
+    }
+
+    function test_repayReducesDebt() public {
+        pool.fzzDeposit(1000);
+        pool.fzzBorrow(400);
+        pool.fzzRepay(150);
+        assertEq(pool.vzzDebt(address(this)), 250);
+        assertEq(pool.vzzTotalDebt(), 250);
+    }
+
+    function test_withdrawWithoutDebt() public {
+        pool.fzzDeposit(400);
+        pool.fzzWithdraw(400);
+        assertEq(pool.vzzStake(address(this)), 0);
+        assertEq(pool.vzzTotalStake(), 0);
+    }
+
+    function test_withdrawThatBreaksSolvencyReverts() public {
+        pool.fzzDeposit(1000);
+        pool.fzzBorrow(900);
+        vm.expectRevert(bytes("not solvent"));
+        pool.fzzWithdraw(200);
+        assertEq(pool.vzzStake(address(this)), 1000, "failed withdraw rolls back");
+    }
+
+    function test_emergencyPartialWhileSolvent() public {
+        pool.fzzDeposit(1000);
+        pool.fzzBorrow(100);
+        pool.fzzEmergency(500);
+        assertEq(pool.vzzStake(address(this)), 500);
+        assertEq(pool.vzzDebt(address(this)), 100);
+        assertTrue(pool.fzzSolvent(address(this)));
+    }
+
+    function test_emergencyThatBreaksSolvencyReverts() public {
+        pool.fzzDeposit(1000);
+        pool.fzzBorrow(900);
+        vm.expectRevert(bytes("not solvent"));
+        pool.fzzEmergency(200);
+        assertEq(pool.vzzStake(address(this)), 1000, "unbacked emergency must not land");
+        assertTrue(pool.fzzSolvent(address(this)));
+    }
+
+    function test_repayThenFullEmergency() public {
+        pool.fzzDeposit(1000);
+        pool.fzzBorrow(500);
+        pool.fzzRepay(500);
+        pool.fzzEmergency(1000);
+        assertEq(pool.vzzStake(address(this)), 0);
+        assertEq(pool.vzzDebt(address(this)), 0);
+    }
+}
