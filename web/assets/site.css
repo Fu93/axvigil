@@ -952,6 +952,11 @@ td a { border-bottom: 1px solid currentColor; text-decoration: none; }
   #crystal-hud { display: none; }
 }
 
+@media (min-width: 1100px) {
+  #how .wrap,
+  #proof .wrap,
+  #roadmap .wrap { padding-right: 200px; }
+}
 #stage {
   position: fixed;
   inset: 0;
@@ -1151,4 +1156,5 @@ body.ax-cursor, body.ax-cursor * { cursor: none !important; }
 }
 @media (max-width: 767px) {
   .ax-cursor { display: none !important; }
+  .ax-skip { top: 76px; right: 12px; bottom: auto; }
 }

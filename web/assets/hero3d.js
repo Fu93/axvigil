@@ -397,11 +397,11 @@ export function mount() {
     return Math.max(0, 1 - dist / (vh * 0.9));
   }
 
-  function screenPoint(el, xFrac, yFrac) {
-    const r = el.getBoundingClientRect();
-    const vh = window.innerHeight;
-    const y = THREE.MathUtils.clamp(r.top + r.height * yFrac, vh * 0.2, vh * 0.74);
-    return { x: window.innerWidth * xFrac, y: y };
+  function corner(isMobile) {
+    return {
+      x: window.innerWidth - (isMobile ? 78 : 110),
+      y: isMobile ? 250 : 168
+    };
   }
 
   function desired() {
@@ -427,13 +427,13 @@ export function mount() {
         y: heroTop + heroH * 0.46,
         px: mobile ? heroH * 0.86 : heroH * 0.9
       },
-      how: screenPoint(how || hero, mobile ? 0.78 : 0.92, 0.08),
-      proof: screenPoint(proof || hero, mobile ? 0.8 : 0.92, 0.06),
-      road: screenPoint(road || hero, mobile ? 0.84 : 0.92, 0.08)
+      how: corner(mobile),
+      proof: corner(mobile),
+      road: corner(mobile)
     };
-    slots.how.px = mobile ? window.innerHeight * 0.16 : window.innerHeight * 0.22;
-    slots.proof.px = mobile ? window.innerHeight * 0.14 : window.innerHeight * 0.2;
-    slots.road.px = mobile ? window.innerHeight * 0.11 : window.innerHeight * 0.15;
+    slots.how.px = mobile ? 150 : 168;
+    slots.proof.px = mobile ? 130 : 156;
+    slots.road.px = mobile ? 110 : 132;
     const sx = (slots.hero.x * wh + slots.how.x * ww + slots.proof.x * wp + slots.road.x * wr) / sum;
     const sy = (slots.hero.y * wh + slots.how.y * ww + slots.proof.y * wp + slots.road.y * wr) / sum;
     const px = (slots.hero.px * wh + slots.how.px * ww + slots.proof.px * wp + slots.road.px * wr) / sum;
