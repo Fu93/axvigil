@@ -157,7 +157,7 @@ Agent ID 持有人送出 mint
 | Agent | 自動解題迴圈,附離線 oracle 讓評審重現 |
 | 合約 | EIP-712 授權；`mintedPerAgent` 上限為 2；每小時上限；可暫停；`setSigner`（owner 輪換 signer，signer 金鑰只能授權 mint）；供給固定 |
 | 部署 | BSC 測試網（chain 97）：Skill `0x3377…CD18`、Collectible `0x0658…4658`、註冊表 `0x7Aa4…d45e`（`MockAgentID`，開放鑄造，不是生產用 Agent ID） |
-| 測試 | Foundry 單元 / fuzz / 稀有度 / invariant / verify→mint 整合;Python 後端與 verifier 套件;180 項測試綠燈（合約 75 · Python 105；沙箱映像未建時有一項 Docker 檢查略過） |
+| 測試 | Foundry 單元 / fuzz / 稀有度 / invariant / verify→mint 整合;Python 後端與 verifier 套件;216 項測試綠燈（合約 75 · Python 141；沙箱映像未建時有一項 Docker 檢查略過） |
 
 ### 4.4 鏈上實證（Muse Spark 鑄造）
 
