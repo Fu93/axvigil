@@ -98,6 +98,7 @@
   <section>
     <h2>Ranking</h2>
     <p class="sub">Completed runs only. A cell stopped by the request cap is not a finished sample.</p>
+    <ul id="misses" hidden style="margin:18px 0 0;color:var(--muted)"></ul>
     <div class="glass scroll"><table id="rank"><thead><tr>
       <th class="num">#</th><th>Contestant</th><th>Strategy</th>
       <th class="num">Pass rate</th><th class="num">Passes</th><th class="num">Runs</th>
@@ -116,7 +117,7 @@
     <div class="glass scroll"><table id="runs"><thead><tr>
       <th>Contestant</th><th>Mother</th><th class="num">Seed</th><th>Status</th><th>Pass</th>
       <th class="num">Attempts</th><th class="num">Requests</th><th class="num">Tokens</th>
-      <th class="num">Latency</th><th>Failed checks</th><th class="num">Diff</th>
+      <th class="num">Latency</th><th>Result</th><th class="num">Diff</th>
     </tr></thead><tbody></tbody></table></div>
   </section>
 
@@ -222,7 +223,7 @@ function render(data, fromFallback) {
     <td class="num">${i + 1}</td>
     <td>${esc(row.contestantId)}</td>
     <td>${esc(row.strategy)}</td>
-    <td class="num">${row.runs ? Math.round(row.passRate * 100) + "%" : "—"}</td>
+    <td class="num">${row.runs ? row.passes + "/" + row.runs + " · " + Math.round(row.passRate * 100) + "%" : "—"}</td>
     <td class="num">${row.passes}</td>
     <td class="num">${row.runs}</td>
     <td class="num">${row.attempts}</td>
@@ -239,17 +240,39 @@ function render(data, fromFallback) {
     return `<td class="num">${slot && slot.runs ? slot.passes + "/" + slot.runs : "—"}</td>`;
   }).join("")}</tr>`).join("");
 
+  const misses = document.getElementById("misses");
+  if (misses) {
+    const lost = runs.filter(run => !run.pass);
+    misses.hidden = !lost.length || showPlaceholder;
+    misses.innerHTML = lost.map(run => `<li>${esc(run.contestantId)} · ${esc(run.mother)}: ${esc(failureReason(run))}</li>`).join("");
+  }
+
   document.querySelector("#runs tbody").innerHTML = runs.map(run => {
-    const failed = (run.failedChecks || []).join(", ") || "—";
     const pass = run.pass ? `<span class="ok">pass</span>` : `<span class="bad">fail</span>`;
     return `<tr>
       <td>${esc(run.contestantId)}</td><td>${esc(run.mother)}</td><td class="num">${esc(run.seed)}</td>
       <td>${esc(run.status)}</td><td>${pass}</td>
       <td class="num">${esc(run.attempts)}</td><td class="num">${esc(run.requests)}</td>
       <td class="num">${tokenTotal(run.tokens)}</td><td class="num">${esc(run.latencyMs)}</td>
-      <td>${esc(failed)}</td><td class="num">${esc(run.patchDiffLines)}</td>
+      <td>${esc(failureReason(run))}</td><td class="num">${esc(run.patchDiffLines)}</td>
     </tr>`;
   }).join("") || `<tr><td colspan="11">No runs.</td></tr>`;
+}
+
+const CHECKS = ["pocProvesBug", "pocFailsAfterPatch", "hiddenTestsPass", "patchWithinLimits"];
+
+function failureReason(run) {
+  const ev = run.evidence || {};
+  const failed = (run.failedChecks || []).slice();
+  if (!failed.length && Array.isArray(run.attemptChecks) && run.attemptChecks.length) {
+    const last = run.attemptChecks[run.attemptChecks.length - 1] || {};
+    for (const name of CHECKS) if (last[name] === false) failed.push(name);
+  }
+  if (!run.pass && !Number(run.attempts) && !failed.length) failed.push("no patch submitted (not graded)");
+  let text = failed.join(", ");
+  if (!run.pass && ev.autoSubmitted) text = (text ? text + " " : "") + "after auto-submit";
+  if (!run.pass && ev.stopReason) text += (text ? " " : "") + "(" + ev.stopReason + ")";
+  return text || (run.pass ? "—" : "fail");
 }
 
 async function loadDefault() {

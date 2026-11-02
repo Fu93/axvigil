@@ -830,7 +830,15 @@ def _run_agentic_member(
     cut = result.stop_reason == "request_cap"
     if emit:
         emit(f"[agentic] stop={result.stop_reason} steps={result.steps}")
-    if not result.patch or not result.poc:
+    original = (Path(challenge_dir) / "src" / meta["targetFile"]).read_text()
+    target_changed = isinstance(result.patch, str) and result.patch != original
+    if not target_changed:
+        # A finished run that never edited the target is a graded miss, not an
+        # ungraded gap. A request-cap stop stays ungraded so resume can retry it.
+        if cut:
+            return False, True, None, [], meta.get("challengeId"), evidence, None
+        return False, False, None, ["no patch submitted"], meta.get("challengeId"), evidence, None
+    if not result.poc:
         return False, cut, result.patch, [], meta.get("challengeId"), evidence, None
     grade_fn = grader if grader is not None else _live_grade
     res = grade_fn(
@@ -903,7 +911,7 @@ def _solve_contestant(
                 forge_runner=forge_runner,
             )
             ran = True
-            attempts += 1 if patch else 0
+            attempts += 1 if patch or "no patch submitted" in (failed_one or []) else 0
             if graded:
                 attempt_checks.append(graded)
             if patch is not None:
@@ -950,6 +958,8 @@ def _solve_contestant(
 def _format_attempt_checks(run: dict) -> str:
     rows = run.get("attemptChecks") or []
     if not rows:
+        if "no patch submitted" in (run.get("failedChecks") or []):
+            return "no patch submitted"
         return "—"
     rendered = []
     for checks in rows:

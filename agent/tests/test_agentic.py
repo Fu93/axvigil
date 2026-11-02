@@ -10,6 +10,7 @@ from axvigil_agent.agentic import (
     build_workspace,
     forge_trace_command,
     run_agentic,
+    system_prompt,
     tool_specs,
 )
 from axvigil_agent.arena import parse_contestant_spec, run_arena
@@ -657,6 +658,41 @@ def test_arena_records_named_checks_for_every_attempt(tmp_path):
     summary = out.with_suffix(".md").read_text()
     for name in names:
         assert name in summary
+
+
+def test_no_target_edit_is_a_graded_miss(tmp_path):
+    text = system_prompt("tools") + " ".join(spec["function"]["description"] for spec in tool_specs())
+    assert "vm.readFile" in text
+    assert "fs_permissions" in text
+
+    def render(mother, seed, out):
+        out = Path(out)
+        (out / "src").mkdir(parents=True)
+        (out / "src" / "Vault.sol").write_text(SOURCE)
+        (out / "challenge.json").write_text(json.dumps({
+            "challengeId": f"{mother}-{seed}", "targetFile": "Vault.sol", "contractName": "Vault",
+            "vulnClass": 0, "requiredFunctions": ["withdraw"], "pragma": "0.8.28",
+            "limits": {"maxChangedLines": 12, "maxBytes": 6000},
+        }))
+
+    def factory(_model):
+        return ScriptedToolClient([
+            {"tool_calls": [{"name": "read_file", "arguments": {"path": "src/Vault.sol"}}]},
+        ])
+
+    result = run_arena(
+        [parse_contestant_spec("muse-spark-1.1:agentic")],
+        ["reentrancy"], [1],
+        out_path=tmp_path / "out.json", request_cap=4, max_steps=1,
+        client_factory=factory, grader=lambda *a, **k: (_ for _ in ()).throw(AssertionError("ungraded")),
+        render_fn=render,
+    )
+    run = result["runs"][0]
+    assert run["status"] == "completed"
+    assert run["pass"] is False
+    assert run["attempts"] == 1
+    assert run["failedChecks"] == ["no patch submitted"]
+    assert "no patch submitted" in (tmp_path / "out.md").read_text()
 
 
 def test_trace_command_is_verbose_and_names_only_the_public_test():
