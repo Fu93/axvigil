@@ -59,8 +59,14 @@ export function mount() {
   const fine = window.matchMedia("(hover: hover) and (pointer: fine)").matches;
   let mobile = window.matchMedia("(max-width: 767px)").matches;
   let seen = false;
-  try { seen = sessionStorage.getItem("axv-intro-seen") === "1"; } catch (err) { seen = false; }
-  const playIntro = !reduced && !seen;
+  let midPage = false;
+  try {
+    seen = sessionStorage.getItem("axv-intro-seen") === "1";
+    midPage = Number(sessionStorage.getItem("axv-scroll") || 0) > 160;
+  } catch (err) { seen = false; }
+  const hashed = !!(location.hash && location.hash.length > 1);
+  const playIntro = !reduced && !seen && !hashed && !midPage;
+  if ("scrollRestoration" in history) history.scrollRestoration = "manual";
 
   if (!webglOk()) {
     document.documentElement.classList.add("intro-go");
@@ -96,6 +102,9 @@ export function mount() {
   if (vignette) stage.appendChild(vignette);
 
   const scene = new THREE.Scene();
+  const fogNear = new THREE.Color(0x1c1d1a);
+  const fogFar = new THREE.Color(0x3a3426);
+  scene.fog = new THREE.FogExp2(0x1c1d1a, 0.012);
   const camera = new THREE.PerspectiveCamera(HERO3D.camera.fov, 1, 0.08, 40);
   camera.position.set(0, 0.08, HERO3D.camera.z);
   camera.layers.enable(1);
@@ -277,14 +286,39 @@ export function mount() {
     return line;
   });
 
+  const shardCount = mobile || reduced ? 0 : 22;
+  const shards = shardCount ? new THREE.InstancedMesh(
+    new THREE.OctahedronGeometry(0.05, 0),
+    new THREE.MeshBasicMaterial({ color: hdr(1.6), transparent: true, opacity: 0, toneMapped: false, depthWrite: false }),
+    shardCount
+  ) : null;
+  const shardSeed = [];
+  if (shards) {
+    const dummy = new THREE.Object3D();
+    for (let i = 0; i < shardCount; i += 1) {
+      const dir = new THREE.Vector3(Math.cos(i * 2.4), Math.sin(i * 1.7) * 0.65, Math.sin(i * 2.4)).normalize();
+      shardSeed.push(dir);
+      dummy.position.copy(dir).multiplyScalar(0.2);
+      dummy.scale.setScalar(0.2);
+      dummy.updateMatrix();
+      shards.setMatrixAt(i, dummy.matrix);
+    }
+    shards.instanceMatrix.needsUpdate = true;
+    shards.frustumCulled = false;
+    yaw.add(shards);
+  }
+
   const hud = buildHud();
   const chrome = buildChrome(playIntro);
   if (playIntro) document.documentElement.classList.add("await-intro");
   else document.documentElement.classList.add("intro-go");
 
   const bloom = makeBloom(renderer);
-  let dprCap = mobile ? HERO3D.perf.maxDprMobile : HERO3D.perf.maxDprDesktop;
-  let quality = 0;
+  const dprLadder = mobile
+    ? [Math.min(window.devicePixelRatio || 1, 1.5), 1, 0.75]
+    : [Math.min(window.devicePixelRatio || 1, 2), 1.5, 1, 0.75];
+  let tier = 0;
+  let dprCap = dprLadder[0];
   let bloomOn = !reduced;
   const frameMs = [];
   let active = true;
@@ -292,14 +326,17 @@ export function mount() {
   let posed = false;
   const pose = {
     x: 0, y: 0, scale: 1, split: 0, body: playIntro ? 0 : 1, edge: playIntro ? 0 : 0.9,
-    hidden: 0, orbit: 1, camZ: HERO3D.camera.z, spin: 0, rotZ: 0, light: 0, proof: 0, heroP: 0
+    hidden: 0, orbit: 1, camZ: HERO3D.camera.z, spin: 0, rotZ: 0, light: 0, proof: 0, heroP: 0,
+    side: 0, lift: 0, fog: 0
   };
+  let storyS = 0;
   const tiltS = { x: 0, vx: 0, y: 0, vy: 0 };
   const drag = { x: 0, v: 0, on: false, lastX: 0, lastT: 0 };
   const look = { nx: 0, ny: 0 };
   let camPx = 0;
   let camPy = 0;
   let sweep = 0;
+  const rate = { fx: 0, fy: 0, sx: 0, sy: 0 };
   let idle = 0;
   let introT = playIntro ? 0 : 20;
   let meshReady = !playIntro;
@@ -376,7 +413,12 @@ export function mount() {
 
   function resize() {
     mobile = window.matchMedia("(max-width: 767px)").matches;
-    if (quality === 0) dprCap = mobile ? HERO3D.perf.maxDprMobile : HERO3D.perf.maxDprDesktop;
+    if (tier === 0) {
+      dprLadder[0] = mobile
+        ? Math.min(window.devicePixelRatio || 1, 1.5)
+        : Math.min(window.devicePixelRatio || 1, 2);
+      dprCap = dprLadder[0];
+    }
     const w = window.innerWidth;
     const h = Math.max(1, window.innerHeight);
     renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, dprCap));
@@ -434,13 +476,13 @@ export function mount() {
     slots.how.px = mobile ? 150 : 168;
     slots.proof.px = mobile ? 130 : 156;
     slots.road.px = mobile ? 110 : 132;
-    const sx = (slots.hero.x * wh + slots.how.x * ww + slots.proof.x * wp + slots.road.x * wr) / sum;
-    const sy = (slots.hero.y * wh + slots.how.y * ww + slots.proof.y * wp + slots.road.y * wr) / sum;
-    const px = (slots.hero.px * wh + slots.how.px * ww + slots.proof.px * wp + slots.road.px * wr) / sum;
-    const camZ = (
-      (HERO3D.camera.z + (HERO3D.camera.dollyToZ - HERO3D.camera.z) * heroP) * wh +
-      6.7 * ww + 6.85 * wp + 7.15 * wr
-    ) / sum;
+    const lane = smootherstep(clamp01((storyS - 0.05) / 0.16));
+    const park = corner(mobile);
+    const sx = slots.hero.x * (1 - lane) + park.x * lane;
+    const sy = slots.hero.y * (1 - lane) + park.y * lane;
+    const px = slots.hero.px * (1 - lane) + (mobile ? 140 : 168) * lane;
+    const flight = sampleFlight(storyS);
+    const camZ = flight.camZ;
     const halfH = Math.tan(THREE.MathUtils.degToRad(camera.fov) / 2) * camZ;
     const halfW = halfH * camera.aspect;
     const ndcX = (sx / Math.max(1, window.innerWidth)) * 2 - 1;
@@ -450,18 +492,28 @@ export function mount() {
       x: ndcX * halfW,
       y: ndcY * halfH,
       scale: THREE.MathUtils.clamp(px / (HERO3D.crystal.height * pxPerUnit), 0.18, 1.35),
-      split: ww / sum,
-      body: (1 * wh + 1 * ww + 0.16 * wp + 1 * wr) / sum,
-      edge: (0.9 * wh + 0.95 * ww + 1 * wp + 0.85 * wr) / sum,
-      hidden: (0.02 * wh + 0.08 * ww + 0.32 * wp + 0.02 * wr) / sum,
-      orbit: (1 * wh + 0.4 * ww + 0.95 * wp + 0.22 * wr) / sum,
+      split: flight.split,
+      body: flight.body,
+      edge: flight.edge,
+      hidden: flight.hidden,
+      orbit: flight.orbit,
       camZ: camZ,
-      spin: (heroP * HERO3D.crystal.scrollSpin * wh + (HERO3D.crystal.scrollSpin + 0.45) * ww + (HERO3D.crystal.scrollSpin + 0.15) * wp + (HERO3D.crystal.scrollSpin + 0.7) * wr) / sum,
-      rotZ: (0.16 * ww) / sum,
-      light: wLight,
-      proof: wp / sum,
-      heroP: heroP
+      spin: flight.spin + heroP * 0.35,
+      rotZ: flight.side * 0.08,
+      light: Math.max(flight.light, wLight * 0.35),
+      proof: flight.proof,
+      heroP: heroP,
+      side: flight.side,
+      lift: flight.lift,
+      fog: flight.fog
     };
+  }
+
+  function rawStory() {
+    const road = document.getElementById("roadmap");
+    const end = road ? road.offsetTop + road.offsetHeight * 0.7 : document.body.scrollHeight;
+    const start = hero.offsetTop;
+    return clamp01((window.scrollY - start) / Math.max(1, end - start));
   }
 
   function spring(value, vel, target, dt) {
@@ -498,45 +550,70 @@ export function mount() {
       drag.x += drag.v * dt;
     }
 
+    const follow = Math.min(0.2, raw);
+    const storyTarget = rawStory();
+    storyS = posed ? THREE.MathUtils.damp(storyS, storyTarget, reduced ? 14 : 2.6, follow) : storyTarget;
     const goal = reduced ? snapHero() : desired();
     const lambda = reduced ? 18 : 4.2;
     if (!posed) {
       Object.assign(pose, goal);
       posed = true;
     } else {
-      pose.x = THREE.MathUtils.damp(pose.x, goal.x, lambda, dt);
-      pose.y = THREE.MathUtils.damp(pose.y, goal.y, lambda, dt);
-      pose.scale = THREE.MathUtils.damp(pose.scale, goal.scale, lambda, dt);
-      pose.split = THREE.MathUtils.damp(pose.split, goal.split, 3.2, dt);
-      pose.body = THREE.MathUtils.damp(pose.body, goal.body, 3.4, dt);
-      pose.edge = THREE.MathUtils.damp(pose.edge, goal.edge, 3.4, dt);
-      pose.hidden = THREE.MathUtils.damp(pose.hidden, goal.hidden, 3.2, dt);
-      pose.orbit = THREE.MathUtils.damp(pose.orbit, goal.orbit, 3.2, dt);
-      pose.camZ = THREE.MathUtils.damp(pose.camZ, goal.camZ, 6, dt);
-      pose.spin = THREE.MathUtils.damp(pose.spin, goal.spin, 3.6, dt);
-      pose.rotZ = THREE.MathUtils.damp(pose.rotZ, goal.rotZ, 3.6, dt);
-      pose.light = THREE.MathUtils.damp(pose.light, goal.light, 3, dt);
-      pose.proof = THREE.MathUtils.damp(pose.proof, goal.proof, 3.4, dt);
+      pose.x = THREE.MathUtils.damp(pose.x, goal.x, lambda, follow);
+      pose.y = THREE.MathUtils.damp(pose.y, goal.y, lambda, follow);
+      pose.scale = THREE.MathUtils.damp(pose.scale, goal.scale, lambda, follow);
+      pose.split = THREE.MathUtils.damp(pose.split, goal.split, 3.2, follow);
+      pose.body = THREE.MathUtils.damp(pose.body, goal.body, 3.4, follow);
+      pose.edge = THREE.MathUtils.damp(pose.edge, goal.edge, 3.4, follow);
+      pose.hidden = THREE.MathUtils.damp(pose.hidden, goal.hidden, 3.2, follow);
+      pose.orbit = THREE.MathUtils.damp(pose.orbit, goal.orbit, 3.2, follow);
+      pose.camZ = THREE.MathUtils.damp(pose.camZ, goal.camZ, 6, follow);
+      pose.spin = THREE.MathUtils.damp(pose.spin, goal.spin, 3.6, follow);
+      pose.rotZ = THREE.MathUtils.damp(pose.rotZ, goal.rotZ, 3.6, follow);
+      pose.light = THREE.MathUtils.damp(pose.light, goal.light, 3, follow);
+      pose.proof = THREE.MathUtils.damp(pose.proof, goal.proof, 3.4, follow);
+      pose.side = THREE.MathUtils.damp(pose.side, goal.side || 0, 2.8, follow);
+      pose.lift = THREE.MathUtils.damp(pose.lift, goal.lift || 0, 2.8, follow);
+      pose.fog = THREE.MathUtils.damp(pose.fog, goal.fog || 0, 2.2, follow);
       pose.heroP = goal.heroP;
     }
 
     const edgeEase = playIntro ? expoOut(clamp01(introT / HERO3D.intro.edgesS)) : 1;
     const bodyEase = playIntro ? expoOut(clamp01((introT - HERO3D.intro.bodyDelayS) / 0.8)) : 1;
     const nodeEase = playIntro ? expoOut(clamp01((introT - 1.1) / 0.55)) : 1;
-    const introScale = playIntro ? 0.9 + 0.1 * bodyEase : 1;
+    const buildP = playIntro ? elasticOut(clamp01(introT / 1.65)) : 1;
+    const introScale = playIntro ? 0.58 + 0.42 * buildP : 1;
     const introRot = playIntro ? (1 - bodyEase) * -0.6 : 0;
     if (!reduced) idle += dt * HERO3D.crystal.idleSpin;
     const bob = reduced ? 0 : Math.sin(now * 0.001 * HERO3D.crystal.bobFreq) * HERO3D.crystal.bobAmp;
 
-    camPx = THREE.MathUtils.damp(camPx, look.nx * HERO3D.camera.parallax.x * amp, HERO3D.camera.parallax.lambda, dt);
-    camPy = THREE.MathUtils.damp(camPy, look.ny * HERO3D.camera.parallax.y * amp, HERO3D.camera.parallax.lambda, dt);
+    const kFast = 1 - Math.pow(0.95, dt * 60);
+    const kSlow = 1 - Math.pow(0.965, dt * 60);
+    const aim = reduced ? 0.25 : 1;
+    rate.fx += (look.nx - rate.fx) * kFast;
+    rate.fy += (look.ny - rate.fy) * kFast;
+    rate.sx += (look.nx - rate.sx) * kSlow;
+    rate.sy += (look.ny - rate.sy) * kSlow;
+    const camYaw = -rate.fx * 0.045 * aim;
+    const pitch = rate.fy * 0.03 * aim;
+    const roll = reduced ? 0 : (rate.fx - rate.sx) * 0.06;
+    const tSec = now * 0.001;
+    const drift = reduced ? 0 : Math.sin(tSec * 1.256) * 0.012 + Math.sin(tSec * 3.455) * 0.008;
+    const driftRot = reduced ? 0 : Math.sin(tSec * 1.256) * 0.006 + Math.sin(tSec * 3.455) * 0.004;
+    camPx = pose.side + camYaw * 1.4 + drift;
+    camPy = pose.lift + pitch * 1.1 + drift * 0.6;
     sweep = THREE.MathUtils.damp(sweep, look.nx * 0.35 * amp, 2, dt);
-    if (scene.environmentRotation) scene.environmentRotation.y = sweep;
+    if (scene.environmentRotation) scene.environmentRotation.y = sweep + camYaw;
     strip.position.x = 2.8 + sweep * 1.6;
     strip.position.y = 1.6 + sweep * 0.25;
+    scene.fog.color.copy(fogNear).lerp(fogFar, pose.fog);
+    scene.fog.density = 0.008 + pose.fog * 0.028;
 
     camera.position.set(camPx, 0.08 + camPy, pose.camZ);
-    camera.lookAt(camPx * 0.35, camPy * 0.35, 0);
+    camera.lookAt(camPx * 0.28, camPy * 0.22, 0);
+    camera.rotation.z += roll + driftRot;
+    const rule = document.getElementById("hero-rule");
+    if (rule) rule.classList.toggle("is-apart", pose.heroP > 0.52);
 
     rig.position.set(pose.x, pose.y + bob, 0);
     rig.scale.setScalar(pose.scale * introScale);
@@ -610,34 +687,50 @@ export function mount() {
       line.material.opacity = envIn * nodeEase;
     });
 
+    if (shards) {
+      const dummy = new THREE.Object3D();
+      const spread = 0.25 + buildP * 1.15;
+      const shardFade = playIntro ? Math.max(0, 1 - clamp01((introT - 1.15) / 0.7)) : 0;
+      shards.material.opacity = shardFade;
+      shardSeed.forEach(function (dir, i) {
+        dummy.position.copy(dir).multiplyScalar(spread * (0.65 + (i % 5) * 0.08));
+        dummy.scale.setScalar(0.35 + buildP * 0.8);
+        dummy.rotation.set(i, buildP * 2, i * 0.3);
+        dummy.updateMatrix();
+        shards.setMatrixAt(i, dummy.matrix);
+      });
+      shards.instanceMatrix.needsUpdate = true;
+      shards.visible = shardFade > 0.02;
+    }
+
     placePins(nodeEase, hoverIndex);
     placeGlow();
 
-    const faq = document.getElementById("faq");
-    let fade = 1;
-    if (faq) fade = clamp01(faq.getBoundingClientRect().top / (window.innerHeight * 0.7));
-    stage.style.opacity = fade.toFixed(3);
-    if (fade < 0.01) return;
+    const road = document.getElementById("roadmap");
+    const pastStory = road && road.getBoundingClientRect().bottom < 48;
+    stage.style.opacity = pastStory ? "0" : "1";
+    if (pastStory) {
+      setActive(false);
+      return;
+    }
 
     renderer.toneMapping = THREE.ACESFilmicToneMapping;
     renderer.setRenderTarget(null);
     renderer.render(scene, camera);
     if (bloomOn) bloom.composite(scene, camera, bodyMat, disc);
 
-    if (!reduced && quality < 2) {
+    if (!reduced && tier < dprLadder.length - 1) {
       frameMs.push(dt * 1000);
-      if (frameMs.length >= 60) {
-        const avg = frameMs.reduce(function (a, b) { return a + b; }, 0) / frameMs.length;
+      if (frameMs.length >= 40) {
+        const sorted = frameMs.slice().sort(function (a, b) { return a - b; });
+        const body = sorted.slice(1, sorted.length - 1);
+        const avg = body.reduce(function (a, b) { return a + b; }, 0) / Math.max(1, body.length);
         frameMs.length = 0;
-        if (avg > HERO3D.perf.frameBudgetMs) {
-          if (quality === 0) {
-            quality = 1;
-            dprCap = 1;
-            resize();
-          } else if (bloomOn) {
-            quality = 2;
-            bloomOn = false;
-          }
+        if (avg > 22) {
+          tier += 1;
+          dprCap = dprLadder[Math.min(tier, dprLadder.length - 1)];
+          if (tier >= dprLadder.length - 1) bloomOn = false;
+          resize();
         }
       }
     }
@@ -667,7 +760,10 @@ export function mount() {
       rotZ: 0,
       light: 0,
       proof: 0,
-      heroP: 0
+      heroP: 0,
+      side: 0,
+      lift: 0,
+      fog: 0
     };
   }
 
@@ -815,15 +911,21 @@ export function mount() {
 
   function onPointerUp() { drag.on = false; }
 
-  const seenIO = new IntersectionObserver(function (entries) {
-    const box = entries[0];
-    const on = box.isIntersecting && !document.hidden && stage.style.opacity !== "0.000";
-    setActive(on);
+  function storyOn() {
+    if (document.hidden) return false;
+    const roadEl = document.getElementById("roadmap");
+    if (roadEl && roadEl.getBoundingClientRect().bottom < 48) return false;
+    return true;
+  }
+  const seenIO = new IntersectionObserver(function () {
+    setActive(storyOn());
   }, { threshold: 0 });
   seenIO.observe(document.body);
   document.addEventListener("visibilitychange", function () {
-    setActive(!document.hidden);
+    frameMs.length = 0;
+    setActive(storyOn());
   });
+  window.addEventListener("scroll", function () { setActive(storyOn()); }, { passive: true });
   window.addEventListener("pointermove", onPointerMove, { passive: true });
   window.addEventListener("pointerdown", onPointerDown);
   window.addEventListener("pointerup", onPointerUp);
@@ -832,6 +934,7 @@ export function mount() {
   raf = requestAnimationFrame(frame);
 
   window.addEventListener("pagehide", function () {
+    try { sessionStorage.setItem("axv-scroll", String(window.scrollY)); } catch (err) { /* ignore */ }
     setActive(false);
     bloom.dispose();
     renderer.dispose();
@@ -861,40 +964,71 @@ function buildHud() {
 function buildChrome(playIntro) {
   const loader = document.createElement("div");
   loader.id = "ax-loader";
-  loader.hidden = true;
-  loader.innerHTML = "<div class=\"frame\"><p class=\"pct\">[ LOADING 000% ]</p><div class=\"bar\"><i></i></div></div>";
+  loader.hidden = !playIntro;
+  loader.innerHTML = "<div class=\"ax-mark\" aria-hidden=\"true\"><i class=\"ring ring-a\"></i><i class=\"ring ring-b\"></i><span class=\"orbit o1\"><i></i></span><span class=\"orbit o2\"><i></i></span><span class=\"orbit o3\"><i></i></span></div><p class=\"pct\">[ 000% SYNCING ]</p><div class=\"bar\"><i></i></div>";
+  const status = document.createElement("p");
+  status.id = "ax-status";
+  status.className = "ax-status";
+  status.textContent = "[ SEEDING SANDBOX ]";
+  status.hidden = !playIntro;
   const skip = document.createElement("button");
   skip.type = "button";
   skip.className = "ax-skip";
   skip.textContent = "[ SKIP ]";
   skip.hidden = !playIntro;
+  skip.tabIndex = playIntro ? 0 : -1;
   document.body.appendChild(loader);
+  document.body.appendChild(status);
   document.body.appendChild(skip);
   let skipFn = function () {};
+  let settled = false;
   skip.addEventListener("click", function () { skipFn(); });
-  const timer = window.setTimeout(function () {
-    loader.hidden = false;
-    skip.hidden = false;
-  }, 400);
-  function clearTimer() { window.clearTimeout(timer); }
+  const failSafe = window.setTimeout(function () {
+    if (settled) return;
+    write(100, "online");
+    loaded();
+  }, 8000);
+  function write(n, phase) {
+    const pct = loader.querySelector(".pct");
+    const bar = loader.querySelector(".bar i");
+    const clamped = Math.max(0, Math.min(100, Math.round(n)));
+    let line = "[ SEEDING SANDBOX ]";
+    if (phase === "scroll") line = "[ SCROLL TO VERIFY ]";
+    else if (phase === "online" || clamped >= 100) line = "[ VALIDATORS ONLINE ]";
+    else if (clamped >= 18) line = "[ VARIANTS " + String(clamped).padStart(3, "0") + "% ]";
+    if (pct) pct.textContent = "[ " + String(clamped).padStart(3, "0") + "% SYNCING ]";
+    if (bar) bar.style.width = clamped + "%";
+    status.textContent = line;
+  }
+  function loaded() {
+    if (settled) return;
+    settled = true;
+    window.clearTimeout(failSafe);
+    write(100, "online");
+    window.setTimeout(function () { write(100, "scroll"); }, 900);
+    window.setTimeout(function () {
+      loader.classList.add("is-out");
+      status.classList.add("is-out");
+    }, 1600);
+    window.setTimeout(function () {
+      loader.hidden = true;
+      status.hidden = true;
+    }, 2100);
+  }
   return {
     onSkip: function (fn) { skipFn = fn; },
-    progress: function (ratio) {
-      const pct = loader.querySelector(".pct");
-      const bar = loader.querySelector(".bar i");
-      const n = Math.max(0, Math.min(100, Math.round(ratio * 100)));
-      if (pct) pct.textContent = "[ LOADING " + String(n).padStart(3, "0") + "% ]";
-      if (bar) bar.style.width = n + "%";
-    },
-    loaded: function () {
-      clearTimer();
-      loader.hidden = true;
-    },
+    progress: function (ratio) { write(ratio * 100); },
+    loaded: loaded,
     hideLoader: function () {
-      clearTimer();
+      settled = true;
+      window.clearTimeout(failSafe);
       loader.hidden = true;
+      status.hidden = true;
     },
-    hideSkip: function () { skip.hidden = true; }
+    hideSkip: function () {
+      skip.hidden = true;
+      skip.tabIndex = -1;
+    }
   };
 }
 
@@ -920,6 +1054,40 @@ function lineMat(boost, opacity) {
     toneMapped: false,
     depthWrite: false
   });
+}
+
+function sampleFlight(p) {
+  const stops = [
+    { at: 0, split: 0, body: 1, hidden: 0.02, orbit: 1, edge: 0.9, camZ: 7.6, side: 0.02, lift: 0.02, spin: 0.1, fog: 0, proof: 0, light: 0 },
+    { at: 0.18, split: 0.12, body: 1, hidden: 0.08, orbit: 0.5, edge: 0.95, camZ: 6.35, side: -0.16, lift: 0.1, spin: 0.85, fog: 0.72, proof: 0, light: 0.45 },
+    { at: 0.4, split: 1, body: 1, hidden: 0.1, orbit: 0.62, edge: 1, camZ: 5.85, side: 0.1, lift: 0.02, spin: 1.55, fog: 0.38, proof: 0.15, light: 0.15 },
+    { at: 0.62, split: 0.02, body: 0.18, hidden: 0.34, orbit: 0.95, edge: 1, camZ: 6.55, side: -0.1, lift: 0.06, spin: 2.15, fog: 0.12, proof: 1, light: 0.8 },
+    { at: 0.8, split: 0, body: 1, hidden: 0.03, orbit: 0.32, edge: 0.86, camZ: 8.6, side: 0.12, lift: 0.1, spin: 2.55, fog: 0.4, proof: 0.1, light: 0.08 },
+    { at: 1, split: 0, body: 1, hidden: 0, orbit: 0.16, edge: 0.7, camZ: 10.4, side: 0.06, lift: 0.14, spin: 2.9, fog: 0.18, proof: 0, light: 0 }
+  ];
+  const x = clamp01(p);
+  let i = 0;
+  while (i < stops.length - 2 && x > stops[i + 1].at) i += 1;
+  const a = stops[i];
+  const b = stops[i + 1];
+  const t = smootherstep((x - a.at) / Math.max(0.0001, b.at - a.at));
+  const out = {};
+  Object.keys(a).forEach(function (key) {
+    if (key === "at") return;
+    out[key] = a[key] + (b[key] - a[key]) * t;
+  });
+  return out;
+}
+
+function smootherstep(t) {
+  const x = clamp01(t);
+  return x * x * x * (x * (x * 6 - 15) + 10);
+}
+
+function elasticOut(t) {
+  if (t <= 0) return 0;
+  if (t >= 1) return 1;
+  return Math.pow(2, -8 * t) * Math.sin((t * 8 - 0.75) * Math.PI) * 0.5 + 1;
 }
 
 function expoOut(p) {

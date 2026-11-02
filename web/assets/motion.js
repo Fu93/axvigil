@@ -124,7 +124,7 @@
       var el = document.elementFromPoint(pointer.x, pointer.y);
       if (el && el.closest) overLink = !!el.closest("a, button, summary, .card");
       var drag = document.body.dataset.axCursor === "drag";
-      var goalS = drag ? 2 : (overLink ? 1.55 : 1);
+      var goalS = drag ? 1.35 : (overLink ? 1.18 : 1);
       ringPos.s += (goalS - ringPos.s) * 0.18;
       cursor.style.transform = "translate(" + ringPos.x.toFixed(1) + "px," + ringPos.y.toFixed(1) + "px)";
       dot.style.transform = "translate(" + (dotPos.x - ringPos.x).toFixed(1) + "px," + (dotPos.y - ringPos.y).toFixed(1) + "px)";
@@ -206,10 +206,16 @@
       if (steps) steps.classList.add("line-in");
     }
     function sweep() {
-      var limit = window.innerHeight * 1.15;
+      var vh = window.innerHeight;
       revealNodes.forEach(function (node) {
-        if (node.classList.contains("in")) return;
-        if (node.getBoundingClientRect().top < limit) show(node);
+        var rect = node.getBoundingClientRect();
+        var onScreen = rect.bottom > 0 && rect.top < vh * 1.15;
+        if (onScreen) {
+          node.classList.remove("out");
+          show(node);
+        } else if (rect.bottom < -12 && node.classList.contains("in")) {
+          node.classList.add("out");
+        }
       });
     }
     var idle = 0;

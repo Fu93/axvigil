@@ -804,7 +804,12 @@ html.motion .reveal {
 html.motion .reveal.in {
   opacity: 1;
   transform: none;
-  transition: opacity 0.42s ease-out, transform 0.42s ease-out;
+  transition: opacity 0.5s cubic-bezier(0.25, 1, 0.5, 1), transform 0.7s cubic-bezier(0.16, 1, 0.3, 1);
+}
+html.motion .reveal.in.out {
+  opacity: 0;
+  transform: none;
+  transition: opacity 0.4s cubic-bezier(0.25, 1, 0.5, 1);
 }
 html.motion .steps::before {
   transform: scaleX(var(--p, 0));
@@ -1091,6 +1096,72 @@ html.motion .close h2.reveal.in {
   cursor: pointer;
 }
 .ax-skip[hidden] { display: none !important; }
+.hero-rule {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 22px;
+  max-width: 36rem;
+  color: var(--yellow);
+  font-family: var(--mono);
+  font-size: 0.66rem;
+  letter-spacing: 0.12em;
+}
+.hero-rule i {
+  flex: 1;
+  height: 1px;
+  background: currentColor;
+  opacity: 0.7;
+  transform-origin: center;
+}
+.hero-rule.is-apart span:nth-of-type(1) { transform: translateX(-28vw); }
+.hero-rule.is-apart span:nth-of-type(2) { opacity: 0.35; }
+.hero-rule.is-apart span:nth-of-type(3) { transform: translateX(28vw); }
+.hero-rule.is-apart i:first-child { transform: scaleX(1.8); transform-origin: left center; }
+.hero-rule.is-apart i:last-child { transform: scaleX(1.8); transform-origin: right center; }
+.hero-rule span, .hero-rule i { transition: transform 0.6s cubic-bezier(0.65, 0, 0.35, 1), opacity 0.6s cubic-bezier(0.65, 0, 0.35, 1); }
+.ax-status {
+  position: fixed;
+  z-index: 61;
+  left: 22px;
+  bottom: 22px;
+  margin: 0;
+  font-family: var(--mono);
+  font-size: 0.72rem;
+  letter-spacing: 0.12em;
+  color: #efeeec;
+}
+.ax-status.is-out, #ax-loader.is-out { opacity: 0; transition: opacity 0.4s cubic-bezier(0.25, 1, 0.5, 1); }
+.ax-mark { position: relative; width: 148px; height: 148px; margin: 0 auto 18px; }
+.ax-mark .ring {
+  position: absolute;
+  inset: 18px;
+  border: 1px solid rgba(238, 249, 75, 0.75);
+  border-radius: 50%;
+  animation: ax-breathe 2s ease-in-out infinite alternate;
+}
+.ax-mark .ring-b { inset: 34px; animation-delay: -1s; }
+.ax-mark .orbit { position: absolute; inset: 0; animation: ax-spin 4.2s linear infinite; }
+.ax-mark .orbit i {
+  position: absolute;
+  left: 50%;
+  top: 8px;
+  width: 6px;
+  height: 6px;
+  margin-left: -3px;
+  border-radius: 50%;
+  background: var(--yellow);
+}
+.ax-mark .o2 { animation-duration: 3.6s; animation-direction: reverse; }
+.ax-mark .o2 i { top: 22px; }
+.ax-mark .o3 { animation-duration: 3.1s; }
+.ax-mark .o3 i { top: 36px; }
+@keyframes ax-breathe { from { transform: scale(0.98); opacity: 0.4; } to { transform: scale(1.02); opacity: 0.88; } }
+@keyframes ax-spin { to { transform: rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) {
+  .ax-mark .ring, .ax-mark .orbit { animation: none; }
+  .ax-status { display: none !important; }
+}
 #crystal-hud {
   position: fixed;
   inset: 0;
