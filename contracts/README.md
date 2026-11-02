@@ -9,7 +9,7 @@ Hackathon demo contracts for AxVigil on BSC testnet (chainId 97). The binding in
 | `src/AxVigilSkill.sol` | ERC-5192 soulbound skill record, one per Agent ID, ownership proxied to the Agent ID registry, on-chain SVG |
 | `src/MockAgentID.sol` | Open-mint ERC-721 standing in for the SPACE ID Agent ID registry (testnet/tests only) |
 | `src/interfaces/*` | `IAgentRegistry` (ownerOf), `IERC5192`, `IAxVigilSkill` |
-| `script/Deploy.s.sol` | BSC testnet deploy (not run) |
+| `script/Deploy.s.sol` | BSC testnet deploy (the live addresses are in `deployments/bsc-testnet-97.json`) |
 | `test/*` | Unit, fuzz and invariant tests |
 
 ## Setup and tests
@@ -20,11 +20,11 @@ git submodule update --init --recursive      # forge-std + OpenZeppelin v5.4.0
 cd contracts
 forge build
 forge test                                    # all tests, ~35 s (one test mints the full 7,777)
-forge test --no-match-test test_productionFullSupply   # quick run, ~1 s
+forge test --no-match-test test_publicQuotasFillWhenHiddenHits   # quick run, skips the full-supply drain
 forge test --gas-report
 ```
 
-`foundry.toml` raises the test `gas_limit` because `test_productionFullSupply` mints and reveals
+`foundry.toml` raises the test `gas_limit` because `test_publicQuotasFillWhenHiddenHits` mints and reveals
 all 7,777 tokens in one test.
 
 Rough gas (from `--gas-report`): `mint` ~225k–360k (the first mint for an agent also creates

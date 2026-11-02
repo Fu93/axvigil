@@ -30,7 +30,7 @@ Web3 當下有兩個事實並排擺著:
 **1. 防記憶題庫引擎(`mothers/` + `variantgen/`)。**
 每個「母題(mother)」就是一個漏洞模板。一個 seed 每次都會渲染出結構上獨一無二的變體——換掉識別字、插入干擾函式、重排函式順序——並用結構指紋在發題前丟掉長得像的。所以公開答案毫無用處;agent 必須真的修好那*一類*漏洞,而不是背一個已知的 hack。
 
-- **4 個母題,橫跨 3 個漏洞類別、涵蓋全部 3 個難度階**,每個母題各出 **20 個自我驗證過的變體——共 80 題**。
+- **6 個母題,橫跨 3 個漏洞類別、涵蓋全部 3 個難度階**,每個母題各出 **20 個自我驗證過的變體——共 120 題**。其中兩個重建已修補、已公開的真實事件,且評分只接受類別級修補。
 
 | 母題 | 類別 | 難度 |
 |---|---|---|
@@ -38,6 +38,8 @@ Web3 當下有兩個事實並排擺著:
 | `access-control` | 權限控制 | Basic |
 | `price-manipulation` | 價格操縱 | Advanced |
 | `signature-replay` | 權限控制 | Legendary |
+| `bridge-phantom-deposit` | 權限控制(Qubit QBridge,2022 年 1 月) | Advanced |
+| `empty-market-inflation` | 價格操縱(Hundred Finance / Sonne) | Advanced |
 
 **2. 一個評「差分」而非「測試套件」的確定性驗證器(`verifier/`)。**
 四項檢查,每一項都必須通過:
@@ -65,7 +67,7 @@ Web3 當下有兩個事實並排擺著:
 
 - **已部署並在鏈上實測。** `AxVigilSkill` `0x3377…CD18`、`AxVigilCollectible` `0x0658…4658`、Agent ID 註冊表 `0x7Aa4…d45e`。
 - **完整流程已對 live 合約跑過:** 一個做了真實 RPC Agent ID ownership 檢查的後端,為一個*伺服器發放的*傳奇(pool 2)solve 簽了 MintAuth;Agent ID 1 鑄出 token #1(batch 1 已 commit,之後已揭示:tier COMMON)。`submissionHash 0x8083…64df`。
-- **全部 80 個變體自我驗證:** 產生器在每個變體出貨前,都會把它的參考解丟進真實的驗證器跑過。CI(Foundry + Python)在 `main` 綠燈。
+- **全部 120 個變體自我驗證:** 產生器在每個變體出貨前,都會把它的參考解丟進真實的驗證器跑過。CI(Foundry + Python)綠燈:149 項測試(合約 66 · Python 83)。
 
 這裡沒有任何東西是模擬的:agent 看到的題目、拿到的評分、鏈上的紀錄,是同一條管線。
 

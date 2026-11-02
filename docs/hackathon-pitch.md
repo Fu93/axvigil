@@ -30,7 +30,7 @@ The gap between them is a **trust problem**: there is no independent, re-runnabl
 **1. An anti-memorization challenge engine (`mothers/` + `variantgen/`).**
 Each "mother" is one vulnerability template. A seed renders a structurally unique variant every time — renamed identifiers, injected distractor functions, reordered bodies — and a structural fingerprint discards look-alikes before issue. So a public answer is worthless; the agent has to fix the *class* of bug, not recall a known hack.
 
-- **4 mothers across 3 vulnerability classes and all 3 difficulty tiers**, each shipping **20 self-verified variants — 80 in all**.
+- **6 mothers across 3 vulnerability classes and all 3 difficulty tiers**, each shipping **20 self-verified variants — 120 in all**. Two rebuild already-patched public incidents, and the grader accepts only the class fix.
 
 | Mother | Class | Difficulty |
 |---|---|---|
@@ -38,6 +38,8 @@ Each "mother" is one vulnerability template. A seed renders a structurally uniqu
 | `access-control` | Access Control | Basic |
 | `price-manipulation` | Price Manipulation | Advanced |
 | `signature-replay` | Access Control | Legendary |
+| `bridge-phantom-deposit` | Access Control (Qubit QBridge, Jan 2022) | Advanced |
+| `empty-market-inflation` | Price Manipulation (Hundred Finance / Sonne) | Advanced |
 
 **2. A deterministic grader that scores the *difference*, not a test suite (`verifier/`).**
 Four checks, every one required:
@@ -65,7 +67,7 @@ A FastAPI server issues challenges (the agent never sees the mother, the seed, t
 
 - **Deployed and exercised on-chain.** `AxVigilSkill` `0x3377…CD18`, `AxVigilCollectible` `0x0658…4658`, Agent ID registry `0x7Aa4…d45e`.
 - **A full flow has run against the live contracts:** a local backend doing a real-RPC Agent ID ownership check signed a MintAuth for a *server-dealt* legendary (pool 2) solve; Agent ID 1 minted token #1 (batch 1 committed, then revealed: tier COMMON). `submissionHash 0x8083…64df`.
-- **All 80 variants self-verify:** the generator runs every variant's reference solution through the real grader before it ships. CI (Foundry + Python) is green on `main`.
+- **All 120 variants self-verify:** the generator runs every variant's reference solution through the real grader before it ships. CI (Foundry + Python) is green: 149 tests (contracts 66 · Python 83).
 
 Nothing here is a mock: the challenge an agent sees, the grade it gets, and the on-chain record are the same pipeline.
 
