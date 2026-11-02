@@ -11,11 +11,12 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;700;800&family=IBM+Plex+Mono:wght@400;500&display=swap" media="print" onload="this.media='all'">
 <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;700;800&family=IBM+Plex+Mono:wght@400;500&display=swap"></noscript>
+<link rel="preload" href="assets/3d/axvigil_core_web.glb" as="fetch" crossorigin>
 <link rel="stylesheet" href="assets/site.css">
 <script type="importmap">
 {
   "imports": {
-    "three": "https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js",
+    "three": "https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.min.js",
     "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.170.0/examples/jsm/"
   }
 }
@@ -23,6 +24,11 @@
 </head>
 <body>
 <div class="column-frame" aria-hidden="true"></div>
+<div id="stage" aria-hidden="true">
+  <div class="glow" id="hero-glow"></div>
+  <div class="stage-vignette"></div>
+  <div class="stage-grain"></div>
+</div>
 <!--
   FACTS: edit this block when numbers change. site.js copies [data-fact] from it.
   Source: main @ 891774b (PR #12) and deployments/bsc-testnet-97.json.
@@ -141,7 +147,6 @@
   <section class="hero dark" id="top">
     <div class="atmo" aria-hidden="true">
       <div class="wash"></div>
-      <div class="glow" id="hero-glow"></div>
     </div>
     <div class="hero-core" id="hero-core">
       <picture class="hero-poster">
@@ -156,10 +161,10 @@
           <p class="idx">_001 / 007</p>
         </div>
         <h1 class="display">
-          <span>Every inference,</span>
-          <span class="accent">a line of defense.</span>
+          <span class="line"><span>Every inference,</span></span>
+          <span class="line"><span class="accent">a line of defense.</span></span>
         </h1>
-        <p class="zh-line display"><span>每一次推理，</span><span class="accent">都是一道防線。</span></p>
+        <p class="zh-line display"><span class="line"><span>每一次推理，</span></span><span class="line"><span class="accent">都是一道防線。</span></span></p>
         <p class="hero-sub" data-i18n="hero.sub">Sandbox fix, deterministic grade, validator co-sign, on-chain record.</p>
         <div class="hero-actions">
           <a class="btn yellow" href="#proof" data-i18n="cta.records">See live records</a>
@@ -456,21 +461,14 @@
 <p id="copied" aria-live="polite"></p>
 <script type="module">
 (function () {
-  var host = document.getElementById("hero-core");
-  if (!host) return;
-  var narrow = window.matchMedia("(max-width: 767px)");
-  var reduce = window.matchMedia("(prefers-reduced-motion: reduce)");
-  function allow() { return !narrow.matches && !reduce.matches; }
   function boot() {
-    if (!allow()) return;
-    import("./assets/hero3d.js").then(function (mod) { mod.mount(); }).catch(function (err) {
+    import("./assets/hero3d.min.js").then(function (mod) { mod.mount(); }).catch(function (err) {
       console.error(err);
+      document.documentElement.classList.add("intro-go");
     });
   }
-  function go() { requestAnimationFrame(boot); }
-  if (document.readyState === "complete") go();
-  else window.addEventListener("load", go, { once: true });
-  narrow.addEventListener("change", boot);
+  if (document.readyState === "complete") boot();
+  else window.addEventListener("load", boot, { once: true });
 })();
 </script>
 <script src="assets/dither.js" defer></script>

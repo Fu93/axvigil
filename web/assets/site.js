@@ -378,6 +378,7 @@
       });
     });
     try { localStorage.setItem("axvigil-lang", next); } catch (err) { /* ignore */ }
+    document.dispatchEvent(new CustomEvent("axv:lang"));
   }
 
   document.querySelectorAll(".lang button").forEach(function (button) {
