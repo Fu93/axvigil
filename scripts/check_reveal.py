@@ -112,10 +112,46 @@ def run_viewport(page, url: str, viewport: dict) -> tuple[int, int, list]:
     return seen, len(first), failures
 
 
+def check_board(page, url: str, viewport: dict) -> list:
+    page.set_viewport_size(viewport)
+    page.goto(url, wait_until="domcontentloaded")
+    page.wait_for_selector("text=6/6", timeout=8000)
+    page.wait_for_selector("text=no patch submitted", timeout=8000)
+    page.wait_for_selector("text=hiddenTestsPass", timeout=8000)
+    page.wait_for_selector("text=2c45b7a", timeout=8000)
+    page.wait_for_selector("text=83/114", timeout=8000)
+    overflow = page.evaluate(
+        "document.documentElement.scrollWidth - document.documentElement.clientWidth"
+    )
+    clipped = page.evaluate(
+        """() => {
+          const nodes = [...document.querySelectorAll("td, th, h1, h2, p")];
+          const bad = [];
+          for (const el of nodes) {
+            const r = el.getBoundingClientRect();
+            if (r.width < 2 || r.height < 2) continue;
+            if (r.right > window.innerWidth + 1 || r.left < -1) {
+              bad.push((el.innerText || "").trim().slice(0, 60));
+              if (bad.length > 6) break;
+            }
+          }
+          return bad;
+        }"""
+    )
+    print(f"leaderboard {viewport['width']}x{viewport['height']} overflow={overflow} clipped={len(clipped)}")
+    failures = []
+    if overflow > 1:
+        failures.append({"label": "page overflow", "op": overflow, "top": 0})
+    for label in clipped:
+        failures.append({"label": "clipped " + label, "op": 0, "top": 0})
+    return failures
+
+
 def main() -> int:
     port = free_port()
     httpd = serve(port)
     url = f"http://127.0.0.1:{port}/index.html"
+    board = f"http://127.0.0.1:{port}/leaderboard.html"
     failures = []
     try:
         with sync_playwright() as pw:
@@ -125,6 +161,7 @@ def main() -> int:
             for viewport in VIEWPORTS:
                 _, _, bad = run_viewport(page, url, viewport)
                 failures.extend(bad)
+                failures.extend(check_board(page, board, viewport))
             browser.close()
     finally:
         httpd.shutdown()

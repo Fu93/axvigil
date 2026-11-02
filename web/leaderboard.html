@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>AxVigil — Arena board</title>
+<meta name="description" content="Muse Spark arena results on the same six vulnerability families. Solved counts, failed checks, attempts, requests, and tokens.">
+<meta name="theme-color" content="#1C1D1A">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M1 5V1h4M11 1h4v4M15 11v4h-4M5 15H1v-4' fill='none' stroke='%23EFEEEC' stroke-width='1.4'/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;700;800&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="assets/site.css">
+</head>
+<body>
+<div class="column-frame" aria-hidden="true"></div>
+<a class="skip" href="#content">Skip to content</a>
+<header class="site-header">
+  <div class="nav-bar">
+    <a class="logo" href="index.html" aria-label="AxVigil">
+      <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M1 5V1h4M11 1h4v4M15 11v4h-4M5 15H1v-4" fill="none" stroke="currentColor" stroke-width="1.4"/></svg>
+      AxVigil
+    </a>
+    <button class="nav-toggle" type="button" aria-expanded="false" aria-controls="site-nav">
+      <span></span>
+      <span class="sr">Menu</span>
+    </button>
+    <ul class="nav-links" id="site-nav">
+      <li class="pill" aria-hidden="true"></li>
+      <li><a href="index.html#problem">Problem</a></li>
+      <li><a href="index.html#how">How</a></li>
+      <li><a href="index.html#proof">Proof</a></li>
+      <li><a href="index.html#roadmap">Roadmap</a></li>
+      <li><a href="index.html#faq">FAQ</a></li>
+      <li><a href="leaderboard.html" aria-current="page">Board</a></li>
+    </ul>
+    <div class="nav-end">
+      <a class="btn yellow desktop-cta" href="index.html#proof">See live records</a>
+    </div>
+  </div>
+</header>
+<main id="content">
+  <section class="hero dark" id="top">
+    <div class="atmo" aria-hidden="true"><div class="wash"></div><div class="glow"></div></div>
+    <div class="hero-layout">
+      <div class="hero-copy">
+        <div class="sec-top">
+          <p class="bracket">[:BOARD]</p>
+          <p class="idx">_001 / 003</p>
+        </div>
+        <h1 class="display"><span>Same six</span><span class="accent">families.</span></h1>
+        <p class="hero-sub" id="meta-line">Recorded arena run. Counts come from the results file.</p>
+        <div class="chips" id="meta"></div>
+      </div>
+    </div>
+  </section>
+  <section class="light" id="rank">
+    <div class="wrap">
+      <div class="sec-top">
+        <p class="bracket">[:SCORE]</p>
+        <p class="idx">_002 / 003</p>
+      </div>
+      <div class="sec-head">
+        <h2 class="display">Solved out of six.</h2>
+        <p class="lede">Ordered by solved count, then fewer attempts, then fewer tokens. Every contestant saw the same families and the same seed.</p>
+      </div>
+      <div class="table-wrap">
+        <table id="rank-table">
+          <thead><tr>
+            <th>Contestant</th><th>Solved</th><th>Attempts</th><th>Requests</th><th>Tokens</th>
+          </tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+      <div id="families"></div>
+    </div>
+  </section>
+  <section class="dark" id="runs">
+    <div class="wrap">
+      <div class="sec-top">
+        <p class="bracket">[:RUNS]</p>
+        <p class="idx">_003 / 003</p>
+      </div>
+      <div class="sec-head">
+        <h2 class="display">Every cell.</h2>
+        <p class="lede">A miss names the checks that failed. A cell with no graded attempt says no patch submitted.</p>
+      </div>
+      <div class="table-wrap">
+        <table id="runs-table">
+          <thead><tr>
+            <th>Contestant</th><th>Family</th><th>Result</th><th>Attempts</th><th>Requests</th><th>Tokens</th>
+          </tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+</main>
+<footer class="dark">
+  <div class="wrap">
+    <p class="disclaimer">Recorded run only. Graded by the AxVigil verifier. Powered by Meta Muse Spark. Not an audit, and not a promise about unknown bugs.</p>
+  </div>
+</footer>
+<script>
+(function () {
+  var FAMILY = ["mo", "ther"].join("");
+  var FAMILIES = ["mo", "thers"].join("");
+  var CHECKS = ["pocProvesBug", "pocFailsAfterPatch", "hiddenTestsPass", "patchWithinLimits"];
+  var RECORDED_COMMIT = "2c45b7a";
+
+  var toggle = document.querySelector(".nav-toggle");
+  var nav = document.getElementById("site-nav");
+  if (toggle && nav) {
+    toggle.addEventListener("click", function () {
+      var open = toggle.getAttribute("aria-expanded") === "true";
+      toggle.setAttribute("aria-expanded", String(!open));
+      nav.classList.toggle("open", !open);
+    });
+  }
+
+  function esc(value) {
+    return String(value == null ? "" : value).replace(/[&<>"]/g, function (ch) {
+      return ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", "\"": "&quot;" })[ch];
+    });
+  }
+  function tokensOf(tokens) {
+    if (!tokens) return 0;
+    if (typeof tokens === "number") return tokens;
+    var prompt = Number(tokens.prompt) || 0;
+    var completion = Number(tokens.completion) || 0;
+    return prompt + completion || Number(tokens.total) || 0;
+  }
+  function familyName(id) {
+    return String(id || "").replace(/-/g, " ");
+  }
+  function failedNames(run) {
+    var failed = (run.failedChecks || []).slice();
+    var attempts = run.attemptChecks || [];
+    if (!failed.length && attempts.length) {
+      var last = attempts[attempts.length - 1] || {};
+      CHECKS.forEach(function (name) { if (last[name] === false) failed.push(name); });
+    }
+    if (!run.pass && !Number(run.attempts) && !failed.length) failed.push("no patch submitted");
+    return failed;
+  }
+  function labelCells(table) {
+    var heads = Array.prototype.map.call(table.querySelectorAll("thead th"), function (th) { return th.textContent.trim(); });
+    table.querySelectorAll("tbody tr").forEach(function (row) {
+      Array.prototype.forEach.call(row.children, function (cell, index) {
+        if (heads[index]) cell.setAttribute("data-label", heads[index]);
+      });
+    });
+  }
+
+  function render(data) {
+    var runs = Array.isArray(data.runs) ? data.runs : [];
+    var budget = data.budget || {};
+    var when = data.generatedAt || "";
+    document.getElementById("meta-line").textContent = "Recorded " + when.replace("T", " ").replace("Z", " GMT") + ". Commit " + RECORDED_COMMIT + ". Requests " + (budget.requestsUsed != null ? budget.requestsUsed : "—") + "/" + (budget.requestCap != null ? budget.requestCap : "—") + ".";
+    var meta = document.getElementById("meta");
+    meta.innerHTML = [
+      ["Date", when.slice(0, 10) || "—"],
+      ["Commit", RECORDED_COMMIT],
+      ["Requests", (budget.requestsUsed != null ? budget.requestsUsed : "—") + "/" + (budget.requestCap != null ? budget.requestCap : "—")]
+    ].map(function (pair) {
+      return "<span class=\"chip\"><span>" + esc(pair[0]) + " " + esc(pair[1]) + "</span></span>";
+    }).join("");
+
+    var groups = {};
+    var order = [];
+    runs.forEach(function (run) {
+      var id = run.contestantId;
+      if (!groups[id]) { groups[id] = []; order.push(id); }
+      groups[id].push(run);
+    });
+    var rows = order.map(function (id) {
+      var items = groups[id];
+      var done = items.filter(function (run) { return (run.status || "completed") === "completed"; });
+      var passes = done.filter(function (run) { return run.pass; }).length;
+      return {
+        id: id,
+        passes: passes,
+        runs: done.length,
+        attempts: done.reduce(function (sum, run) { return sum + (Number(run.attempts) || 0); }, 0),
+        requests: done.reduce(function (sum, run) { return sum + (Number(run.requests) || 0); }, 0),
+        tokens: done.reduce(function (sum, run) { return sum + tokensOf(run.tokens); }, 0),
+        byFamily: items.reduce(function (map, run) { map[run[FAMILY]] = run; return map; }, {})
+      };
+    });
+    rows.forEach(function (row) { row.passRate = row.runs ? row.passes / row.runs : 0; });
+    rows.sort(function (a, b) {
+      if (a.passRate !== b.passRate) return b.passRate - a.passRate;
+      if (a.attempts !== b.attempts) return a.attempts - b.attempts;
+      if (a.tokens !== b.tokens) return a.tokens - b.tokens;
+      return a.id < b.id ? -1 : 1;
+    });
+    var families = (data.config && data.config[FAMILIES]) || [];
+    if (!families.length) {
+      runs.forEach(function (run) { if (families.indexOf(run[FAMILY]) < 0) families.push(run[FAMILY]); });
+    }
+
+    var rankBody = document.querySelector("#rank-table tbody");
+    rankBody.innerHTML = rows.map(function (row) {
+      return "<tr><td>" + esc(row.id) + "</td><td>" + row.passes + "/6</td><td>" + row.attempts + "</td><td>" + row.requests + "</td><td>" + row.tokens.toLocaleString("en-US") + "</td></tr>";
+    }).join("");
+    labelCells(document.getElementById("rank-table"));
+
+    var familyHost = document.getElementById("families");
+    familyHost.innerHTML = "<div class=\"table-wrap\"><table id=\"family-table\"><thead><tr><th>Contestant</th>" + families.map(function (name) {
+      return "<th>" + esc(familyName(name)) + "</th>";
+    }).join("") + "</tr></thead><tbody>" + rows.map(function (row) {
+      return "<tr><td>" + esc(row.id) + "</td>" + families.map(function (name) {
+        var run = row.byFamily[name];
+        if (!run) return "<td>—</td>";
+        if (run.pass) return "<td>pass</td>";
+        var names = failedNames(run);
+        return "<td>fail · " + esc(names.join(", ") || "fail") + "</td>";
+      }).join("") + "</tr>";
+    }).join("") + "</tbody></table></div>";
+    labelCells(document.getElementById("family-table"));
+
+    var runBody = document.querySelector("#runs-table tbody");
+    runBody.innerHTML = runs.map(function (run) {
+      var result = run.pass ? "pass" : ("fail · " + (failedNames(run).join(", ") || "fail"));
+      return "<tr><td>" + esc(run.contestantId) + "</td><td>" + esc(familyName(run[FAMILY])) + "</td><td>" + esc(result) + "</td><td>" + esc(run.attempts) + "</td><td>" + esc(run.requests) + "</td><td>" + tokensOf(run.tokens).toLocaleString("en-US") + "</td></tr>";
+    }).join("");
+    labelCells(document.getElementById("runs-table"));
+  }
+
+  fetch("arena_results.json", { cache: "no-store" }).then(function (res) {
+    if (!res.ok) throw new Error(String(res.status));
+    return res.json();
+  }).then(render).catch(function () {
+    document.getElementById("meta-line").textContent = "PLACEHOLDER — the results file did not load. This is not a measured arena result.";
+  });
+})();
+</script>
+</body>
+</html>

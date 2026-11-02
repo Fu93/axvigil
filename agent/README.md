@@ -46,6 +46,8 @@ includes the grader log, so the model can self-correct.
 - `model.py` — `ModelClient` interface; `MetaModelClient` (OpenAI-compatible HTTP, stdlib only) and `ScriptedClient` (canned responses for offline tests / the `--oracle` dry-run).
 - `prompts.py` — system prompt, first-attempt prompt, and the feedback/retry prompt.
 - `solver.py` — the loop: robust JSON extraction, per-iteration grading via the verifier, transcript of every attempt (checks + submissionHash) for the demo video.
+- `arena.py` — multi-model arena. Same rendered challenges, real verifier, request cap, resume. Schema for `arena_results.json` is in the module docstring.
+- `agentic.py` — tool-using loop (`read_file`, `list_files`, `run_poc`, `run_tests`, `forge_trace`, `apply_patch`, `submit`). `--tool-protocol tools` sends OpenAI tool calls; `--tool-protocol json` expects one JSON action per turn. Hidden tests and the reference patch are not in the workspace.
 
 The agent never signs anything; a solved run yields the `submissionHash` the backend
 will sign into a `MintAuth` (one per passed reward solve, at most two per Agent ID).
@@ -70,3 +72,7 @@ if out["passed"]:
 ```
 
 `c.start(mother_id="reentrancy")` returns 400 on a reward session: the server chooses the mother. Pass `practice=True` to pick one. A practice session is graded but `authorize` returns 403 and it does not spend a reward attempt.
+
+## Arena
+
+`python -m axvigil_agent arena` runs several Meta models, plus an optional ensemble, through the same solve loop and writes `arena_results.json` (schema version 1) and a markdown summary. Strategies are `baseline`, `self-critique`, and `plan-then-patch`. The root [README](../README.md#multi-model-arena) has the budget-conscious command (3 models, 6 mothers, 1 seed, `--max-iters 3`, `--request-cap 60`) and the environment variables (`META_API_KEY` or `MODEL_API_KEY`, optional `META_BASE_URL` and `META_MAX_TOKENS`). The key is never written to the results. Offline tests use `FakeModelClient` and do not call the network.

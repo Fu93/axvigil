@@ -832,6 +832,8 @@ html[lang="zh-Hant"] .zh-line { display: block; }
 }
 .hero-copy { position: relative; z-index: 2; }
 .stats.stat-strip { grid-template-columns: repeat(4, minmax(0, 1fr)) auto; align-items: end; }
+.board-stats { margin-top: 28px; border-top: 1px solid var(--line); }
+.board-stats .l { text-transform: none; letter-spacing: 0; }
 .stat-strip .chip {
   align-self: center;
   margin: 0 0 8px auto;

@@ -11,7 +11,7 @@ import time
 from dataclasses import dataclass, field
 from pathlib import Path
 
-from .model import ModelClient
+from .model import ClientStop, ModelClient
 from .prompts import SYSTEM, build_retry_prompt, build_user_prompt
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
@@ -66,6 +66,8 @@ class SolveOutcome:
     final_patch: str | None = None
     final_poc: str | None = None
     final_result: dict | None = None
+    last_patch: str | None = None
+    stopped: str | None = None
 
 
 def _grade(challenge_dir: Path, target_file: str, patch: str, poc: str, seed: int,
@@ -94,6 +96,7 @@ def solve(
     solc: str | None = None,
     timeout_s: int = 120,
     on_event=None,
+    grader=None,
 ) -> SolveOutcome:
     challenge_dir = Path(challenge_dir)
     meta = json.loads((challenge_dir / "challenge.json").read_text())
@@ -118,10 +121,15 @@ def solve(
     outcome = SolveOutcome(challenge_id=meta["challengeId"], solved=False)
     start = time.time()
     prev_patch = prev_poc = ""
+    grade_fn = grader if grader is not None else _grade
 
     for i in range(max_iters):
         emit(f"[iter {i}] asking model…")
-        raw = client.complete(SYSTEM, user)
+        try:
+            raw = client.complete(SYSTEM, user)
+        except ClientStop as stop:
+            outcome.stopped = stop.reason or "stopped"
+            break
         if not isinstance(raw, str):
             raw = ""
         try:
@@ -129,6 +137,7 @@ def solve(
             patch = obj["patched_contract"]
             poc = obj["poc_test"]
             analysis = obj.get("analysis", "")
+            outcome.last_patch = patch
         except (ValueError, KeyError, TypeError) as e:
             emit(f"[iter {i}] unparseable response ({e}); retrying")
             # The client is stateless, so the retry must keep the challenge source.
@@ -140,7 +149,7 @@ def solve(
             continue
 
         emit(f"[iter {i}] grading…")
-        res = _grade(challenge_dir, target_file, patch, poc, seed, forge_bin, solc, timeout_s)
+        res = grade_fn(challenge_dir, target_file, patch, poc, seed, forge_bin, solc, timeout_s)
         checks = {
             "pocProvesBug": res.pocProvesBug,
             "pocFailsAfterPatch": res.pocFailsAfterPatch,
