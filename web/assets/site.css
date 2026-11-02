@@ -288,6 +288,29 @@ html[lang="zh-Hant"] .text-link { text-transform: none; letter-spacing: 0.04em; 
   width: min(var(--max), calc(100% - 80px));
   margin-inline: auto;
 }
+.hero-copy { position: relative; z-index: 2; }
+.hero-core {
+  position: absolute;
+  z-index: 1;
+  top: 168px;
+  right: 36px;
+  width: min(420px, 32vw);
+  height: min(520px, 58vh);
+  pointer-events: none;
+}
+.hero-core { overflow: hidden; }
+.hero-core canvas,
+.hero-poster,
+.hero-poster img {
+  position: absolute;
+  inset: 0;
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+.hero-poster { transition: opacity 0.45s ease; }
+.hero-core.is-live .hero-poster { opacity: 0; }
 .hero .bracket { margin-bottom: 22px; }
 .hero h1 { font-size: clamp(3.4rem, 6.4vw, 6.5rem); max-width: 16ch; line-height: 0.96; }
 .hero h1 span + span { margin-top: 0.06em; }
@@ -911,4 +934,16 @@ td a { border-bottom: 1px solid currentColor; text-decoration: none; }
   .steps, .stat-strip, .stats.stat-strip { grid-template-columns: 1fr 1fr; }
   .stat-strip .chip { grid-column: 1 / -1; margin: 8px 0 0; }
   .hero-layout, .hero-copy { width: min(var(--max), calc(100% - 28px)); }
+  .hero-layout { order: 1; }
+  .hero-core {
+    position: relative;
+    order: 2;
+    top: auto;
+    right: auto;
+    bottom: auto;
+    width: min(240px, 70vw);
+    height: 280px;
+    margin: 8px 0 0;
+  }
+  .stats { order: 3; }
 }

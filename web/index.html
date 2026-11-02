@@ -12,6 +12,14 @@
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;700;800&family=IBM+Plex+Mono:wght@400;500&display=swap" media="print" onload="this.media='all'">
 <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;700;800&family=IBM+Plex+Mono:wght@400;500&display=swap"></noscript>
 <link rel="stylesheet" href="assets/site.css">
+<script type="importmap">
+{
+  "imports": {
+    "three": "https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js",
+    "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.170.0/examples/jsm/"
+  }
+}
+</script>
 </head>
 <body>
 <div class="column-frame" aria-hidden="true"></div>
@@ -134,6 +142,12 @@
     <div class="atmo" aria-hidden="true">
       <div class="wash"></div>
       <div class="glow" id="hero-glow"></div>
+    </div>
+    <div class="hero-core" id="hero-core">
+      <picture class="hero-poster">
+        <source media="(max-width: 767px)" srcset="assets/3d/poster_mobile_1080x1350.png">
+        <img src="assets/3d/render_transparent_1024.png" alt="" width="1024" height="1024">
+      </picture>
     </div>
     <div class="hero-layout">
       <div class="hero-copy">
@@ -419,6 +433,25 @@
   </div>
 </footer>
 <p id="copied" aria-live="polite"></p>
+<script type="module">
+(function () {
+  var host = document.getElementById("hero-core");
+  if (!host) return;
+  var narrow = window.matchMedia("(max-width: 767px)");
+  var reduce = window.matchMedia("(prefers-reduced-motion: reduce)");
+  function allow() { return !narrow.matches && !reduce.matches; }
+  function boot() {
+    if (!allow()) return;
+    import("./assets/hero3d.js").then(function (mod) { mod.mount(); }).catch(function (err) {
+      console.error(err);
+    });
+  }
+  function go() { requestAnimationFrame(boot); }
+  if (document.readyState === "complete") go();
+  else window.addEventListener("load", go, { once: true });
+  narrow.addEventListener("change", boot);
+})();
+</script>
 <script src="assets/dither.js" defer></script>
 <script src="assets/site.js" defer></script>
 <script src="assets/motion.js" defer></script>
