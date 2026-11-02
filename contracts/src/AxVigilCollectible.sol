@@ -10,6 +10,7 @@ import {ECDSA} from "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 import {Strings} from "@openzeppelin/contracts/utils/Strings.sol";
 
 import {IAgentRegistry} from "./interfaces/IAgentRegistry.sol";
+import {IAxVigilChallenge} from "./interfaces/IAxVigilChallenge.sol";
 import {IAxVigilSkill} from "./interfaces/IAxVigilSkill.sol";
 
 /// @title AxVigilCollectible
@@ -49,6 +50,10 @@ import {IAxVigilSkill} from "./interfaces/IAxVigilSkill.sol";
 /// mint-free solve path. Hourly mint cap, pausable, rotatable signer, and a validator set
 /// with a threshold (k-of-n EIP-712 signatures). The owner administers the set and is not
 /// a validator unless explicitly added. Supply is fixed in the constructor.
+///
+/// Optimistic challenges live in an optional `challengeBook`. With no book (or a book whose
+/// window is zero) the skill solve is confirmed inside `mint`. With a window, `mint` forwards
+/// the operator bond and the book holds the record Pending until `finalize` or an upheld verdict.
 contract AxVigilCollectible is ERC721, Ownable2Step, Pausable, EIP712 {
     using Strings for uint256;
 
@@ -143,6 +148,8 @@ contract AxVigilCollectible is ERC721, Ownable2Step, Pausable, EIP712 {
 
     address public signer;
     uint256 public hourlyCap;
+    /// @notice Challenge book, set once before the first mint. Zero keeps immediate finality.
+    address public challengeBook;
     /// @notice Registered graders. The owner is not a validator unless added.
     mapping(address => bool) public isValidator;
     uint256 public validatorCount;
@@ -200,6 +207,7 @@ contract AxVigilCollectible is ERC721, Ownable2Step, Pausable, EIP712 {
     event HourlyCapUpdated(uint256 cap);
     event BaseURIUpdated(string baseURI, string unrevealedURI);
     event ProvenanceHashSet(bytes32 provenanceHash);
+    event ChallengeBookSet(address indexed challengeBook);
 
     error Expired();
     error NonceUsed();
@@ -284,14 +292,24 @@ contract AxVigilCollectible is ERC721, Ownable2Step, Pausable, EIP712 {
 
     /// @notice Mint with the single legacy signer. Reverts once the threshold is above 1.
     /// @dev Caller must currently own `auth.agentId` in the Agent ID registry.
-    function mint(MintAuth calldata auth, bytes calldata signature) external whenNotPaused returns (uint256 tokenId) {
+    function mint(MintAuth calldata auth, bytes calldata signature)
+        external
+        payable
+        whenNotPaused
+        returns (uint256 tokenId)
+    {
         if (threshold != 1) revert ThresholdRequired();
         _checkAuth(auth, signature);
         tokenId = _performMint(auth);
     }
 
     /// @notice Mint when `threshold` distinct registered validators have signed the same MintAuth.
-    function mint(MintAuth calldata auth, bytes[] calldata signatures) external whenNotPaused returns (uint256 tokenId) {
+    function mint(MintAuth calldata auth, bytes[] calldata signatures)
+        external
+        payable
+        whenNotPaused
+        returns (uint256 tokenId)
+    {
         _checkAuthFields(auth);
         _verifyThreshold(auth, signatures);
         if (auth.pool != poolForDifficulty(auth.difficulty)) {
@@ -336,8 +354,22 @@ contract AxVigilCollectible is ERC721, Ownable2Step, Pausable, EIP712 {
         // _mint (not _safeMint): no receiver callback, so no reentrancy surface.
         _mint(auth.to, tokenId);
         skill.recordSolve(auth.agentId, auth.vulnClass, auth.difficulty);
+        _settleSkill(tokenId, auth);
 
         _emitMinted(tokenId, batchId, auth);
+    }
+
+    /// @dev No book: confirm the solve now (msg.value must be 0). With a book: forward the
+    ///      operator bond and let the book open the challenge window.
+    function _settleSkill(uint256 tokenId, MintAuth calldata auth) private {
+        if (challengeBook == address(0)) {
+            if (msg.value != 0) revert InvalidParams();
+            skill.confirmSolve(auth.agentId, auth.vulnClass);
+            return;
+        }
+        IAxVigilChallenge(challengeBook).onMint{value: msg.value}(
+            tokenId, auth.agentId, auth.vulnClass, auth.submissionHash, msg.sender
+        );
     }
 
     /// @dev Deadline, nonce, field ranges. Signatures and ownership are checked by the caller.
@@ -610,6 +642,14 @@ contract AxVigilCollectible is ERC721, Ownable2Step, Pausable, EIP712 {
         emit HourlyCapUpdated(cap);
     }
 
+    /// @notice Attach the challenge book once, before any mint. The book reads `isValidator`
+    ///         and `threshold` from this contract. This contract does not grant it roles.
+    function setChallengeBook(address book) external onlyOwner {
+        if (book == address(0) || challengeBook != address(0) || totalMinted != 0) revert InvalidParams();
+        challengeBook = book;
+        emit ChallengeBookSet(book);
+    }
+
     function pause() external onlyOwner {
         _pause();
     }
@@ -643,6 +683,22 @@ contract AxVigilCollectible is ERC721, Ownable2Step, Pausable, EIP712 {
         TokenData memory t = _tokens[tokenId];
         if (!t.revealed) return unrevealedURI;
         return string.concat(baseURI, uint256(t.artId).toString());
+    }
+
+    /// @notice 0 None, 1 Pending, 2 Challenged, 3 Final, 4 Revoked. Without a book every
+    ///         minted token is Final (the skill solve was confirmed inside `mint`).
+    function status(uint256 tokenId) external view returns (uint8) {
+        if (challengeBook == address(0)) {
+            if (tokenId == 0 || tokenId > totalMinted) return 0;
+            return 3;
+        }
+        return IAxVigilChallenge(challengeBook).status(tokenId);
+    }
+
+    /// @notice True when an upheld challenge has flagged this token. False with no book.
+    function flagged(uint256 tokenId) external view returns (bool) {
+        if (challengeBook == address(0)) return false;
+        return IAxVigilChallenge(challengeBook).flagged(tokenId);
     }
 
     function tokenData(uint256 tokenId) external view returns (TokenData memory) {

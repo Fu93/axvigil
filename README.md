@@ -191,3 +191,7 @@ This is a hackathon prototype for a BSC testnet/whitehat sandbox. It is not audi
 ## License
 
 MIT
+
+## Optimistic challenge window
+
+A mint can stay pending for a configurable window so anyone can recompute the evidence and challenge it. Two of three validators sign an EIP-712 `ChallengeVerdict`; an upheld challenge flags the collectible and drops that skill solve from `isValid`. After the window, `finalize` confirms an unchallenged record. The mechanism, deploy script, demo commands, and trust assumptions are in [`docs/challenge-window.md`](docs/challenge-window.md).

@@ -51,6 +51,11 @@ contract AxVigilSkill is IERC5192, IERC165, IAxVigilSkill, AccessControl {
         uint32[3] solvesPerClass;
         uint64 firstSolveAt;
         uint64 lastSolveAt;
+        /// @notice Solves whose challenge window has closed in favour of the agent.
+        uint32 finalizedSolves;
+        /// @notice Solves recorded by mint and not yet confirmed or slashed. Per class.
+        uint32[3] pendingPerClass;
+        uint32[3] finalizedPerClass;
     }
 
     IAgentRegistry public immutable agentRegistry;
@@ -68,6 +73,8 @@ contract AxVigilSkill is IERC5192, IERC165, IAxVigilSkill, AccessControl {
     /// @dev ERC-721 Transfer, emitted on record creation (from 0) and revoke (to 0).
     event Transfer(address indexed from, address indexed to, uint256 indexed tokenId);
     event SolveRecorded(uint256 indexed agentId, uint8 vulnClass, uint8 difficulty, uint32 totalSolves);
+    event SolveConfirmed(uint256 indexed agentId, uint8 vulnClass, uint32 finalizedSolves);
+    event SolveRevoked(uint256 indexed agentId, uint8 vulnClass, uint32 totalSolves);
     event Revoked(uint256 indexed agentId, string reason);
 
     error Soulbound();
@@ -76,6 +83,7 @@ contract AxVigilSkill is IERC5192, IERC165, IAxVigilSkill, AccessControl {
     error InvalidVulnClass(uint8 vulnClass);
     error InvalidDifficulty(uint8 difficulty);
     error BalanceUnsupported();
+    error NoPending(uint256 agentId);
 
     constructor(IAgentRegistry registry, address admin) {
         agentRegistry = registry;
@@ -108,12 +116,43 @@ contract AxVigilSkill is IERC5192, IERC165, IAxVigilSkill, AccessControl {
         }
 
         r.solvesPerClass[vulnClass] += 1;
+        r.pendingPerClass[vulnClass] += 1;
         r.totalSolves += 1;
         r.classMask |= uint8(1 << vulnClass);
         if (difficulty > r.maxDifficulty) r.maxDifficulty = difficulty;
         r.lastSolveAt = uint64(block.timestamp);
 
         emit SolveRecorded(agentId, vulnClass, difficulty, r.totalSolves);
+    }
+
+    /// @notice Count one pending solve as final. `isValid` stays false until this runs
+    ///         (immediately, when the collectible has no challenge book or the window is 0).
+    function confirmSolve(uint256 agentId, uint8 vulnClass) external override onlyRole(MINTER_ROLE) {
+        if (vulnClass >= NUM_CLASSES) revert InvalidVulnClass(vulnClass);
+        Record storage r = _records[agentId];
+        if (!r.exists || r.revoked) return;
+        if (r.pendingPerClass[vulnClass] == 0) revert NoPending(agentId);
+        r.pendingPerClass[vulnClass] -= 1;
+        r.finalizedPerClass[vulnClass] += 1;
+        r.finalizedSolves += 1;
+        emit SolveConfirmed(agentId, vulnClass, r.finalizedSolves);
+    }
+
+    /// @notice Drop one pending solve after an upheld challenge. Does not set the admin
+    ///         `revoked` flag, so a later honest mint for this Agent ID can still record.
+    ///         No-ops if an admin already wiped the record, so a bond payout cannot stick.
+    function revokeSolve(uint256 agentId, uint8 vulnClass) external override onlyRole(MINTER_ROLE) {
+        if (vulnClass >= NUM_CLASSES) revert InvalidVulnClass(vulnClass);
+        Record storage r = _records[agentId];
+        if (!r.exists || r.revoked) return;
+        if (r.pendingPerClass[vulnClass] == 0) revert NoPending(agentId);
+        r.pendingPerClass[vulnClass] -= 1;
+        r.solvesPerClass[vulnClass] -= 1;
+        r.totalSolves -= 1;
+        if (r.solvesPerClass[vulnClass] == 0) {
+            r.classMask = uint8(r.classMask & ~uint8(1 << vulnClass));
+        }
+        emit SolveRevoked(agentId, vulnClass, r.totalSolves);
     }
 
     /// @notice Revoke an agent's skill record, with a public reason. Permanent for this contract:
@@ -207,6 +246,13 @@ contract AxVigilSkill is IERC5192, IERC165, IAxVigilSkill, AccessControl {
 
     function isRevoked(uint256 agentId) external view returns (bool) {
         return _records[agentId].revoked;
+    }
+
+    /// @notice True when the record exists, was not admin-revoked, and at least one solve
+    ///         has been confirmed. Pending and fully slashed records are excluded.
+    function isValid(uint256 agentId) external view returns (bool) {
+        Record storage r = _records[agentId];
+        return r.exists && !r.revoked && r.finalizedSolves > 0;
     }
 
     /// @notice Solve count for one vulnerability class.

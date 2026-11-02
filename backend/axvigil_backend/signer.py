@@ -32,6 +32,13 @@ _MINT_TYPES = {
 # Public alias — the single source of truth for the EIP-712 MintAuth encoding,
 # reused by the mint_auth CLI so there is only one definition in the repo.
 MINT_AUTH_TYPES = _MINT_TYPES
+_VERDICT_TYPES = {
+    "ChallengeVerdict": [
+        {"name": "tokenId", "type": "uint256"},
+        {"name": "upheld", "type": "bool"},
+        {"name": "reasonHash", "type": "bytes32"},
+    ]
+}
 DOMAIN_NAME = "AxVigil"
 DOMAIN_VERSION = "1"
 
@@ -146,6 +153,21 @@ class AuthSigner:
         out = dict(msg)
         out["submissionHash"] = message["submissionHash"] if str(message["submissionHash"]).startswith("0x") else "0x" + message["submissionHash"]
         return SignedAuth("mint", out, sig, self.address, digest)
+
+    def sign_verdict(self, *, token_id: int, upheld: bool, reason_hash: str) -> SignedAuth:
+        """Sign ChallengeVerdict for the challenge book (this signer's verifying contract)."""
+        msg = {
+            "tokenId": int(token_id),
+            "upheld": bool(upheld),
+            "reasonHash": _b32(reason_hash),
+        }
+        sig, digest = self._sign(_VERDICT_TYPES, msg)
+        out = {
+            "tokenId": int(token_id),
+            "upheld": bool(upheld),
+            "reasonHash": reason_hash if str(reason_hash).startswith("0x") else "0x" + reason_hash,
+        }
+        return SignedAuth("verdict", out, sig, self.address, digest)
 
 
 def _b32(h: str) -> bytes:

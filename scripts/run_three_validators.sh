@@ -15,6 +15,9 @@ ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 : "${VERIFYING_CONTRACT:?}"
 export CHAIN_ID="${CHAIN_ID:-97}"
 export RECHECK="${RECHECK:-1}"
+# CHALLENGE_CONTRACT is the book that verifies ChallengeVerdict. /sign ignores it.
+export CHALLENGE_CONTRACT="${CHALLENGE_CONTRACT:-}"
+export AXV_ALLOW_TEST_GRADE="${AXV_ALLOW_TEST_GRADE:-}"
 export PYTHONPATH="${ROOT}/backend:${ROOT}/verifier:${ROOT}/variantgen"
 pids=()
 start() {
