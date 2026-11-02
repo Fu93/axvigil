@@ -41,6 +41,12 @@
   var ZH = {
     "skip": "跳至主要內容",
     "nav.road": "路線",
+    "sec.home": "[:首頁]",
+    "sec.problem": "[:問題]",
+    "sec.how": "[:如何]",
+    "sec.proof": "[:證明]",
+    "sec.road": "[:路線]",
+    "sec.faq": "[:問答]",
     "nav.faq": "問答",
     "cta.records": "看鏈上紀錄",
     "cta.scan": "在 BscScan 查驗 ↗",

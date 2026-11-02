@@ -73,7 +73,7 @@
     });
   }
 
-  var revealSelector = ".hero-copy, .stat, .bracket, h2, .lede, .card, .sources li, .note, .recompute, .timeline li, .faq details, .chips, .close .hero-actions";
+  var revealSelector = ".hero-copy, .stat, .sec-top, h2, .lede, .card, .sources li, .note, .recompute, .timeline li, .faq details, .chips, .close .hero-actions";
   var revealNodes = Array.prototype.filter.call(document.querySelectorAll(revealSelector), function (node) {
     return !(node.parentElement && node.parentElement.closest(revealSelector));
   });

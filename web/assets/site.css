@@ -135,6 +135,7 @@ html[lang="zh-Hant"] .bracket { text-transform: none; letter-spacing: 0.04em; }
   border-radius: 18px;
   background: rgba(28, 29, 26, 0.72);
   border: 1px solid rgba(239, 238, 236, 0.14);
+  -webkit-backdrop-filter: blur(16px) saturate(1.2);
   backdrop-filter: blur(16px) saturate(1.2);
   color: #efeeec;
   box-shadow: 0 16px 40px -28px rgba(0, 0, 0, 0.8);
@@ -618,7 +619,8 @@ footer { padding: 48px 0 32px; }
   .hero-layout, .stats { width: min(var(--max), calc(100% - 28px)); }
   .site-header { left: 8px; right: 8px; top: 8px; }
   .hero { padding-top: 112px; padding-bottom: 48px; }
-  .hero h1 { font-size: clamp(2.2rem, 9.6vw, 3.15rem); max-width: none; line-height: 1.14; }
+  .hero h1, .hero .zh-line.display { font-size: clamp(2.2rem, 9.6vw, 3.15rem); max-width: none; line-height: 1.14; }
+  .hero .zh-line.display { line-height: 1.2; font-weight: 700; letter-spacing: 0; }
   .hero h1 span + span { margin-top: 0.14em; }
   .hero-sub { margin-top: 18px; }
   .hero-actions { flex-direction: column; align-items: flex-start; gap: 16px; }
@@ -795,20 +797,16 @@ html.motion .steps.line-in::before {
 }
 
 /* v2 sections, drawn in the v1 type and yellow. */
-.zh-line {
-  display: none;
-  margin-top: 16px;
-  font-weight: 700;
-  font-size: clamp(1.5rem, 3vw, 2.35rem);
-  line-height: 1.2;
-  letter-spacing: 0;
-  color: var(--ink);
-}
+.zh-line { display: none; margin-top: 12px; color: var(--ink); }
 html[lang="zh-Hant"] .zh-line { display: block; }
-.eyebrow { font-family: var(--mono); font-size: 0.72rem; letter-spacing: 0.14em; text-transform: uppercase; color: var(--faint); margin: 0 0 16px; }
-html[lang="zh-Hant"] .eyebrow { text-transform: none; letter-spacing: 0.04em; }
-h2.display { font-size: clamp(2.4rem, 5vw, 4.4rem); max-width: 16ch; }
-.lede { margin-top: 18px; max-width: 62ch; font-size: 1.08rem; }
+.hero .zh-line.display {
+  font-size: clamp(3.4rem, 6.4vw, 6.5rem);
+  max-width: 12em;
+  line-height: 1.12;
+  font-weight: 700;
+  letter-spacing: 0;
+  text-transform: none;
+}
 .hero-copy { position: relative; z-index: 2; }
 .stats.stat-strip { grid-template-columns: repeat(4, minmax(0, 1fr)) auto; align-items: end; }
 .stat-strip .chip {
@@ -824,7 +822,7 @@ h2.display { font-size: clamp(2.4rem, 5vw, 4.4rem); max-width: 16ch; }
   padding: 5px 10px;
   font-family: var(--mono);
   font-size: 0.66rem;
-  letter-spacing: 0.1em;
+  letter-spacing: 0.08em;
   text-transform: uppercase;
   color: var(--faint);
 }
@@ -887,7 +885,17 @@ pre {
 code { font-family: var(--mono); font-size: 0.78rem; white-space: pre-wrap; overflow-wrap: anywhere; }
 .faq { margin-top: 8px; border-top: 1px solid var(--line); }
 .faq details { border-bottom: 1px solid var(--line); }
-.faq summary { cursor: pointer; font-weight: 800; letter-spacing: -0.03em; font-size: 1.25rem; padding: 16px 0; list-style: none; }
+.faq summary {
+  cursor: pointer;
+  font-family: var(--sans);
+  font-weight: 800;
+  letter-spacing: -0.04em;
+  text-transform: uppercase;
+  font-size: clamp(1.2rem, 2vw, 1.7rem);
+  padding: 16px 0;
+  list-style: none;
+}
+html[lang="zh-Hant"] .faq summary { text-transform: none; letter-spacing: 0; }
 .faq summary::-webkit-details-marker { display: none; }
 .faq details p { padding: 0 0 16px; max-width: 68ch; color: var(--muted); }
 .close { max-width: none; }
