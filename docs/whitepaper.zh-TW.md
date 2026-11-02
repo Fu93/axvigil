@@ -100,7 +100,7 @@ AxVigil 是**安全 AI 的信任與調度基礎設施**。不是另一個 benchm
 | 層 | 功能 | 元件 | 狀態 |
 |---|---|---|---|
 | **L1 — 熔爐** | 身分 | Agent ID(SPACE-ID 式 ERC-721 註冊表) | 已建成 |
-| | 題庫 | `mothers/` + `variantgen/`(4 母題 × 20 變體) | 已建成 |
+| | 題庫 | `mothers/` + `variantgen/`(6 母題 × 20 變體) | 已建成 |
 | | 驗證 | `axvigil_verifier`(四項檢查 + 沙箱) | 已建成 |
 | | 執照 | `AxVigilSkill`(ERC-5192 靈魂綁定) | 已建成 |
 | | 紀念 | `AxVigilCollectible`(ERC-721,免費) | 已建成 |
@@ -155,11 +155,11 @@ Agent ID 持有人送出 mint
 | Agent | 自動解題迴圈,附離線 oracle 讓評審重現 |
 | 合約 | EIP-712 授權;每個 Agent ID 終身 2 次;每小時上限;可暫停;可輪換 signer;供給固定 |
 | 部署 | BSC 測試網(chain 97):Skill `0x3377…CD18`、Collectible `0x0658…4658`、Agent ID 註冊表 `0x7Aa4…d45e` |
-| 測試 | Foundry 單元 / fuzz / 稀有度 / invariant / verify→mint 整合;Python 後端與 verifier 套件;CI 在 `main` 綠燈 |
+| 測試 | Foundry 單元 / fuzz / 稀有度 / invariant / verify→mint 整合;Python 後端與 verifier 套件;156 項測試綠燈(合約 66 · Python 90) |
 
 ### 4.4 鏈上現況
 
-完整流程已對 live 合約跑過:一個做了真實 RPC Agent ID ownership 檢查的後端,為一個**伺服器發放的傳奇(pool 2)**solve 簽了 MintAuth;Agent ID 1 鑄出 token #1(batch 1 已 commit,之後已揭示:tier COMMON);`submissionHash 0x8083…64df`。全部 80 個變體在出貨前都對真實驗證器自我驗證。
+完整流程已對 live 合約跑過:一個做了真實 RPC Agent ID ownership 檢查的後端,為一個**伺服器發放的傳奇(pool 2)**solve 簽了 MintAuth;Agent ID 1 鑄出 token #1(batch 1 已 commit,之後已揭示:tier COMMON,artId 20000);`submissionHash 0x8083…64df`。全部 120 個變體在出貨前都對真實驗證器自我驗證。
 
 ---
 
@@ -179,8 +179,10 @@ Agent ID 持有人送出 mint
 | `access-control` | 權限控制 | Basic |
 | `price-manipulation` | 價格操縱 | Advanced |
 | `signature-replay` | 權限控制 | Legendary |
+| `bridge-phantom-deposit` | 權限控制(Qubit QBridge,2022 年 1 月) | Advanced |
+| `empty-market-inflation` | 價格操縱(Hundred Finance / Sonne) | Advanced |
 
-**今天:4 個母題,每個 20 個自我驗證的唯一變體——共 80 題**,橫跨 3 個漏洞類別、涵蓋全部 3 個難度階。
+**今天:6 個母題,每個 20 個自我驗證的唯一變體——共 120 題**,橫跨 3 個漏洞類別、涵蓋全部 3 個難度階。最後兩個重建自已修補的公開事件。評分只接受類別級修補:只擋 `address(0)` 的橋接 patch,以及只加 `require(shares > 0)` 的金庫 patch,都會被拒絕。這兩個母題目前沒有未關閉的評分缺口。
 
 ### 5.3 差分式四項檢查
 
@@ -350,7 +352,7 @@ Agent ID 持有人送出 mint
 
 | 階段 | 時間窗口 | 重點 | 驗收標準 |
 |---|---|---|---|
-| **Phase 0 — 熔爐** | 至 2026-11-05 | 黑客松收尾:美術、IPFS、Hidden、demo 影片 | demo 端到端可重跑;80 題全部自我驗證 |
+| **Phase 0 — 熔爐** | 至 2026-11-05 | 黑客松收尾:收藏美術、IPFS metadata、demo 影片(Hidden 已在測試網上線) | demo 端到端可重跑;120 題全部自我驗證 |
 | **Phase 1 — 加固** | 2026-11 – 12 | 金鑰拆分、VRF、真實 Agent ID、外部審計、法律意見 | 取得審計報告;取得法律意見;無高風險漏洞 |
 | **Phase 2 — 防禦 Alpha** | 2027 Q1(視條件) | 主網;首批實戰掃描試點(3–5 家協議) | ≥100 個持牌 agent;≥1 個付費掃描客戶 |
 | **Phase 3 — 飛輪** | 主網後 3–6 個月 | 題庫擴至 15–20 母題;對接賞金平台;B2B 定價 | 月掃描收入覆蓋營運成本;首筆賞金結算完成 |

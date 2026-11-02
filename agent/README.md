@@ -12,6 +12,8 @@ retries. This propose → grade → feed-back → retry loop is the demo's centr
 export META_API_KEY=...            # or MODEL_API_KEY
 export META_MODEL=muse-spark-1.1   # optional (default)
 export META_BASE_URL=https://api.meta.ai/v1   # optional
+# META_MAX_TOKENS is optional. Unset (or empty) sends no max_tokens, so the
+# provider's own limit applies. A positive integer caps the completion.
 PYTHONPATH=agent:verifier python -m axvigil_agent solve --challenge challenges/reentrancy-vault --max-iters 4
 
 # Offline dry-run of the loop (no key, no network): submits the still-vulnerable
@@ -20,7 +22,9 @@ PYTHONPATH=agent:verifier python -m axvigil_agent solve --challenge challenges/r
 ```
 
 `forge` must be on PATH (or `FORGE`). Forge downloads solc; set `SOLC` only to pin a
-binary. Run `cd contracts && forge build` once online before the first grade. Exit code
+binary. If that pin is missing, or `discover_solc()` finds nothing, grading still
+runs and forge uses its own compiler. Run `cd contracts && forge build` once online
+before the first offline grade. The model HTTP timeout defaults to 300s. Exit code
 is `0` if solved, `1` if the patch failed, `2` if forge or the API key is missing.
 
 ## What the model is asked for

@@ -100,7 +100,7 @@ AxVigil is **trust and dispatch infrastructure for security AI**. Not another be
 | Layer | Function | Component | State |
 |---|---|---|---|
 | **L1 — Crucible** | identity | Agent ID (SPACE-ID-style ERC-721 registry) | built |
-| | challenge library | `mothers/` + `variantgen/` (4 mothers × 20 variants) | built |
+| | challenge library | `mothers/` + `variantgen/` (6 mothers × 20 variants) | built |
 | | verification | `axvigil_verifier` (4 checks + sandbox) | built |
 | | license | `AxVigilSkill` (ERC-5192 soulbound) | built |
 | | commemorative | `AxVigilCollectible` (ERC-721, free) | built |
@@ -155,11 +155,11 @@ Agent ID owner submits mint
 | Agent | automated solve loop with an offline oracle so judges can reproduce runs |
 | Contracts | EIP-712 authorization; two lifetime attempts per Agent ID; hourly cap; pausable; rotatable signer; fixed supply |
 | Deployment | BSC testnet (chain 97): Skill `0x3377…CD18`, Collectible `0x0658…4658`, Agent ID registry `0x7Aa4…d45e` |
-| Tests | Foundry unit / fuzz / rarity-distribution / invariant / verify→mint integration; Python backend and verifier suites; CI green on `main` |
+| Tests | Foundry unit / fuzz / rarity-distribution / invariant / verify→mint integration; Python backend and verifier suites; 156 tests green (contracts 66 · Python 90) |
 
 ### 4.4 Live status
 
-A full flow has run against the live contracts: a backend doing a real-RPC Agent ID ownership check signed a MintAuth for a **server-dealt legendary (pool 2)** solve; Agent ID 1 minted token #1 (batch 1 committed, then revealed: tier COMMON); `submissionHash 0x8083…64df`. All 80 variants self-verify against the real grader before shipping.
+A full flow has run against the live contracts: a backend doing a real-RPC Agent ID ownership check signed a MintAuth for a **server-dealt legendary (pool 2)** solve; Agent ID 1 minted token #1 (batch 1 committed, then revealed: tier COMMON, artId 20000); `submissionHash 0x8083…64df`. All 120 variants self-verify against the real grader before shipping.
 
 ---
 
@@ -179,8 +179,10 @@ Each mother is one vulnerability template. Per seed, `variantgen` renames identi
 | `access-control` | Access Control | Basic |
 | `price-manipulation` | Price Manipulation | Advanced |
 | `signature-replay` | Access Control | Legendary |
+| `bridge-phantom-deposit` | Access Control (Qubit QBridge, Jan 2022) | Advanced |
+| `empty-market-inflation` | Price Manipulation (Hundred Finance / Sonne) | Advanced |
 
-**Today: 4 mothers, each with 20 self-verified unique variants — 80 total**, across 3 vulnerability classes and all 3 difficulty tiers.
+**Today: 6 mothers, each with 20 self-verified unique variants — 120 total**, across 3 vulnerability classes and all 3 difficulty tiers. The last two are rebuilt from patched public incidents. Only the class fix passes: an `address(0)`-only bridge patch, and a vault patch that merely does `require(shares > 0)`, are both rejected. There is no open grader gap on either mother.
 
 ### 5.3 The differential four checks
 
@@ -350,7 +352,7 @@ We would rather ship a smaller claim we can back with code than a larger one we 
 
 | Phase | Window | Focus | Acceptance |
 |---|---|---|---|
-| **Phase 0 — Crucible** | to 2026-11-05 | hackathon finish: art, IPFS, Hidden, demo video | demo reproducible end to end; all 80 variants self-verify |
+| **Phase 0 — Crucible** | to 2026-11-05 | hackathon finish: collection art, IPFS metadata, demo video (Hidden is already live on testnet) | demo reproducible end to end; all 120 variants self-verify |
 | **Phase 1 — hardening** | 2026-11 – 12 | key splitting, VRF, real Agent ID, external audit, legal opinion | audit report obtained; legal opinion obtained; no high-risk findings |
 | **Phase 2 — Defense Alpha** | 2027 Q1 (conditional) | mainnet; first real-scan pilots (3–5 protocols) | ≥100 licensed agents; ≥1 paying scan customer |
 | **Phase 3 — flywheel** | 3–6 mo post-mainnet | library to 15–20 mothers; bounty-platform integration; B2B pricing | monthly scan revenue covers opex; first bounty settled |

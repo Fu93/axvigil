@@ -36,10 +36,10 @@ jobs:
         run: forge build
 
       - name: Run fast test suite
-        run: forge test --no-match-test test_productionFullSupply
+        run: forge test --no-match-test test_publicQuotasFillWhenHiddenHits
 
       # Keep the full 7,777-token distribution test explicit and separate from
       # the normal PR suite because it is intentionally resource-intensive.
       - name: Run production distribution test
         if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-        run: forge test --match-test test_productionFullSupply
+        run: forge test --match-test test_publicQuotasFillWhenHiddenHits

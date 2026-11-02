@@ -3,20 +3,22 @@
 Deadline: Meta Global AI Developer Hackathon, 2026-11-04 21:00 ET. Chain: BSC testnet (chainId 97). Whitehat, sandbox only.
 This file is the repo-local contract for the demo. The longer product PRD is not shipped in this repository. The v1.4 asset pipeline addendum is `docs/prd-v1.4-asset-pipeline.md`.
 
-## Monorepo layout (/workspace/axvigil)
+## Monorepo layout
 - contracts/   Foundry project: AxVigilSkill (ERC-5192), AxVigilCollectible (ERC-721), MockAgentID for tests
-- challenges/  3 parent challenges + template variant generator
+- mothers/     six mother templates, 20 self-verified variants each (120)
+- variantgen/  seed variant generator
+- challenges/  two static fixtures: `reentrancy-001` (patch-graded live demo) and `reentrancy-vault` (verifier self-check)
 - verifier/    deterministic sandboxed grader (Python CLI)
-- agent/       Muse Spark solver loop (later; needs Meta API key)
-- backend/     FastAPI: login, start challenge, submit, sign mint authorization (later)
-- web/         static demo page (later)
+- agent/       solve loop (Meta Model API, with an offline oracle)
+- backend/     FastAPI: login, start challenge, submit, sign mint authorization
+- web/         static site; `demo/` is the one-page walkthrough
 
 ## Shared interfaces
 Vuln classes (uint8): 0 REENTRANCY, 1 PRICE_MANIPULATION, 2 ACCESS_CONTROL.
 Difficulty: 0 BASIC, 1 ADVANCED, 2 LEGENDARY.
-Pool: 0 NORMAL, 1 PREMIUM (hard + fast solve).
+Pool: equals difficulty — 0 basic, 1 advanced, 2 legendary.
 
-Verifier result JSON (stdout of `python -m verifier grade ...`):
+Verifier result JSON (stdout of `python -m axvigil_verifier grade ...`):
 { "challengeId": str, "seed": int, "vulnClass": int, "difficulty": int,
   "pocProvesBug": bool, "pocFailsAfterPatch": bool, "hiddenTestsPass": bool,
   "patchWithinLimits": bool, "passed": bool, "solveSeconds": int|null,

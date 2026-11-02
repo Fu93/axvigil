@@ -44,8 +44,11 @@ contract HiddenTest is Test {
         vm.prank(alice);
         treasury.fzzDeposit{value: 1 ether}();
 
+        // Any revert is a refusal. The role name is chosen per seed and the
+        // vulnerable source has no access-check string, so a correct fix that
+        // reverts with "not <role>" (or a custom error) must still pass.
         vm.prank(bob);
-        vm.expectRevert(bytes("not owner"));
+        vm.expectRevert();
         treasury.fzzAdmin(bob);
     }
 }

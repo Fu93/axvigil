@@ -80,7 +80,7 @@ python3 -m pip install -r backend/requirements.txt
 git submodule update --init --recursive
 cd contracts
 forge build          # downloads solc 0.8.28; do this once while online
-forge test --no-match-test test_productionFullSupply
+forge test --no-match-test test_publicQuotasFillWhenHiddenHits
 ```
 
 `forge` is enough of a Solidity compiler. Set `SOLC` only to pin a binary. If a new shell cannot find `forge`, add `$HOME/.foundry/bin` to `PATH`.
@@ -95,8 +95,10 @@ PYTHONPATH=agent:verifier python3 -m axvigil_agent solve \
 The full production-supply distribution test mints and reveals all 7,777 tokens and is intentionally heavier:
 
 ```bash
-forge test --match-test test_productionFullSupply
+forge test --match-test test_publicQuotasFillWhenHiddenHits
 ```
+
+`scripts/test_all.sh` runs the Foundry suite (including that full-supply test) plus the Python packages. Last green run: 156 tests (contracts 66 · Python 90).
 
 See [`contracts/README.md`](contracts/README.md) for the contract interface, deployment parameters, rarity rules, limitations and BSC testnet deployment instructions.
 
@@ -153,7 +155,7 @@ That superseded bytecode never drew Hidden. AxVigilSkill `0xF572376A24467F5a70D0
 
 ### Original deployment (pre-PR #4, superseded)
 
-The first public testnet deployment (now superseded) is below. The deployment uses the demo-only `MockAgentID` registry and a 50 mint-per-hour cap. No seed batch was committed yet, so the owner must commit a seed before a mint can be demonstrated.
+The first public testnet deployment (now superseded) is below. The deployment uses the demo-only `MockAgentID` registry and a 50 mint-per-hour cap. Its live demo did commit a batch, mint token `1`, and reveal it (details under the table).
 
 | Contract | Address | Explorer |
 |---|---|---|
@@ -167,7 +169,7 @@ The collection art plan is documented in [`docs/prd-v1.4-asset-pipeline.md`](doc
 
 On that previous deployment, the first live demo completed: verifier `reentrancy-001` passed, Agent ID `1` was created, and Collectible token `1` was minted to the deployer. `AxVigilSkill.totalSolves(1)` was `1` and `currentBatch` was `1`. Those transactions are [commit seed](https://testnet.bscscan.com/tx/0x493ac2cb71504cb643f95c8e1b3a2a7dd53cc33e95428d6cc8297138e100155b), [create Agent ID](https://testnet.bscscan.com/tx/0xc125505638e6562e965977610cbad7a0cfc6f3579c38f3660c24a578a73f5ecd), and [mint collectible](https://testnet.bscscan.com/tx/0xf78ae69add796a107302aaafc178c0b45c4c5936ebcb5ebe47c58f3836b14fce). The reusable script is [`contracts/script/BscLiveDemo.s.sol`](contracts/script/BscLiveDemo.s.sol); its seed is generated and retained locally, never committed.
 
-That previous token `1` was revealed as `REENTRANCY`, tier `COMMON`, with `artId = 0`. The [seed reveal transaction](https://testnet.bscscan.com/tx/0x4a0cb0039cd88c8573cab7bd30a909c2d601036f2607b516dc62abe34f407733) and [token reveal transaction](https://testnet.bscscan.com/tx/0xe17d8f2ea32ee87698bc5367aca087ebb12a841083cd2416111aea525dba6401) are under `previous` in the deployment manifest. The new contract’s token `1` has not been revealed.
+That original token `1` was revealed as `REENTRANCY`, tier `COMMON`, with `artId = 0`. The [seed reveal transaction](https://testnet.bscscan.com/tx/0x4a0cb0039cd88c8573cab7bd30a909c2d601036f2607b516dc62abe34f407733) and [token reveal transaction](https://testnet.bscscan.com/tx/0xe17d8f2ea32ee87698bc5367aca087ebb12a841083cd2416111aea525dba6401) are under `previous.previous` in the deployment manifest. The current deployment's token `1` was revealed as tier **COMMON**, artId `20000` (see above).
 
 Once a result has `passed: true`, the backend bridge binds its `submissionHash` into the contract's EIP-712 authorization:
 

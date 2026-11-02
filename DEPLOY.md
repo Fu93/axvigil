@@ -12,7 +12,9 @@ Two paths: a **local devnet** (anvil) that needs nothing external, and **BSC tes
 
 Proves deploy → two mints (the lifetime cap, 1:1 with skill solves) → commit-reveal → tier draw, all on a
 live chain, with no faucet and no network. A third mint reverts. The script deploys the current
-contracts; the already-live BSC testnet addresses do not have this cap pairing or the three-pool ladder.
+contracts. The live BSC testnet deployment already runs this pairing: 2 mints per Agent ID, the
+three-pool ladder (pool equals difficulty), and Hidden drawable only from pool 2 at a fixed 0.25%
+(`HIDDEN_CHANCE_BPS` 25, cap 30). See [`deployments/bsc-testnet-97.json`](deployments/bsc-testnet-97.json).
 
 ```bash
 # 1. a local chain at BSC testnet's chainId

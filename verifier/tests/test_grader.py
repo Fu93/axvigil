@@ -175,6 +175,9 @@ def test_hidden_failure_hints_without_naming_tests(tmp_path):
     res = _grade(sub)
     assert res.hiddenTestsPass is False, res.log
     assert HIDDEN_FAIL_HINT in res.log
+    assert "keep the fix minimal" not in res.log
+    assert "code.length" not in HIDDEN_FAIL_HINT
+    assert "address(0)" not in HIDDEN_FAIL_HINT
     hidden = (CH / "test" / "Hidden.t.sol").read_text()
     for line in hidden.splitlines():
         stripped = line.strip()

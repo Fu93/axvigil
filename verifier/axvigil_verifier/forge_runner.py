@@ -102,6 +102,22 @@ def _foundry_toml(forge_std: Path, oz: Path, solc: str | None) -> str:
     return "\n".join(lines) + "\n"
 
 
+def forge_test_command(
+    forge_bin: str, match_path: str, solc: str | None, fuzz_seed: int,
+) -> list[str]:
+    """forge test argv. A missing solc path is not an error: omit ``--use`` and
+    forge runs the compiler from ``solc_version`` (its own svm copy)."""
+    cmd = [
+        forge_bin, "test",
+        "--json",
+        "--match-path", match_path,
+        "--fuzz-seed", str(fuzz_seed),
+    ]
+    if solc:
+        cmd += ["--use", solc]
+    return cmd
+
+
 def run_test(
     *,
     sources: dict[str, str],
@@ -137,14 +153,7 @@ def run_test(
             dest.parent.mkdir(parents=True, exist_ok=True)
             dest.write_text(text)
 
-        cmd = [
-            forge_bin, "test",
-            "--json",
-            "--match-path", match_path,
-            "--fuzz-seed", str(fuzz_seed),
-        ]
-        if solc:
-            cmd += ["--use", solc]
+        cmd = forge_test_command(forge_bin, match_path, solc, fuzz_seed)
 
         env = dict(os.environ)
         env["FOUNDRY_OFFLINE"] = "true"

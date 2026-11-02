@@ -28,10 +28,23 @@ def _is_exec(path: Path) -> bool:
 
 
 def discover_solc(version: str = SOLC_VERSION) -> str | None:
-    """Return a solc binary, preferring SOLC, then PATH, then Foundry's svm cache."""
+    """Return a solc binary, or None.
+
+    None is not a failure. Callers must omit ``--use`` so forge runs its own
+    compiler (``solc_version`` / svm). Prefer SOLC, then PATH, then Foundry's
+    svm cache. A set ``SOLC`` that is not an executable is ignored, and the
+    search continues, rather than pinning ``--use`` to a missing file.
+    """
     env = os.environ.get("SOLC")
     if env:
-        return env
+        # A missing pin must not become `forge --use <bad path>`. Fall through
+        # so forge can use the compiler it already has.
+        pinned = Path(env)
+        if _is_exec(pinned):
+            return str(pinned)
+        found_pin = shutil.which(env)
+        if found_pin:
+            return found_pin
     for name in ("solc", f"solc-{version}"):
         found = shutil.which(name)
         if found:

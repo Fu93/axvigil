@@ -25,15 +25,43 @@ class ModelClient(Protocol):
         ...
 
 
+def checked_max_tokens(value: int | None) -> int | None:
+    """A positive completion cap, or None when the request should not set one."""
+    if value is None:
+        return None
+    if isinstance(value, bool) or not isinstance(value, int) or value <= 0:
+        raise ValueError("max_tokens must be a positive integer, or unset for no client limit")
+    return value
+
+
+def max_tokens_from_env() -> int | None:
+    """META_MAX_TOKENS. Unset or empty means the request omits max_tokens."""
+    raw = os.environ.get("META_MAX_TOKENS")
+    if raw is None or raw.strip() == "":
+        return None
+    try:
+        parsed = int(raw.strip())
+    except ValueError as exc:
+        raise ValueError(
+            "META_MAX_TOKENS must be a positive integer, or unset for no client limit"
+        ) from exc
+    return checked_max_tokens(parsed)
+
+
 class MetaModelClient:
-    """Meta Model API client (OpenAI-compatible /chat/completions)."""
+    """Meta Model API client (OpenAI-compatible /chat/completions).
+
+    The HTTP timeout defaults to 300s. ``META_MAX_TOKENS``, when set to a
+    positive integer, is sent as ``max_tokens``; unset means no client cap.
+    """
 
     def __init__(
         self,
         api_key: str | None = None,
         base_url: str | None = None,
         model: str | None = None,
-        timeout_s: int = 120,
+        timeout_s: int = 300,
+        max_tokens: int | None = None,
     ):
         # META_API_KEY is this repo's name. MODEL_API_KEY is accepted because some
         # Meta quickstarts export that name instead.
@@ -41,13 +69,15 @@ class MetaModelClient:
         self.base_url = (base_url or os.environ.get("META_BASE_URL", "https://api.meta.ai/v1")).rstrip("/")
         self.model = model or os.environ.get("META_MODEL", "muse-spark-1.1")
         self.timeout_s = timeout_s
+        # An explicit argument wins. None reads META_MAX_TOKENS (unset = no cap).
+        self.max_tokens = checked_max_tokens(max_tokens) if max_tokens is not None else max_tokens_from_env()
         if not self.api_key:
             raise RuntimeError(
                 "No model API key. Set META_API_KEY (this repo's name) or MODEL_API_KEY "
                 "(accepted alias). For an offline demo, re-run with --oracle."
             )
 
-    def complete(self, system: str, user: str) -> str:
+    def completion_payload(self, system: str, user: str) -> dict:
         payload = {
             "model": self.model,
             "temperature": 0.2,
@@ -56,6 +86,12 @@ class MetaModelClient:
                 {"role": "user", "content": user},
             ],
         }
+        if self.max_tokens is not None:
+            payload["max_tokens"] = self.max_tokens
+        return payload
+
+    def complete(self, system: str, user: str) -> str:
+        payload = self.completion_payload(system, user)
         req = urllib.request.Request(
             f"{self.base_url}/chat/completions",
             data=json.dumps(payload).encode("utf-8"),
