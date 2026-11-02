@@ -134,12 +134,14 @@ class AgenticResult:
     steps: int
     prompt_tokens: int = 0
     completion_tokens: int = 0
+    auto_submitted: bool = False
 
     def evidence(self, protocol: str) -> dict:
         return {
             "kind": "agentic-transcript",
             "protocol": protocol,
             "stopReason": self.stop_reason,
+            "autoSubmitted": self.auto_submitted,
             "steps": self.steps,
             "transcript": self.transcript,
         }
@@ -263,10 +265,12 @@ class ScriptedToolClient:
         self.usage = (int(usage[0]), int(usage[1]))
         self.calls = 0
         self.seen_tools: list = []
+        self.history: list[list[tuple[str, str]]] = []
         self.last_usage = {"prompt": self.usage[0], "completion": self.usage[1]}
 
     def complete_turn(self, messages: list[dict], *, tools: list[dict] | None = None) -> ModelTurn:
         self.seen_tools.append(tools)
+        self.history.append([(str(m.get("role")), str(m.get("content") or "")) for m in messages])
         spec = self.turns[min(self.calls, len(self.turns) - 1)]
         self.calls += 1
         self.last_usage = {"prompt": self.usage[0], "completion": self.usage[1]}
@@ -348,6 +352,37 @@ def _action_call(obj: dict, call_id: str) -> ToolCall:
     return ToolCall(call_id, name, args)
 
 
+def _shrink_tool_history(messages: list[dict], keep_last: int) -> None:
+    """Keep the last few tool results intact and replace earlier ones with one line.
+
+    The evidence transcript stays complete. Only the messages sent back to the
+    model shrink, so a long run does not resend every forge log.
+    """
+    indexes = []
+    for index, message in enumerate(messages):
+        role = message.get("role")
+        content = message.get("content") or ""
+        if role == "tool" or (role == "user" and str(content).startswith("Tool result:")):
+            indexes.append(index)
+    if keep_last < 0:
+        keep_last = 0
+    stale = indexes if keep_last == 0 else indexes[:-keep_last]
+    for index in stale:
+        content = str(messages[index].get("content") or "")
+        if content.startswith("[earlier "):
+            continue
+        messages[index] = {**messages[index], "content": _summarize_tool_output(content)}
+
+
+def _summarize_tool_output(content: str) -> str:
+    first = ""
+    for line in content.splitlines():
+        if line.strip():
+            first = line.strip()[:80]
+            break
+    return f"[earlier tool result, {len(content)} chars] {first}"
+
+
 def trim_output(text: str, limit: int) -> tuple[str, bool]:
     if limit < 1:
         return "", True
@@ -367,7 +402,9 @@ def run_agentic(
     max_steps: int = 10,
     max_output_bytes: int = 4096,
     wall_clock_s: float = 180,
-    token_budget: int = 20000,
+    token_budget: int = 40_000,
+    max_total_output_bytes: int = 262_144,
+    keep_full_results: int = 4,
     forge_runner=None,
     clock=None,
     forge_bin: str = "forge",
@@ -394,18 +431,39 @@ def run_agentic(
             {"role": "user", "content": _opening_user(workspace)},
         ]
         tools = tool_specs() if protocol == "tools" else None
+
+        def _stop(reason: str) -> AgenticResult:
+            nonlocal patch, poc, analysis
+            auto = False
+            if patch is None and reason != "submit" and _autosubmit(
+                workspace, forge_runner, forge_bin=forge_bin, solc=solc,
+                forge_timeout_s=forge_timeout_s,
+            ):
+                patch = workspace.files_written.get("patch")
+                poc = workspace.files_written.get("poc")
+                analysis = workspace.files_written.get("analysis") or ""
+                transcript.append({
+                    "step": step, "tool": "submit", "arguments": {"auto": True},
+                    "ok": True, "malformed": None, "output": "auto-submitted", "truncated": False,
+                })
+                auto = True
+            return AgenticResult(
+                patch=patch, poc=poc, analysis=analysis, transcript=transcript,
+                stop_reason=reason, auto_submitted=auto,
+                steps=len({row["step"] for row in transcript}) if transcript else 0,
+                prompt_tokens=prompt_tokens, completion_tokens=completion_tokens,
+            )
+
         for step in range(1, max_steps + 1):
             if now() - started > wall_clock_s:
-                stop = "wall_clock"
-                break
+                return _stop("wall_clock")
             if prompt_tokens + completion_tokens >= token_budget:
-                stop = "token_budget"
-                break
+                return _stop("token_budget")
+            _shrink_tool_history(messages, keep_full_results)
             try:
                 turn = client.complete_turn(messages, tools=tools)
             except ClientStop:
-                stop = "request_cap"
-                break
+                return _stop("request_cap")
             usage = getattr(client, "last_usage", None) or {}
             prompt_tokens += int(usage.get("prompt") or 0)
             completion_tokens += int(usage.get("completion") or 0)
@@ -417,7 +475,7 @@ def run_agentic(
                     "step": step, "tool": None, "arguments": None, "ok": False,
                     "malformed": "no tool call", "output": note, "truncated": truncated,
                 })
-                messages.append({"role": "user", "content": "No tool call was found. Reply with one tool action."})
+                messages.append({"role": "user", "content": "Tool result:\n" + note})
             else:
                 submitted = False
                 for call in calls:
@@ -438,35 +496,15 @@ def run_agentic(
                         submitted = True
                         break
                 if submitted:
-                    stop = "submit"
-                    break
-            if step == max_steps and patch is None and _autosubmit(
-                workspace, forge_runner, forge_bin=forge_bin, solc=solc,
-                forge_timeout_s=forge_timeout_s,
-            ):
-                patch = workspace.files_written.get("patch")
-                poc = workspace.files_written.get("poc")
-                analysis = workspace.files_written.get("analysis") or ""
-                transcript.append({
-                    "step": step, "tool": "submit", "arguments": {"auto": True},
-                    "ok": True, "malformed": None, "output": "auto-submitted", "truncated": False,
-                })
-                stop = "auto_submit"
-                break
+                    return _stop("submit")
+            produced = sum(len((row.get("output") or "").encode("utf-8")) for row in transcript)
+            if produced > max_total_output_bytes:
+                return _stop("output_bytes")
             if prompt_tokens + completion_tokens >= token_budget:
-                stop = "token_budget"
-                break
+                return _stop("token_budget")
             if now() - started > wall_clock_s:
-                stop = "wall_clock"
-                break
-        else:
-            stop = "max_steps"
-
-    return AgenticResult(
-        patch=patch, poc=poc, analysis=analysis, transcript=transcript,
-        stop_reason=stop, steps=len({row["step"] for row in transcript}) if transcript else 0,
-        prompt_tokens=prompt_tokens, completion_tokens=completion_tokens,
-    )
+                return _stop("wall_clock")
+        return _stop("max_steps")
 
 
 def _calls_for_turn(turn: ModelTurn, protocol: str) -> list[ToolCall]:

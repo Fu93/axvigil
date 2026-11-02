@@ -124,6 +124,7 @@ RUN_FIELDS = (
     "tokens",
     "latencyMs",
     "failedChecks",
+    "attemptChecks",
     "patchDiffLines",
     "ensembleWinner",
     "error",
@@ -134,7 +135,9 @@ SCHEMA = {
     "description": (
         "Arena ledger. ranking is pass rate on completed runs, then fewer "
         "total attempts, then fewer total tokens (prompt + completion). "
-        "Agentic runs add evidence.transcript (tool calls and trimmed results)."
+        "Each run's attemptChecks lists pocProvesBug, pocFailsAfterPatch, "
+        "hiddenTestsPass, and patchWithinLimits for every graded attempt. "
+        "Agentic runs add evidence.transcript and evidence.autoSubmitted."
     ),
     "run": list(RUN_FIELDS),
     "tokens": ["prompt", "completion"],
@@ -371,16 +374,15 @@ def render_summary(doc: dict) -> str:
                 cells.append("—" if not slot else f"{slot['passes']}/{slot['runs']}")
             lines.append(f"| {row['contestantId']} | " + " | ".join(cells) + " |")
     lines.extend(["", "## Runs", ""])
-    lines.append("| Contestant | Mother | Seed | Status | Pass | Attempts | Requests | Tokens | Latency ms | Failed checks | Diff lines |")
+    lines.append("| Contestant | Mother | Seed | Status | Pass | Attempts | Requests | Tokens | Latency ms | Checks | Diff lines |")
     lines.append("|---|---|---|---|---|---|---|---|---|---|---|")
     for run in doc.get("runs") or []:
         tokens = run.get("tokens") or {}
         total = int(tokens.get("prompt") or 0) + int(tokens.get("completion") or 0)
-        failed = ", ".join(run.get("failedChecks") or []) or "—"
         lines.append(
             f"| {run.get('contestantId')} | {run.get('mother')} | {run.get('seed')} | {run.get('status')} | "
             f"{run.get('pass')} | {run.get('attempts')} | {run.get('requests')} | {total} | "
-            f"{run.get('latencyMs')} | {failed} | {run.get('patchDiffLines')} |"
+            f"{run.get('latencyMs')} | {_format_attempt_checks(run)} | {run.get('patchDiffLines')} |"
         )
     lines.append("")
     return "\n".join(lines)
@@ -573,7 +575,7 @@ def run_arena(
     max_steps: int = 10,
     max_output_bytes: int = 4096,
     agent_wall_clock_s: float = 180,
-    token_budget: int = 20000,
+    token_budget: int = 40000,
     forge_runner=None,
 ) -> dict:
     """Run the matrix. ``client_factory(model_id)`` must return a fresh client.
@@ -751,7 +753,7 @@ def _run_cell(
     max_steps: int = 10,
     max_output_bytes: int = 4096,
     agent_wall_clock_s: float = 180,
-    token_budget: int = 20000,
+    token_budget: int = 40000,
     forge_runner=None,
 ) -> dict:
     started = time.perf_counter()
@@ -763,7 +765,7 @@ def _run_cell(
             meta = json.loads((challenge_dir / "challenge.json").read_text())
             target = meta["targetFile"]
             original = (challenge_dir / "src" / target).read_text()
-            solved, winner, cut_short, last_patch, attempts, failed, challenge_id, evidence = _solve_contestant(
+            solved, winner, cut_short, last_patch, attempts, failed, challenge_id, evidence, attempt_checks = _solve_contestant(
                 task.contestant,
                 challenge_dir,
                 seed=task.seed,
@@ -790,6 +792,7 @@ def _run_cell(
             status=status, passed=solved, attempts=attempts, sink=sink,
             latency_ms=_latency(started), failed=failed if not solved else [],
             diff=diff, winner=winner, error=None, evidence=evidence,
+            attempt_checks=attempt_checks,
         )
         emit(
             f"[arena] {task.run_id} status={status} pass={solved} "
@@ -828,20 +831,20 @@ def _run_agentic_member(
     if emit:
         emit(f"[agentic] stop={result.stop_reason} steps={result.steps}")
     if not result.patch or not result.poc:
-        return False, cut, result.patch, [], meta.get("challengeId"), evidence
+        return False, cut, result.patch, [], meta.get("challengeId"), evidence, None
     grade_fn = grader if grader is not None else _live_grade
     res = grade_fn(
         challenge_dir, meta["targetFile"], result.patch, result.poc,
         seed, forge_bin, solc, timeout_s,
     )
-    checks = {
+    checks = _named_checks({
         "pocProvesBug": res.pocProvesBug,
         "pocFailsAfterPatch": res.pocFailsAfterPatch,
         "hiddenTestsPass": res.hiddenTestsPass,
         "patchWithinLimits": res.patchWithinLimits,
-    }
+    })
     failed = [] if res.passed else _failed_checks(checks)
-    return bool(res.passed), cut, result.patch, failed, meta.get("challengeId"), evidence
+    return bool(res.passed), cut, result.patch, failed, meta.get("challengeId"), evidence, checks
 
 
 def _solve_contestant(
@@ -862,7 +865,7 @@ def _solve_contestant(
     max_steps: int = 10,
     max_output_bytes: int = 4096,
     agent_wall_clock_s: float = 180,
-    token_budget: int = 20000,
+    token_budget: int = 40000,
     forge_runner=None,
 ):
     if contestant.strategy == "ensemble":
@@ -883,6 +886,7 @@ def _solve_contestant(
     solved = False
     ran = False
     evidence = None
+    attempt_checks: list[dict] = []
 
     for model in models:
         if budget.exhausted:
@@ -891,7 +895,7 @@ def _solve_contestant(
         raw = client_factory(model)
         metered = _Meter(raw, budget, sink)
         if strategy == "agentic":
-            solved_one, cut_one, patch, failed_one, challenge_id, evidence = _run_agentic_member(
+            solved_one, cut_one, patch, failed_one, challenge_id, evidence, graded = _run_agentic_member(
                 metered, challenge_dir, seed=seed, grader=grader, forge_bin=forge_bin,
                 solc=solc, timeout_s=timeout_s, emit=emit, tool_protocol=tool_protocol,
                 max_steps=max_steps, max_output_bytes=max_output_bytes,
@@ -900,6 +904,8 @@ def _solve_contestant(
             )
             ran = True
             attempts += 1 if patch else 0
+            if graded:
+                attempt_checks.append(graded)
             if patch is not None:
                 last_patch = patch
             failed = failed_one
@@ -924,6 +930,8 @@ def _solve_contestant(
         if outcome.last_patch is not None:
             last_patch = outcome.last_patch
         if outcome.iterations:
+            for it in outcome.iterations:
+                attempt_checks.append(_named_checks(it.checks))
             failed = _failed_checks(outcome.iterations[-1].checks)
         if outcome.stopped:
             cut_short = True
@@ -936,7 +944,23 @@ def _solve_contestant(
             break
     if not ran and cut_short:
         failed = []
-    return solved, winner, cut_short, last_patch, attempts, failed, challenge_id, evidence
+    return solved, winner, cut_short, last_patch, attempts, failed, challenge_id, evidence, attempt_checks
+
+
+def _format_attempt_checks(run: dict) -> str:
+    rows = run.get("attemptChecks") or []
+    if not rows:
+        return "—"
+    rendered = []
+    for checks in rows:
+        rendered.append(" ".join(
+            f"{name}={'yes' if checks.get(name) else 'no'}" for name in CHECK_NAMES
+        ))
+    return " || ".join(rendered)
+
+
+def _named_checks(checks: dict) -> dict:
+    return {name: bool(checks.get(name)) for name in CHECK_NAMES}
 
 
 def _latency(started: float) -> int:
@@ -957,6 +981,7 @@ def _record(
     winner: str | None,
     error: str | None,
     evidence: dict | None = None,
+    attempt_checks: list[dict] | None = None,
 ) -> dict:
     models = list(task.contestant.models) if task.contestant.strategy == "ensemble" else [task.contestant.model]
     return {
@@ -975,6 +1000,7 @@ def _record(
         "tokens": {"prompt": sink.prompt, "completion": sink.completion},
         "latencyMs": latency_ms,
         "failedChecks": list(failed),
+        "attemptChecks": list(attempt_checks or []),
         "patchDiffLines": diff,
         "ensembleWinner": winner,
         "error": error,

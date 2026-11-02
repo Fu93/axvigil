@@ -80,7 +80,7 @@ def _outcome_payload(outcome) -> dict:
 def _cmd_solve_agentic(args, client, challenge_dir: Path) -> int:
     result = run_agentic(
         client, challenge_dir, protocol=args.tool_protocol, max_steps=args.max_steps,
-        token_budget=20_000, forge_bin=_default_forge(), solc=_default_solc(),
+        token_budget=40_000, forge_bin=_default_forge(), solc=_default_solc(),
         forge_timeout_s=args.timeout,
     )
     graded = None
@@ -238,8 +238,8 @@ def main(argv: list[str] | None = None) -> int:
                        help="agentic protocol: tools (OpenAI tool_calls) or json (one action per turn)")
     arena.add_argument("--max-steps", type=int, default=10, dest="max_steps",
                        help="agentic model rounds per challenge")
-    arena.add_argument("--token-budget", type=int, default=20000, dest="token_budget",
-                       help="agentic prompt+completion token budget per challenge")
+    arena.add_argument("--token-budget", type=int, default=40000, dest="token_budget",
+                       help="agentic prompt+completion token budget per challenge (request cap is the hard call limit)")
 
     args = p.parse_args(argv)
     if args.cmd == "arena":

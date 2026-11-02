@@ -98,7 +98,7 @@ The full production-supply distribution test mints and reveals all 7,777 tokens 
 forge test --match-test test_publicQuotasFillWhenHiddenHits
 ```
 
-`scripts/test_all.sh` runs the Foundry suite (including that full-supply test) plus the Python packages. Last green run: 212 tests (contracts 75 · Python 137). One Docker image check is skipped until `axvigil-sandbox:1.8.7` is built. The live server reference-checks a dealt seed before showing it (`AXVIGIL_REFERENCE_CHECK`, default on) and writes an evidence bundle with a local CIDv1 on each grade. The mined signer rotation, batch-2 reveal, and 2-of-3 mint are recorded in [`docs/operator-runbook.md`](docs/operator-runbook.md). Repeating them still needs keys that stay out of git.
+`scripts/test_all.sh` runs the Foundry suite (including that full-supply test) plus the Python packages. Last green run: 215 tests (contracts 75 · Python 140). One Docker image check is skipped until `axvigil-sandbox:1.8.7` is built. The live server reference-checks a dealt seed before showing it (`AXVIGIL_REFERENCE_CHECK`, default on) and writes an evidence bundle with a local CIDv1 on each grade. The mined signer rotation, batch-2 reveal, and 2-of-3 mint are recorded in [`docs/operator-runbook.md`](docs/operator-runbook.md). Repeating them still needs keys that stay out of git.
 
 See [`contracts/README.md`](contracts/README.md) for the contract interface, deployment parameters, rarity rules, limitations and BSC testnet deployment instructions.
 
@@ -254,7 +254,7 @@ PYTHONPATH=agent:verifier:variantgen python -m axvigil_agent arena \
   --summary web/arena_agentic_smoke.md
 ```
 
-Full arena: three baseline models (`muse-spark-1.1`, `1.2`, `1.3`, `--max-iters 3`) plus `muse-spark-1.1:agentic` on all 6 mothers and 1 seed. Worst case is 3 × 6 × 3 = 54 baseline requests plus 6 × 10 = 60 agentic steps, 114 in total.
+Full arena: three baseline models (`muse-spark-1.1`, `1.2`, `1.3`, `--max-iters 3`) plus `muse-spark-1.1:agentic` on all 6 mothers and 1 seed. Worst case is 3 × 6 × 3 = 54 baseline requests plus 6 × 10 = 60 agentic steps, 114 calls. The request cap is the hard limit on model calls. Each agentic run also stops at `--token-budget` 40000 (the default), so the agentic worst case is 6 × 40,000 = 240,000 tokens. Baseline calls have no token cap; at about 3,000 tokens per request they are roughly 160,000 tokens more, about 400,000 tokens for the whole arena.
 
 ```bash
 PYTHONPATH=agent:verifier:variantgen python -m axvigil_agent arena \

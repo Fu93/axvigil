@@ -498,7 +498,9 @@ def test_last_step_autosubmits_when_the_poc_fails_and_public_tests_pass(tmp_path
         {"tool_calls": [{"name": "read_file", "arguments": {"path": "src/Vault.sol"}}]},
     ])
     result = run_agentic(client, challenge, max_steps=2, forge_runner=runner)
-    assert result.stop_reason == "auto_submit"
+    assert result.stop_reason == "max_steps"
+    assert result.auto_submitted is True
+    assert result.evidence("tools")["autoSubmitted"] is True
     assert client.calls == 2
     assert "// FIXED" in result.patch
     assert "test_exploit" in result.poc
@@ -517,7 +519,144 @@ def test_last_step_autosubmits_when_the_poc_fails_and_public_tests_pass(tmp_path
     ])
     left = run_agentic(still_open, challenge, max_steps=1, forge_runner=runner)
     assert left.stop_reason == "max_steps"
+    assert left.auto_submitted is False
     assert left.patch is None
+
+
+def test_every_budget_exit_autosubmits_a_closing_patch(tmp_path):
+    from axvigil_agent.model import ClientStop
+    challenge = _challenge(tmp_path)
+
+    def runner(*, sources, tests, match_test, verbosity, forge_bin, solc, timeout_s):
+        src = "\n".join(sources.values())
+        if "Poc.t.sol" in tests:
+            return _Obs("FIXED" not in src, "poc")
+        return _Obs(True, "public")
+
+    def closing():
+        return [
+            {"tool_calls": [
+                {"name": "apply_patch", "arguments": {"diff": POC_DIFF}},
+                {"name": "replace_in_file", "arguments": {
+                    "path": "src/Vault.sol",
+                    "old": "function withdraw() external {}",
+                    "new": "function withdraw() external {} // FIXED",
+                }},
+            ]},
+            {"tool_calls": [{"name": "read_file", "arguments": {"path": "src/Vault.sol"}}]},
+        ]
+
+    class StopSecond(ScriptedToolClient):
+        def complete_turn(self, messages, *, tools=None):
+            if self.calls >= 1:
+                raise ClientStop("request_cap")
+            return super().complete_turn(messages, tools=tools)
+
+    cases = {
+        "token_budget": dict(
+            client=ScriptedToolClient(closing(), usage=(30_000, 15_000)),
+            token_budget=40_000, max_steps=8,
+        ),
+        "wall_clock": dict(
+            client=ScriptedToolClient(closing()),
+            clock=lambda ticks=iter([0, 0, 100]): next(ticks),
+            wall_clock_s=10, token_budget=10**9, max_steps=8,
+        ),
+        "request_cap": dict(
+            client=StopSecond(closing()),
+            token_budget=10**9, max_steps=8,
+        ),
+        "output_bytes": dict(
+            client=ScriptedToolClient(closing()),
+            max_total_output_bytes=1, token_budget=10**9, max_steps=4,
+        ),
+    }
+    for reason, kwargs in cases.items():
+        result = run_agentic(kwargs.pop("client"), challenge, forge_runner=runner, **kwargs)
+        assert result.stop_reason == reason, reason
+        assert result.auto_submitted is True, reason
+        assert result.evidence("tools")["autoSubmitted"] is True
+        assert "// FIXED" in (result.patch or ""), reason
+
+    missed = run_agentic(
+        ScriptedToolClient([
+            {"tool_calls": [{"name": "read_file", "arguments": {"path": "src/Vault.sol"}}]},
+        ], usage=(50, 50)),
+        challenge, max_steps=4, token_budget=10, forge_runner=runner,
+    )
+    assert missed.stop_reason == "token_budget"
+    assert missed.auto_submitted is False
+    assert missed.patch is None
+
+
+def test_prompt_keeps_only_recent_tool_outputs(tmp_path):
+    challenge = _challenge(tmp_path)
+    client = ScriptedToolClient([
+        {"tool_calls": [{"name": "read_file", "arguments": {"path": "src/Vault.sol"}}]},
+    ])
+    run_agentic(client, challenge, max_steps=6, token_budget=10**9, forge_runner=_runner_factory([]))
+    roles = client.history[-1]
+    earlier = [text for role, text in roles if text.startswith("[earlier ")]
+    full = [text for role, text in roles if role == "tool" and not text.startswith("[earlier ")]
+    assert len(earlier) == 1
+    assert len(full) == 4
+    assert "function withdraw" not in earlier[0]
+
+
+def test_arena_records_named_checks_for_every_attempt(tmp_path):
+    from axvigil_agent.arena import FakeModelClient
+
+    def render(mother, seed, out):
+        out = Path(out)
+        (out / "src").mkdir(parents=True)
+        (out / "src" / "Vault.sol").write_text(SOURCE)
+        (out / "challenge.json").write_text(json.dumps({
+            "challengeId": f"{mother}-{seed}", "targetFile": "Vault.sol", "contractName": "Vault",
+            "vulnClass": 0, "requiredFunctions": ["withdraw"], "pragma": "0.8.28",
+            "limits": {"maxChangedLines": 12, "maxBytes": 6000},
+        }))
+
+    class Grade:
+        def __init__(self, passed):
+            self.passed = passed
+            self.pocProvesBug = True
+            self.pocFailsAfterPatch = passed
+            self.hiddenTestsPass = passed
+            self.patchWithinLimits = True
+            self.log = "ok"
+            self.submissionHash = "0x" + "11" * 32
+
+        def to_json(self):
+            return {"passed": self.passed, "submissionHash": self.submissionHash}
+
+    def grade(challenge_dir, target_file, patch, poc, seed, forge_bin, solc, timeout_s):
+        return Grade("FIXED" in patch)
+
+    def factory(_model):
+        return FakeModelClient([
+            json.dumps({"analysis": "n", "patched_contract": SOURCE, "poc_test": POC}),
+            json.dumps({"analysis": "n", "patched_contract": SOURCE + "// FIXED\n", "poc_test": POC}),
+        ], usage=(2, 1))
+
+    out = tmp_path / "arena_results.json"
+    result = run_arena(
+        [parse_contestant_spec("muse-spark-1.1")],
+        ["reentrancy"], [1],
+        out_path=out, request_cap=6, max_iters=2,
+        client_factory=factory, grader=grade, render_fn=render,
+    )
+    checks = result["runs"][0]["attemptChecks"]
+    names = ["pocProvesBug", "pocFailsAfterPatch", "hiddenTestsPass", "patchWithinLimits"]
+    assert [list(row) for row in checks] == [names, names]
+    assert checks[0]["pocProvesBug"] is True
+    assert checks[0]["pocFailsAfterPatch"] is False
+    assert checks[0]["hiddenTestsPass"] is False
+    assert checks[0]["patchWithinLimits"] is True
+    assert checks[1]["pocFailsAfterPatch"] is True
+    assert checks[1]["hiddenTestsPass"] is True
+    summary = out.with_suffix(".md").read_text()
+    for name in names:
+        assert name in summary
 
 
 def test_trace_command_is_verbose_and_names_only_the_public_test():
