@@ -98,7 +98,7 @@ The full production-supply distribution test mints and reveals all 7,777 tokens 
 forge test --match-test test_publicQuotasFillWhenHiddenHits
 ```
 
-`scripts/test_all.sh` runs the Foundry suite (including that full-supply test) plus the Python packages. Last green run: 209 tests (contracts 75 · Python 134). One Docker image check is skipped until `axvigil-sandbox:1.8.7` is built. The live server reference-checks a dealt seed before showing it (`AXVIGIL_REFERENCE_CHECK`, default on) and writes an evidence bundle with a local CIDv1 on each grade. The mined signer rotation, batch-2 reveal, and 2-of-3 mint are recorded in [`docs/operator-runbook.md`](docs/operator-runbook.md). Repeating them still needs keys that stay out of git.
+`scripts/test_all.sh` runs the Foundry suite (including that full-supply test) plus the Python packages. Last green run: 212 tests (contracts 75 · Python 137). One Docker image check is skipped until `axvigil-sandbox:1.8.7` is built. The live server reference-checks a dealt seed before showing it (`AXVIGIL_REFERENCE_CHECK`, default on) and writes an evidence bundle with a local CIDv1 on each grade. The mined signer rotation, batch-2 reveal, and 2-of-3 mint are recorded in [`docs/operator-runbook.md`](docs/operator-runbook.md). Repeating them still needs keys that stay out of git.
 
 See [`contracts/README.md`](contracts/README.md) for the contract interface, deployment parameters, rarity rules, limitations and BSC testnet deployment instructions.
 
@@ -238,7 +238,7 @@ PYTHONPATH=agent:verifier:variantgen python -m axvigil_agent arena \
 
 The Meta chat-completions API is OpenAI-compatible, so `--tool-protocol tools` (the default) sends a `tools` array and reads `tool_calls`. `--tool-protocol json` does not send `tools`; the model returns one `{"action","arguments"}` object per turn. Use json when a Muse Spark build ignores tool calls. This repo does not probe the live API.
 
-Small live agentic smoke (2 mothers, 1 seed, at most 4 model rounds each, cap 10). Do not commit the key.
+Small live agentic smoke (2 mothers, 1 seed, 10 model rounds each). Worst case is 2 × 10 = 20 requests. Do not commit the key.
 
 ```bash
 export META_API_KEY=...
@@ -246,15 +246,15 @@ PYTHONPATH=agent:verifier:variantgen python -m axvigil_agent arena \
   --contestant muse-spark-1.1:agentic \
   --mothers reentrancy,access-control \
   --seeds 1 \
-  --max-steps 4 \
-  --request-cap 10 \
+  --max-steps 10 \
+  --request-cap 20 \
   --tool-protocol tools \
   --concurrency 1 \
   --out web/arena_agentic_smoke.json \
   --summary web/arena_agentic_smoke.md
 ```
 
-Full arena with a baseline trio plus one agentic contestant. Worst case is about 3 × 6 × 3 baseline requests plus 6 × 6 agentic steps (90). A cap of 120 leaves room for a short retry.
+Full arena: three baseline models (`muse-spark-1.1`, `1.2`, `1.3`, `--max-iters 3`) plus `muse-spark-1.1:agentic` on all 6 mothers and 1 seed. Worst case is 3 × 6 × 3 = 54 baseline requests plus 6 × 10 = 60 agentic steps, 114 in total.
 
 ```bash
 PYTHONPATH=agent:verifier:variantgen python -m axvigil_agent arena \
@@ -265,8 +265,8 @@ PYTHONPATH=agent:verifier:variantgen python -m axvigil_agent arena \
   --mothers reentrancy,price-manipulation,access-control,signature-replay,bridge-phantom-deposit,empty-market-inflation \
   --seeds 1 \
   --max-iters 3 \
-  --max-steps 6 \
-  --request-cap 120 \
+  --max-steps 10 \
+  --request-cap 114 \
   --tool-protocol tools \
   --concurrency 1 \
   --out web/arena_results.json \

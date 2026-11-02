@@ -39,6 +39,7 @@ TOOL_NAMES = (
     "run_tests",
     "forge_trace",
     "apply_patch",
+    "replace_in_file",
     "submit",
 )
 PROTOCOLS = ("tools", "json")
@@ -77,8 +78,14 @@ def tool_specs() -> list[dict]:
            {}, []),
         fn("forge_trace", "forge test -vvvv for one public test function. The name must appear in the PoC or a public test.",
            {"name": {"type": "string", "description": "Public test function name, such as test_exploit."}}, ["name"]),
-        fn("apply_patch", "Apply a unified diff to the target source or poc/Poc.t.sol. Size-limited. Paths outside the workspace are rejected.",
+        fn("apply_patch", "Apply a unified diff to the target source or poc/Poc.t.sol. Wrong hunk line numbers are tolerated. Size-limited.",
            {"diff": {"type": "string", "description": "Unified diff (--- a/path / +++ b/path)."}}, ["diff"]),
+        fn("replace_in_file", "Replace one exact occurrence of old with new in the target source or poc/Poc.t.sol. old must match exactly once.",
+           {
+               "path": path,
+               "old": {"type": "string", "description": "Exact text to replace. Must occur once."},
+               "new": {"type": "string", "description": "Replacement text."},
+           }, ["path", "old", "new"]),
         fn("submit", "Finish. Provide the full patched target and the full PoC, or omit them to submit the workspace copies.",
            {
                "analysis": {"type": "string"},
@@ -96,17 +103,25 @@ def system_prompt(protocol: str) -> str:
         f"Tools: {names}. "
         "The workspace has the vulnerable source and any public tests. "
         "Hidden tests and the reference solution are not available; do not try to read them. "
-        "apply_patch may only touch the target source and poc/Poc.t.sol. "
-        "Call submit when the patch and PoC are ready. "
+        "Edits may only touch the target source and poc/Poc.t.sol. "
+        "Prefer replace_in_file when you can quote the exact old text. "
+        "Do this in as few turns as you can: write the PoC, run_poc (it should pass on the vulnerable code), "
+        "patch the contract, run_poc (it should then fail) and run_tests (they should pass), then submit. "
+        "Batch several tool calls in one turn. Do not spend steps re-reading files you already have. "
         "Forge has no network."
     )
     if protocol == "json":
         return shared + (
-            " Reply with ONLY a JSON object "
-            '{"action": "<tool>", "arguments": { ... }} and no other text. '
-            "One action per reply."
+            " Reply with ONLY JSON. One tool is "
+            '{"action": "<tool>", "arguments": { ... }}. '
+            "Several tools in one turn are "
+            '{"actions": [{"action": "<tool>", "arguments": { ... }}, ...]}. '
+            "No other text."
         )
-    return shared + " Use the provided function tools. Do not wrap tool calls in prose."
+    return shared + (
+        " Use the function tools. Several tool calls in one turn are better than one. "
+        "Do not wrap tool calls in prose."
+    )
 
 
 @dataclass
@@ -295,20 +310,42 @@ def _call_from_spec(item: dict, index: int) -> ToolCall:
     return ToolCall(call_id, name, None, "arguments are not JSON")
 
 
+def parse_json_actions(text: str) -> list[ToolCall]:
+    """One action, or an `actions` list so a JSON turn can batch tools."""
+    try:
+        obj = extract_json(text)
+    except (ValueError, TypeError):
+        return [ToolCall("action", "", None, "malformed tool call")]
+    batch = obj.get("actions")
+    if isinstance(batch, list):
+        calls: list[ToolCall] = []
+        for index, item in enumerate(batch):
+            if not isinstance(item, dict):
+                calls.append(ToolCall(f"action_{index}", "", None, "malformed tool call"))
+                continue
+            calls.append(_action_call(item, f"action_{index}"))
+        return calls or [ToolCall("action", "", None, "malformed tool call")]
+    return [parse_json_action(text)]
+
+
 def parse_json_action(text: str) -> ToolCall:
     try:
         obj = extract_json(text)
     except (ValueError, TypeError):
         return ToolCall("action", "", None, "malformed tool call")
+    return _action_call(obj, "action")
+
+
+def _action_call(obj: dict, call_id: str) -> ToolCall:
     name = obj.get("action") or obj.get("tool")
     if not isinstance(name, str) or not name:
-        return ToolCall("action", "", None, "malformed tool call")
+        return ToolCall(call_id, "", None, "malformed tool call")
     args = obj.get("arguments", {})
     if args is None:
         args = {}
     if not isinstance(args, dict):
-        return ToolCall("action", name, None, "arguments are not a JSON object")
-    return ToolCall("action", name, args)
+        return ToolCall(call_id, name, None, "arguments are not a JSON object")
+    return ToolCall(call_id, name, args)
 
 
 def trim_output(text: str, limit: int) -> tuple[str, bool]:
@@ -327,7 +364,7 @@ def run_agentic(
     challenge_dir: str | Path,
     *,
     protocol: str = "tools",
-    max_steps: int = 6,
+    max_steps: int = 10,
     max_output_bytes: int = 4096,
     wall_clock_s: float = 180,
     token_budget: int = 20000,
@@ -403,6 +440,19 @@ def run_agentic(
                 if submitted:
                     stop = "submit"
                     break
+            if step == max_steps and patch is None and _autosubmit(
+                workspace, forge_runner, forge_bin=forge_bin, solc=solc,
+                forge_timeout_s=forge_timeout_s,
+            ):
+                patch = workspace.files_written.get("patch")
+                poc = workspace.files_written.get("poc")
+                analysis = workspace.files_written.get("analysis") or ""
+                transcript.append({
+                    "step": step, "tool": "submit", "arguments": {"auto": True},
+                    "ok": True, "malformed": None, "output": "auto-submitted", "truncated": False,
+                })
+                stop = "auto_submit"
+                break
             if prompt_tokens + completion_tokens >= token_budget:
                 stop = "token_budget"
                 break
@@ -423,13 +473,13 @@ def _calls_for_turn(turn: ModelTurn, protocol: str) -> list[ToolCall]:
     if protocol == "json":
         if not (turn.text or "").strip():
             return []
-        return [parse_json_action(turn.text)]
+        return parse_json_actions(turn.text)
     if turn.tool_calls:
         return list(turn.tool_calls)
     if (turn.text or "").strip():
-        parsed = parse_json_action(turn.text)
-        if parsed.error is None:
-            return [parsed]
+        parsed = parse_json_actions(turn.text)
+        if parsed and parsed[0].error is None:
+            return parsed
     return []
 
 
@@ -441,7 +491,8 @@ def _opening_user(workspace: Workspace) -> str:
         f"Patch budget: at most {workspace.max_changed_lines} changed lines and "
         f"{workspace.max_bytes} bytes.\n"
         f"Public files:\n{files}\n"
-        "Inspect the source, write poc/Poc.t.sol, patch the target, then submit."
+        "Write the PoC, run it, patch the contract, run_poc and run_tests, then submit. "
+        "Several tools per turn. Do not re-read."
     )
 
 
@@ -486,6 +537,8 @@ def _dispatch(workspace: Workspace, name: str, args: dict, forge_runner, **forge
         return _forge_trace(workspace, args.get("name"), forge_runner, **forge_kw), False
     if name == "apply_patch":
         return _apply_patch(workspace, args.get("diff")), False
+    if name == "replace_in_file":
+        return _replace_in_file(workspace, args), False
     if name == "submit":
         return _submit(workspace, args)
     return f"error: unknown tool {name}", False
@@ -705,37 +758,93 @@ def _parse_hunk(lines: list[str], index: int):
 
 
 def _apply_hunks(original: str, hunks: list[dict]) -> str:
+    """Apply hunks, sliding them when the header line number is wrong.
+
+    A stated count is ignored: the hunk body is what gets matched. Search
+    starts at the header line, then anywhere later in the file. Up to two
+    context lines are dropped from each end (fuzz) if the full context misses.
+    """
     src = original.splitlines(keepends=True)
-    # splitlines drops a trailing empty piece's newline handling: keepends keeps \n.
+    norms = [_norm(line) for line in src]
     out: list[str] = []
-    idx = 0
+    cursor = 0
     for hunk in hunks:
-        start = max(hunk["old_start"] - 1, 0)
-        if hunk["old_start"] == 0:
-            start = 0
-        if start < idx:
+        located = _locate_hunk(norms, hunk, cursor)
+        if located is None:
             raise ValueError("hunk does not apply")
-        out.extend(src[idx:start])
-        idx = start
-        for tag, text in hunk["lines"]:
-            line = text if text.endswith("\n") else text + "\n"
-            if tag == " ":
-                if idx >= len(src) or _norm(src[idx]) != _norm(line):
-                    raise ValueError("hunk does not apply")
-                out.append(src[idx])
-                idx += 1
-            elif tag == "-":
-                if idx >= len(src) or _norm(src[idx]) != _norm(line):
-                    raise ValueError("hunk does not apply")
-                idx += 1
-            elif tag == "+":
-                out.append(line)
-    out.extend(src[idx:])
+        start, end, new_lines = located
+        out.extend(src[cursor:start])
+        out.extend(new_lines)
+        cursor = end
+    out.extend(src[cursor:])
     return "".join(out)
+
+
+def _locate_hunk(norms: list[str], hunk: dict, cursor: int):
+    hint = 0 if hunk["old_start"] == 0 else max(hunk["old_start"] - 1, 0)
+    for fuzz in (0, 1, 2):
+        pattern, replacement = _hunk_pattern(hunk, fuzz)
+        found = _find_pattern(norms, pattern, cursor, hint)
+        if found is not None:
+            start, end = found
+            return start, end, replacement
+    return None
+
+
+def _hunk_pattern(hunk: dict, fuzz: int) -> tuple[list[str], list[str]]:
+    body = hunk["lines"]
+    lead = 0
+    while lead < len(body) and body[lead][0] == " ":
+        lead += 1
+    trail = 0
+    while trail < len(body) - lead and body[-1 - trail][0] == " ":
+        trail += 1
+    drop_lead = min(fuzz, lead)
+    drop_trail = min(fuzz, trail)
+    if drop_trail:
+        kept = body[drop_lead:len(body) - drop_trail]
+    else:
+        kept = body[drop_lead:]
+    pattern = [_norm(text) for tag, text in kept if tag in (" ", "-")]
+    replacement = []
+    for tag, text in kept:
+        if tag in (" ", "+"):
+            replacement.append(text if text.endswith("\n") else text + "\n")
+    return pattern, replacement
+
+
+def _find_pattern(norms: list[str], pattern: list[str], cursor: int, hint: int):
+    if cursor > len(norms):
+        return None
+    if not pattern:
+        at = min(max(hint, cursor), len(norms))
+        return at, at
+    width = len(pattern)
+    best = None
+    best_dist = None
+    last = len(norms) - width
+    for index in range(cursor, last + 1):
+        if norms[index:index + width] == pattern:
+            dist = abs(index - hint)
+            if best is None or dist < best_dist:
+                best = index
+                best_dist = dist
+                if dist == 0:
+                    break
+    if best is None:
+        return None
+    return best, best + width
 
 
 def _norm(line: str) -> str:
     return line[:-1] if line.endswith("\n") else line
+
+
+def _allowed_edit(workspace: Workspace, rel: str) -> str | None:
+    safe, err = _safe_rel(workspace, rel)
+    if err or safe not in {f"src/{workspace.target_file}", "poc/Poc.t.sol"}:
+        return None
+    return safe
 
 
 def _apply_patch(workspace: Workspace, diff) -> str:
@@ -743,35 +852,208 @@ def _apply_patch(workspace: Workspace, diff) -> str:
         return "error: diff is required"
     if len(diff) > _MAX_DIFF_CHARS:
         return "error: diff exceeds the size limit"
+    rels = _diff_rels(diff)
+    if not rels:
+        return "error: diff has no files"
+    if any(_allowed_edit(workspace, rel) is None for rel in rels):
+        return "error: path is outside the workspace"
 
-    def base_for(rel: str):
-        allowed = {f"src/{workspace.target_file}", "poc/Poc.t.sol"}
-        safe, err = _safe_rel(workspace, rel)
-        if err or safe not in allowed:
-            raise ValueError("path is outside the workspace")
-        path = workspace.root / safe
-        if path.is_file():
-            return path.read_text()
-        if safe == "poc/Poc.t.sol":
-            return ""
-        raise ValueError("diff does not match a workspace file")
+    files = _git_apply(workspace, diff, rels)
+    if files is None:
+        def base_for(rel: str):
+            safe = _allowed_edit(workspace, rel)
+            if safe is None:
+                raise ValueError("path is outside the workspace")
+            path = workspace.root / safe
+            if path.is_file():
+                return path.read_text()
+            if safe == "poc/Poc.t.sol":
+                return ""
+            raise ValueError("diff does not match a workspace file")
 
-    try:
-        files = apply_unified_to(base_for, diff)
-    except ValueError as exc:
-        return f"error: {exc}"
+        try:
+            files = apply_unified_to(base_for, diff)
+        except ValueError:
+            return _hunk_mismatch(workspace, diff)
+    return _write_edits(workspace, files)
+
+
+def _replace_in_file(workspace: Workspace, args: dict) -> str:
+    safe = _allowed_edit(workspace, args.get("path") if isinstance(args.get("path"), str) else "")
+    if safe is None:
+        return "error: path is outside the workspace"
+    old = args.get("old")
+    new = args.get("new")
+    if not isinstance(old, str) or old == "":
+        return "error: old is required"
+    if not isinstance(new, str):
+        return "error: new is required"
+    path = workspace.root / safe
+    if path.is_file():
+        text = path.read_text()
+    elif safe == "poc/Poc.t.sol":
+        text = ""
+    else:
+        return "error: file not found"
+    found = text.count(old)
+    if found == 0:
+        return "error: old text not found"
+    if found != 1:
+        return f"error: old text matched {found} times; need a unique match"
+    written = _write_edits(workspace, {safe: text.replace(old, new, 1)})
+    if written.startswith("error:"):
+        return written
+    return "replaced 1 match"
+
+
+def _write_edits(workspace: Workspace, files: dict[str, str]) -> str:
+    staged: dict[str, str] = {}
     for rel, new_text in files.items():
-        safe, err = _safe_rel(workspace, rel)
-        if err or safe is None:
+        safe = _allowed_edit(workspace, rel)
+        if safe is None:
             return "error: path is outside the workspace"
+        if not new_text.endswith("\n") and new_text != "":
+            new_text += "\n"
         if safe.startswith("src/") and len(new_text.encode("utf-8")) > workspace.max_bytes:
             return "error: patched file exceeds the byte limit"
         if safe.startswith("src/") and _changed_lines(workspace.original_target, new_text) > workspace.max_changed_lines:
             return "error: patch exceeds the line budget"
+        staged[safe] = new_text
+    for safe, new_text in staged.items():
         dest = workspace.root / safe
         dest.parent.mkdir(parents=True, exist_ok=True)
-        dest.write_text(new_text if new_text.endswith("\n") or new_text == "" else new_text + "\n")
-    return "applied " + ", ".join(sorted(files))
+        dest.write_text(new_text)
+    return "applied " + ", ".join(sorted(staged))
+
+
+def _autosubmit(workspace: Workspace, forge_runner, **forge_kw) -> bool:
+    """Last-step save: the patch closed the PoC and public tests still pass."""
+    target = workspace.root / "src" / workspace.target_file
+    poc_path = workspace.root / "poc" / "Poc.t.sol"
+    if not target.is_file() or not poc_path.is_file():
+        return False
+    current = target.read_text()
+    if current == workspace.original_target:
+        return False
+    if len(current.encode("utf-8")) > workspace.max_bytes:
+        return False
+    if _changed_lines(workspace.original_target, current) > workspace.max_changed_lines:
+        return False
+    poc_out = _run_poc(workspace, forge_runner, **forge_kw)
+    if not str(poc_out).startswith("pass: false"):
+        return False
+    tests_out = _run_tests(workspace, forge_runner, **forge_kw)
+    if tests_out != "no public tests" and not str(tests_out).startswith("pass: true"):
+        return False
+    workspace.files_written["patch"] = current
+    workspace.files_written["poc"] = poc_path.read_text()
+    workspace.files_written["analysis"] = "auto-submitted on the last step"
+    return True
+
+
+def _diff_rels(diff: str) -> list[str]:
+    rels: list[str] = []
+    for line in diff.replace("\r\n", "\n").splitlines():
+        if line.startswith("--- ") or line.startswith("+++ "):
+            rel = _diff_path(line[4:])
+            if rel:
+                rels.append(rel)
+        elif line.startswith("diff --git "):
+            parts = line.split()
+            if len(parts) >= 4:
+                for item in parts[2:4]:
+                    rel = _diff_path(item)
+                    if rel:
+                        rels.append(rel)
+    # Preserve order, drop duplicates.
+    seen: list[str] = []
+    for rel in rels:
+        if rel not in seen:
+            seen.append(rel)
+    return seen
+
+
+def _git_apply(workspace: Workspace, diff: str, rels: list[str]) -> dict[str, str] | None:
+    """`git apply --recount`, then again with one line of context fuzz (`-C1`)."""
+    if shutil.which("git") is None:
+        return None
+    strip = "1" if _diff_uses_ab_prefix(diff) else "0"
+    with tempfile.TemporaryDirectory(prefix="axv-apply-") as tmp:
+        root = Path(tmp)
+        subprocess.run(["git", "init", "-q"], cwd=root, check=False, capture_output=True)
+        originals: dict[str, str | None] = {}
+        for rel in rels:
+            safe = _allowed_edit(workspace, rel)
+            if safe is None:
+                return None
+            dest = root / safe
+            dest.parent.mkdir(parents=True, exist_ok=True)
+            src = workspace.root / safe
+            if src.is_file():
+                originals[safe] = src.read_text()
+                dest.write_text(originals[safe])
+            else:
+                # A new PoC is created by the diff. Do not pre-create it:
+                # git apply treats /dev/null as "file must not exist yet".
+                originals[safe] = None
+        patch = root / "incoming.diff"
+        patch.write_text(diff if diff.endswith("\n") else diff + "\n")
+        for extra in ([], ["-C1"]):
+            for safe, text in originals.items():
+                dest = root / safe
+                if text is None:
+                    if dest.exists():
+                        dest.unlink()
+                else:
+                    dest.write_text(text)
+            proc = subprocess.run(
+                ["git", "apply", "--recount", "--whitespace=nowarn", f"-p{strip}", *extra, str(patch)],
+                cwd=root, capture_output=True, text=True, check=False,
+            )
+            if proc.returncode == 0 and all((root / safe).is_file() for safe in originals):
+                return {safe: (root / safe).read_text() for safe in originals}
+    return None
+
+
+def _diff_uses_ab_prefix(diff: str) -> bool:
+    for line in diff.splitlines():
+        if line.startswith("--- ") or line.startswith("+++ "):
+            text = line[4:].strip()
+            return text.startswith("a/") or text.startswith("b/") or text.startswith("/dev/null")
+    return True
+
+
+def _hunk_mismatch(workspace: Workspace, diff: str) -> str:
+    """Short failure: the claimed lines, then the file lines around that number."""
+    target = workspace.root / "src" / workspace.target_file
+    text = target.read_text() if target.is_file() else ""
+    file_lines = text.splitlines()
+    hunk = _first_hunk(diff)
+    if hunk is None:
+        return "error: hunk does not apply"
+    claimed = [_norm(line) for tag, line in hunk["lines"] if tag in (" ", "-")][:4]
+    start = hunk["old_start"] if hunk["old_start"] else 1
+    begin = max(start - 1, 1)
+    end = min(begin + 5, len(file_lines))
+    actual = [f"{number}:{file_lines[number - 1]}" for number in range(begin, end + 1)]
+    claimed_s = " | ".join(claimed)[:160]
+    actual_s = " | ".join(actual)[:220]
+    return (
+        f"error: hunk does not apply near line {hunk['old_start']}; "
+        f"claimed: {claimed_s}; actual: {actual_s}"
+    )
+
+
+def _first_hunk(diff: str):
+    lines = diff.replace("\r\n", "\n").splitlines()
+    for index, line in enumerate(lines):
+        if line.startswith("@@"):
+            try:
+                hunk, _ = _parse_hunk(lines, index)
+            except ValueError:
+                return None
+            return hunk
+    return None
 
 
 def default_forge_runner(*, sources, tests, match_test, verbosity, forge_bin, solc, timeout_s):

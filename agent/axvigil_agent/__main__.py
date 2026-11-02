@@ -199,7 +199,7 @@ def main(argv: list[str] | None = None) -> int:
     s.add_argument("--agentic", action="store_true", help="tool-using loop instead of a single JSON patch")
     s.add_argument("--tool-protocol", default="tools", choices=("tools", "json"), dest="tool_protocol",
                    help="tools = OpenAI tool_calls; json = one JSON action per turn")
-    s.add_argument("--max-steps", type=int, default=6, dest="max_steps")
+    s.add_argument("--max-steps", type=int, default=10, dest="max_steps")
 
     arena = sub.add_parser(
         "arena",
@@ -236,7 +236,7 @@ def main(argv: list[str] | None = None) -> int:
     arena.add_argument("--fresh", action="store_true", help="ignore completed rows already in --out")
     arena.add_argument("--tool-protocol", default="tools", choices=("tools", "json"), dest="tool_protocol",
                        help="agentic protocol: tools (OpenAI tool_calls) or json (one action per turn)")
-    arena.add_argument("--max-steps", type=int, default=6, dest="max_steps",
+    arena.add_argument("--max-steps", type=int, default=10, dest="max_steps",
                        help="agentic model rounds per challenge")
     arena.add_argument("--token-budget", type=int, default=20000, dest="token_budget",
                        help="agentic prompt+completion token budget per challenge")

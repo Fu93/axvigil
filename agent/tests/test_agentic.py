@@ -404,6 +404,122 @@ def test_parse_assistant_message_and_client_sends_tools(monkeypatch):
     assert plain.tool_calls[0].arguments == {"analysis": "a"}
 
 
+def test_apply_patch_accepts_a_misnumbered_hunk_and_reports_nearby_lines(tmp_path):
+    padded = "".join(f"// pad {i}\n" for i in range(30)) + SOURCE
+    challenge = _challenge(tmp_path)
+    (challenge / "src" / "Vault.sol").write_text(padded)
+    # Header claims line 1 and 2 old lines. The contract is near line 31 and the
+    # body has three old lines. git apply --recount slides to the real context.
+    drifted = """--- a/src/Vault.sol
++++ b/src/Vault.sol
+@@ -1,2 +1,3 @@
+ contract Vault {
+     function withdraw() external {}
++    // FIXED
+ }
+"""
+    missing = """--- a/src/Vault.sol
++++ b/src/Vault.sol
+@@ -3,1 +3,1 @@
+-function notPresent() external {}
++function stillMissing() external {}
+"""
+    client = ScriptedToolClient([
+        {"tool_calls": [{"name": "apply_patch", "arguments": {"diff": drifted}}]},
+        {"tool_calls": [{"name": "apply_patch", "arguments": {"diff": missing}}]},
+        {"tool_calls": [{"name": "submit", "arguments": {"poc_test": POC}}]},
+    ])
+    result = run_agentic(client, challenge, max_steps=3, forge_runner=_runner_factory([]))
+    assert result.stop_reason == "submit"
+    assert "// pad 0" in result.patch
+    assert "// FIXED" in result.patch
+    failed = result.transcript[1]["output"]
+    assert "does not apply" in failed
+    assert "pad 2" in failed or "pad 1" in failed
+    assert "notPresent" in failed
+    assert "HIDDEN_SENTINEL" not in failed
+
+
+def test_replace_in_file_requires_a_unique_exact_match(tmp_path):
+    challenge = _challenge(tmp_path)
+    client = ScriptedToolClient([
+        {"tool_calls": [{
+            "name": "replace_in_file",
+            "arguments": {
+                "path": "src/Vault.sol",
+                "old": "function withdraw() external {}",
+                "new": "function withdraw() external {} // FIXED",
+            },
+        }]},
+        {"tool_calls": [{"name": "submit", "arguments": {"poc_test": POC}}]},
+    ])
+    result = run_agentic(client, challenge, max_steps=3, forge_runner=_runner_factory([]))
+    assert "// FIXED" in result.patch
+    assert result.transcript[0]["output"] == "replaced 1 match"
+
+    doubled = "contract Vault {\n    function withdraw() external {}\n    function withdraw() external {}\n}\n"
+    (challenge / "src" / "Vault.sol").write_text(doubled)
+    ambiguous = ScriptedToolClient([
+        {"tool_calls": [{
+            "name": "replace_in_file",
+            "arguments": {
+                "path": "src/Vault.sol",
+                "old": "function withdraw() external {}",
+                "new": "function withdraw() external {} // FIXED",
+            },
+        }]},
+        {"tool_calls": [{"name": "read_file", "arguments": {"path": "src/Vault.sol"}}]},
+    ])
+    rejected = run_agentic(ambiguous, challenge, max_steps=2, forge_runner=_runner_factory([]))
+    assert "unique match" in rejected.transcript[0]["output"]
+    assert "// FIXED" not in rejected.transcript[1]["output"]
+    assert "solution" not in rejected.transcript[1]["output"]
+
+
+def test_last_step_autosubmits_when_the_poc_fails_and_public_tests_pass(tmp_path):
+    challenge = _challenge(tmp_path)
+
+    def runner(*, sources, tests, match_test, verbosity, forge_bin, solc, timeout_s):
+        src = "\n".join(sources.values())
+        if "Poc.t.sol" in tests:
+            # The exploit still succeeds until the contract contains the fix.
+            return _Obs("FIXED" not in src, "poc")
+        return _Obs(True, "public")
+
+    client = ScriptedToolClient([
+        {"tool_calls": [
+            {"name": "apply_patch", "arguments": {"diff": POC_DIFF}},
+            {"name": "replace_in_file", "arguments": {
+                "path": "src/Vault.sol",
+                "old": "function withdraw() external {}",
+                "new": "function withdraw() external {} // FIXED",
+            }},
+        ]},
+        {"tool_calls": [{"name": "read_file", "arguments": {"path": "src/Vault.sol"}}]},
+    ])
+    result = run_agentic(client, challenge, max_steps=2, forge_runner=runner)
+    assert result.stop_reason == "auto_submit"
+    assert client.calls == 2
+    assert "// FIXED" in result.patch
+    assert "test_exploit" in result.poc
+    assert result.transcript[-1]["tool"] == "submit"
+    assert result.transcript[-1]["arguments"]["auto"] is True
+
+    still_open = ScriptedToolClient([
+        {"tool_calls": [
+            {"name": "apply_patch", "arguments": {"diff": POC_DIFF}},
+            {"name": "replace_in_file", "arguments": {
+                "path": "src/Vault.sol",
+                "old": "function withdraw() external {}",
+                "new": "function withdraw() external {} // untouched",
+            }},
+        ]},
+    ])
+    left = run_agentic(still_open, challenge, max_steps=1, forge_runner=runner)
+    assert left.stop_reason == "max_steps"
+    assert left.patch is None
+
+
 def test_trace_command_is_verbose_and_names_only_the_public_test():
     cmd = forge_trace_command("forge", "test_publicOk", None)
     assert cmd[:4] == ["forge", "test", "-vvvv", "--match-test"]
