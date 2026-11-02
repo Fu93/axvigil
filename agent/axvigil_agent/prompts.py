@@ -53,6 +53,19 @@ Source of {target_file}:
 Return the JSON object described in the system message."""
 
 
+def hidden_fail_hint() -> str:
+    """Same sentence the grader appends. One wording, so the retry cannot drift."""
+    import sys
+    from pathlib import Path
+
+    verifier = str(Path(__file__).resolve().parents[2] / "verifier")
+    if verifier not in sys.path:
+        sys.path.insert(0, verifier)
+    from axvigil_verifier.grader import HIDDEN_FAIL_HINT
+
+    return HIDDEN_FAIL_HINT
+
+
 def build_retry_prompt(
     *, prev_patch: str, prev_poc: str, result_log: str, checks: dict,
     source: str, limits: dict | None = None,
@@ -68,7 +81,7 @@ Grader log:
 What each check means:
 - pocProvesBug: your PoC must PASS on the ORIGINAL contract (actually trigger the bug).
 - pocFailsAfterPatch: your PoC must FAIL on your PATCHED contract (the fix must close it).
-- hiddenTestsPass: hidden functional tests must still pass on your patched contract. If this failed, the patch changed intended behaviour; keep the fix minimal and do not rewrite unrelated functions. Those tests are not named.
+- hiddenTestsPass: hidden functional tests must still pass on your patched contract. If this failed, {hidden_fail_hint()}. Those tests are not named.
 - patchWithinLimits: keep the diff small; do not rename the contract or delete interface functions.
 
 Your previous patched_contract:

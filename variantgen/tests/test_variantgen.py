@@ -75,6 +75,70 @@ def test_identifiers_are_renamed_across_seeds(tmp_path):
     assert len(names) >= 3, "contract name should vary across seeds"
 
 
+def test_access_control_hidden_test_accepts_a_role_named_revert(tmp_path):
+    """The hidden test must not demand the literal "not owner".
+
+    Seed rendering renames the role (manager, governor, ...). That word is not
+    in the vulnerable source, so a correct `require(msg.sender == manager)`
+    that reverts with "not manager" has to pass, and the unpatched sweep must
+    still fail.
+    """
+    if not _forge:
+        pytest.fail("forge is required. Install foundry; solc is discovered from svm if needed.")
+    import sys
+    sys.path.insert(0, str(REPO_ROOT / "verifier"))
+    from axvigil_verifier.grader import grade
+
+    m = Mother(REPO_ROOT / "mothers" / "access-control")
+    seed = ctx = None
+    for s in range(40):
+        c = build_context(m, s)
+        if c["ids"]["vzzOwner"] != "owner":
+            seed, ctx = s, c
+            break
+    assert seed is not None and ctx is not None
+    role = ctx["ids"]["vzzOwner"]
+    vdir = tmp_path / "ac"
+    render_challenge(m, seed, vdir)
+    contract = ctx["contract"]
+    src_path = vdir / "src" / f"{contract}.sol"
+    src = src_path.read_text()
+    assert "not owner" not in src
+    assert role in src
+
+    ref = (vdir / "solution" / "patched" / f"{contract}.sol").read_text()
+    role_patch = ref.replace('"not owner"', f'"not {role}"', 1)
+    assert role_patch != ref
+    poc = (vdir / "solution" / "poc" / "Poc.t.sol").read_text()
+
+    def _grade(patched: str):
+        sub = tmp_path / "sub"
+        if sub.exists():
+            shutil.rmtree(sub)
+        (sub / "patched").mkdir(parents=True)
+        (sub / "poc").mkdir()
+        (sub / "patched" / f"{contract}.sol").write_text(patched)
+        (sub / "poc" / "Poc.t.sol").write_text(poc)
+        return grade(vdir, sub, seed=seed, forge_bin=_forge, solc=_solc, timeout_s=120)
+
+    ok = _grade(role_patch)
+    assert ok.passed, ok.log
+
+    bare = _grade(src)
+    assert bare.hiddenTestsPass is False, bare.log
+    assert bare.passed is False
+
+    # A patch that reverts for everyone, including the owner, is not a fix.
+    blocked = role_patch.replace(
+        f'require(msg.sender == {role}, "not {role}");',
+        'require(false, "closed");',
+        1,
+    )
+    assert blocked != role_patch
+    everyone = _grade(blocked)
+    assert everyone.hiddenTestsPass is False, everyone.log
+
+
 @pytest.mark.parametrize("mdir", MOTHERS, ids=lambda p: p.name)
 def test_rendered_variants_grade_as_solved(mdir, tmp_path):
     if not _forge:

@@ -155,7 +155,7 @@ Agent ID owner submits mint
 | Agent | automated solve loop with an offline oracle so judges can reproduce runs |
 | Contracts | EIP-712 authorization; two lifetime attempts per Agent ID; hourly cap; pausable; rotatable signer; fixed supply |
 | Deployment | BSC testnet (chain 97): Skill `0x3377…CD18`, Collectible `0x0658…4658`, Agent ID registry `0x7Aa4…d45e` |
-| Tests | Foundry unit / fuzz / rarity-distribution / invariant / verify→mint integration; Python backend and verifier suites; 149 tests green (contracts 66 · Python 83) |
+| Tests | Foundry unit / fuzz / rarity-distribution / invariant / verify→mint integration; Python backend and verifier suites; 156 tests green (contracts 66 · Python 90) |
 
 ### 4.4 Live status
 

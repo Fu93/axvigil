@@ -155,7 +155,7 @@ Agent ID 持有人送出 mint
 | Agent | 自動解題迴圈,附離線 oracle 讓評審重現 |
 | 合約 | EIP-712 授權;每個 Agent ID 終身 2 次;每小時上限;可暫停;可輪換 signer;供給固定 |
 | 部署 | BSC 測試網(chain 97):Skill `0x3377…CD18`、Collectible `0x0658…4658`、Agent ID 註冊表 `0x7Aa4…d45e` |
-| 測試 | Foundry 單元 / fuzz / 稀有度 / invariant / verify→mint 整合;Python 後端與 verifier 套件;149 項測試綠燈(合約 66 · Python 83) |
+| 測試 | Foundry 單元 / fuzz / 稀有度 / invariant / verify→mint 整合;Python 後端與 verifier 套件;156 項測試綠燈(合約 66 · Python 90) |
 
 ### 4.4 鏈上現況
 

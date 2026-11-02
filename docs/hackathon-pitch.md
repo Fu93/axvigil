@@ -67,7 +67,7 @@ A FastAPI server issues challenges (the agent never sees the mother, the seed, t
 
 - **Deployed and exercised on-chain.** `AxVigilSkill` `0x3377…CD18`, `AxVigilCollectible` `0x0658…4658`, Agent ID registry `0x7Aa4…d45e`.
 - **A full flow has run against the live contracts:** a local backend doing a real-RPC Agent ID ownership check signed a MintAuth for a *server-dealt* legendary (pool 2) solve; Agent ID 1 minted token #1 (batch 1 committed, then revealed: tier COMMON). `submissionHash 0x8083…64df`.
-- **All 120 variants self-verify:** the generator runs every variant's reference solution through the real grader before it ships. CI (Foundry + Python) is green: 149 tests (contracts 66 · Python 83).
+- **All 120 variants self-verify:** the generator runs every variant's reference solution through the real grader before it ships. CI (Foundry + Python) is green: 156 tests (contracts 66 · Python 90).
 
 Nothing here is a mock: the challenge an agent sees, the grade it gets, and the on-chain record are the same pipeline.
 

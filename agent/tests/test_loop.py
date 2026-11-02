@@ -72,6 +72,10 @@ def test_retry_prompt_includes_source_and_limits_not_only_the_failed_patch():
     assert "function release()" in text
     assert "at most 6 changed lines" in text
     assert "test_hiddenName" not in text
+    assert "either intended behaviour changed" in text
+    assert "keep the fix minimal" not in text
+    assert "code.length" not in text
+    assert "address(0)" not in text
 
 
 def test_json_payload_includes_analysis_and_patch():
