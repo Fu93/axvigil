@@ -22,14 +22,16 @@ RUN useradd --uid 1000 --non-unique --create-home --shell /usr/sbin/nologin axvi
     && printf 'pragma solidity 0.8.28;\ncontract W { function f() external pure returns (uint256) { return 1; } }\n' > /tmp/warmup/src/W.sol \
     && printf '[profile.default]\nsrc="src"\nout="out"\nsolc_version="0.8.28"\n' > /tmp/warmup/foundry.toml \
     && chown -R axvigil:axvigil /tmp/warmup
+# Set this before the warmup build; otherwise the base image's HOME causes the
+# compiler cache to be downloaded into a different user's directory.
+ENV HOME=/home/axvigil \
+    FOUNDRY_HOME=/home/axvigil/.foundry
 USER axvigil
 RUN cd /tmp/warmup && forge build
 USER root
 # Keep the runtime user's home identical to the build-time home so the warmed
 # offline solc cache is available when Docker invokes the container by numeric
 # uid (which has no passwd-entry home resolution).
-ENV HOME=/home/axvigil \
-    FOUNDRY_HOME=/home/axvigil/.foundry
 COPY entrypoint.sh /entrypoint.sh
 RUN chmod 755 /entrypoint.sh
 USER axvigil
