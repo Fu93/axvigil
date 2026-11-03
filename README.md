@@ -277,6 +277,6 @@ PYTHONPATH=agent:verifier:variantgen python -m axvigil_agent arena \
 
 This is a hackathon prototype for a BSC testnet/whitehat sandbox. It is not audited and should not be used with production funds. The demo commit-reveal randomness has known owner/validator influence and liveness limitations; the production plan is to replace it with Chainlink VRF v2.5. Admin powers, metadata mutability and skill revocation are documented in [`contracts/README.md`](contracts/README.md).
 
-## MIT
+## License
 
-Released under the MIT terms shipped with this repository.
+This project is MIT-licensed. See [LICENSE](LICENSE).
