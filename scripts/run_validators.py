@@ -49,9 +49,23 @@ def _live_grade(manifest: dict) -> dict:
     (sub / "patched" / meta["targetFile"]).write_text(manifest["patch"])
     (sub / "poc" / "Poc.t.sol").write_text(manifest["poc"])
     res = grade(rendered, sub, seed=int(manifest["seed"]))
-    out = {"passed": res.passed}
+    out = {
+        "passed": res.passed,
+        "pocProvesBug": res.pocProvesBug,
+        "pocFailsAfterPatch": res.pocFailsAfterPatch,
+        "hiddenTestsPass": res.hiddenTestsPass,
+        "patchWithinLimits": res.patchWithinLimits,
+        "invariantsHold": res.invariantsHold,
+        "invariantProfile": {
+            "fuzzSeed": res.invariantFuzzSeed,
+            "fuzzRuns": res.invariantFuzzRuns,
+            "invariantRuns": res.invariantRuns,
+            "invariantDepth": res.invariantDepth,
+            "applied": res.invariantApplied,
+        },
+    }
     cex = manifest.get("counterexample")
-    if res.passed and isinstance(cex, str) and "function test" in cex:
+    if out["passed"] and isinstance(cex, str) and "function test" in cex:
         if _counterexample_hits(manifest, rendered, meta):
             out["passed"] = False
             out["reason"] = "counterexample"
