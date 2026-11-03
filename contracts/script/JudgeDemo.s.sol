@@ -4,9 +4,11 @@ pragma solidity ^0.8.24;
 import {Script, console2} from "forge-std/Script.sol";
 import {AxVigilCollectible} from "../src/AxVigilCollectible.sol";
 import {AxVigilSkill} from "../src/AxVigilSkill.sol";
+import {AxVigilZKVerifier} from "../src/AxVigilZKVerifier.sol";
 import {MockAgentID} from "../src/MockAgentID.sol";
 import {IAgentRegistry} from "../src/interfaces/IAgentRegistry.sol";
 import {IAxVigilSkill} from "../src/interfaces/IAxVigilSkill.sol";
+import {MockSP1Verifier} from "../test/AxVigilZKVerifier.t.sol";
 
 /// @notice Local judge demo. Production quotas, no collectible minted yet.
 ///         The platform signs the mint after a reward solve. Any chain id is fine;
@@ -29,6 +31,14 @@ contract JudgeDemo is Script {
             IAgentRegistry(address(registry)), IAxVigilSkill(address(skill)), signer, deployer, tiers, 50
         );
         skill.grantRole(skill.MINTER_ROLE(), address(nft));
+        MockSP1Verifier mockSP1 = new MockSP1Verifier(keccak256("AxVigil-Crucible-zkVM-v1"));
+        AxVigilZKVerifier zkVerifier = new AxVigilZKVerifier(
+            address(mockSP1),
+            keccak256("AxVigil-Crucible-zkVM-v1"),
+            address(registry),
+            address(skill)
+        );
+        skill.grantRole(skill.MINTER_ROLE(), address(zkVerifier));
         nft.setBaseURI("https://metadata.axvigil.local/art/", "https://metadata.axvigil.local/unrevealed.json");
         nft.commitSeed(keccak256(abi.encodePacked(SEED)));
         uint256 agentId = registry.mint(deployer);
@@ -37,6 +47,7 @@ contract JudgeDemo is Script {
         console2.log("REGISTRY", address(registry));
         console2.log("SKILL", address(skill));
         console2.log("COLLECTIBLE", address(nft));
+        console2.log("ZK_VERIFIER", address(zkVerifier));
         console2.log("AGENT_ID", agentId);
         console2.log("DEPLOYER", deployer);
         console2.log("SIGNER", signer);
