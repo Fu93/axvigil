@@ -25,6 +25,11 @@ RUN useradd --uid 1000 --non-unique --create-home --shell /usr/sbin/nologin axvi
 USER axvigil
 RUN cd /tmp/warmup && forge build
 USER root
+# Keep the runtime user's home identical to the build-time home so the warmed
+# offline solc cache is available when Docker invokes the container by numeric
+# uid (which has no passwd-entry home resolution).
+ENV HOME=/home/axvigil \
+    FOUNDRY_HOME=/home/axvigil/.foundry
 COPY entrypoint.sh /entrypoint.sh
 RUN chmod 755 /entrypoint.sh
 USER axvigil
