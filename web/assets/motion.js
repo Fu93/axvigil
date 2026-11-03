@@ -1,5 +1,37 @@
 /* Scroll reveal, cursor, magnets, counters. Native scroll stays intact. */
 (function () {
+  /* The fixed WebGL stage covers the viewport. In Chrome that layer swallows
+     wheel deltas even with pointer-events: none, so the page applies them. */
+  window.addEventListener("wheel", function (event) {
+    if (event.ctrlKey) return;
+    var node = event.target;
+    var dy = event.deltaY;
+    if (event.deltaMode === 1) dy *= 32;
+    else if (event.deltaMode === 2) dy *= window.innerHeight * 0.9;
+    while (node && node !== document.body && node !== document.documentElement) {
+      var oy = getComputedStyle(node).overflowY;
+      if ((oy === "auto" || oy === "scroll") && node.scrollHeight > node.clientHeight + 1) {
+        if (dy > 0 && node.scrollTop + node.clientHeight < node.scrollHeight - 1) return;
+        if (dy < 0 && node.scrollTop > 0) return;
+      }
+      node = node.parentElement;
+    }
+    if (!dy) return;
+    var root = document.scrollingElement || document.documentElement;
+    var before = root.scrollTop;
+    var max = root.scrollHeight - root.clientHeight;
+    requestAnimationFrame(function () {
+      if (root.scrollTop === before) {
+        root.scrollTop = Math.max(0, Math.min(max, before + dy));
+      }
+      requestAnimationFrame(function () {
+        if (Math.abs(root.scrollTop - (before + dy * 2)) < 3) {
+          root.scrollTop = Math.max(0, Math.min(max, before + dy));
+        }
+      });
+    });
+  }, { passive: true });
+
   if (location.hash) {
     var jumped = document.querySelector(location.hash);
     if (jumped) jumped.scrollIntoView();
@@ -144,12 +176,12 @@
       pointer.x = event.clientX;
       pointer.y = event.clientY;
       pointer.inside = true;
-      if (cursorOn) document.body.classList.add("ax-cursor");
+      if (cursorOn) document.body.classList.add("has-ax-cursor");
       wake();
     }, { passive: true });
     window.addEventListener("pointerleave", function () {
       pointer.inside = false;
-      document.body.classList.remove("ax-cursor");
+      document.body.classList.remove("has-ax-cursor");
       wake();
     });
   }

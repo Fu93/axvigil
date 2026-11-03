@@ -9,12 +9,27 @@
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M1 5V1h4M11 1h4v4M15 11v4h-4M5 15H1v-4' fill='none' stroke='%23EFEEEC' stroke-width='1.4'/%3E%3C/svg%3E">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="preload" href="assets/fonts/MonaSansDisplaySemiExpanded-ExtraBold.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;700;800&family=IBM+Plex+Mono:wght@400;500&display=swap" media="print" onload="this.media='all'">
 <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;700;800&family=IBM+Plex+Mono:wght@400;500&display=swap"></noscript>
 <link rel="preload" href="assets/3d/halves_meshopt.glb" as="fetch" crossorigin>
 <link rel="preload" href="assets/3d/shards_meshopt.glb" as="fetch" crossorigin>
 <link rel="preload" href="assets/3d/node_meshopt.glb" as="fetch" crossorigin>
+<link rel="preload" href="assets/3d/board_podium.glb" as="fetch" crossorigin>
 <link rel="stylesheet" href="assets/site.css">
+<script>
+(function () {
+  var reduce = false, seen = false, mid = false;
+  try {
+    reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
+    seen = sessionStorage.getItem("axv-intro-seen") === "1";
+    mid = Number(sessionStorage.getItem("axv-scroll") || 0) > 160;
+  } catch (err) { /* ignore */ }
+  if (!reduce && !seen && !mid && !(location.hash && location.hash.length > 1)) {
+    document.documentElement.classList.add("hold-hero");
+  }
+})();
+</script>
 <script type="importmap">
 {
   "imports": {
@@ -25,7 +40,6 @@
 </script>
 </head>
 <body>
-<div class="column-frame" aria-hidden="true"></div>
 <div id="stage" aria-hidden="true">
   <div class="glow" id="hero-glow"></div>
   <div class="stage-vignette"></div>
@@ -202,8 +216,7 @@
     </div>
   </section>
 
-  <canvas class="dither" data-from="#1C1D1A" data-to="#EFEEEC" aria-hidden="true"></canvas>
-  <section class="light" id="problem">
+  <section class="dark band" id="problem">
     <div class="wrap">
       <div class="sec-top">
         <p class="bracket" data-i18n="sec.problem">[:PROBLEM]</p>
@@ -221,8 +234,7 @@
     </div>
   </section>
 
-  <canvas class="dither" data-from="#EFEEEC" data-to="#1C1D1A" aria-hidden="true"></canvas>
-  <section class="dark" id="how">
+  <section class="dark band" id="how">
     <div class="wrap">
       <div class="sec-top">
         <p class="bracket" data-i18n="sec.how">[:HOW]</p>
@@ -256,8 +268,7 @@
     </div>
   </section>
 
-  <canvas class="dither" data-from="#1C1D1A" data-to="#EFEEEC" aria-hidden="true"></canvas>
-  <section class="light" id="proof">
+  <section class="dark band" id="proof">
     <div class="wrap">
       <div class="sec-top">
         <p class="bracket" data-i18n="sec.proof">[:PROOF]</p>
@@ -314,8 +325,7 @@
     </div>
   </section>
 
-  <canvas class="dither" data-from="#EFEEEC" data-to="#1C1D1A" aria-hidden="true"></canvas>
-  <section class="dark" id="board">
+  <section class="dark band" id="board">
     <div class="wrap">
       <div class="sec-top">
         <p class="bracket" data-i18n="sec.board">[:BOARD]</p>
@@ -336,7 +346,7 @@
       </div>
     </div>
   </section>
-  <section class="dark" id="roadmap">
+  <section class="dark band" id="roadmap">
     <div class="wrap">
       <div class="sec-top">
         <p class="bracket" data-i18n="sec.road">[:ROADMAP]</p>
@@ -476,7 +486,6 @@
   else window.addEventListener("load", boot, { once: true });
 })();
 </script>
-<script src="assets/dither.js" defer></script>
 <script src="assets/site.js" defer></script>
 <script src="assets/motion.js" defer></script>
 </body>

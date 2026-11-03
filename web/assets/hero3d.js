@@ -4,7 +4,16 @@
 import * as THREE from "three";
 import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
 import { MeshoptDecoder } from "three/addons/libs/meshopt_decoder.module.js";
-import { RoomEnvironment } from "three/addons/environments/RoomEnvironment.js";
+import { Line2 } from "three/addons/lines/Line2.js";
+import { LineGeometry } from "three/addons/lines/LineGeometry.js";
+import { LineSegments2 } from "three/addons/lines/LineSegments2.js";
+import { LineSegmentsGeometry } from "three/addons/lines/LineSegmentsGeometry.js";
+import { LineMaterial } from "three/addons/lines/LineMaterial.js";
+import { EffectComposer } from "three/addons/postprocessing/EffectComposer.js";
+import { RenderPass } from "three/addons/postprocessing/RenderPass.js";
+import { UnrealBloomPass } from "three/addons/postprocessing/UnrealBloomPass.js";
+import { ShaderPass } from "three/addons/postprocessing/ShaderPass.js";
+import { OutputPass } from "three/addons/postprocessing/OutputPass.js";
 
 export const HERO3D = {
   bg: 0x1c1d1a,
@@ -19,17 +28,17 @@ export const HERO3D = {
     scrollSpin: Math.PI * 0.75
   },
   material: {
-    color: 0x0a0b09,
+    color: 0x050505,
     metalness: 0,
-    roughness: 0.12,
+    roughness: 0.04,
     clearcoat: 1,
-    clearcoatRoughness: 0.04,
-    ior: 1.5,
-    envMapIntensity: 1.15,
-    iridescence: 0.15
+    clearcoatRoughness: 0.02,
+    ior: 1.7,
+    envMapIntensity: 2.2,
+    iridescence: 0
   },
-  edges: { thresholdDeg: 25, hdrBoost: 2.2, opacity: 0.9, sweep: 0.18 },
-  bloom: { strength: 0.65, radius: 0.35, threshold: 0.92, halfRes: true },
+  edges: { thresholdDeg: 25, hdrBoost: 2.2, opacity: 0.9, sweep: 0.18, width: 1.25 },
+  bloom: { strength: 0.62, radius: 0.36, threshold: 0.88, halfRes: false },
   nodes: {
     radii: [1.75, 2.0, 2.3],
     inclDeg: [12, -20, 34],
@@ -46,6 +55,12 @@ export const HERO3D = {
 const HALVES = "assets/3d/halves_meshopt.glb";
 const SHARDS = "assets/3d/shards_meshopt.glb";
 const NODE = "assets/3d/node_meshopt.glb";
+/* board_podium.glb drop-in. Swap the file, not this transform:
+   scale 1, origin at the plinth center, y = 0 on the underside,
+   four columns along +X (outer centers ±1.35), height 2.4, facing +Z. */
+const BOARD = "assets/3d/board_podium.glb";
+const BOARD_SCALE = 1;
+const BOARD_DOLLY = { from: -1.15, to: 1.15 };
 const MODEL_SCALE = 2.4 / 1.9;
 const SHARD_CENTROIDS = [
   [0.0235, 0.5383, 0.0131],
@@ -57,6 +72,7 @@ const SHARD_CENTROIDS = [
   [0.0157, -0.5384, -0.0261]
 ];
 const ACCENT = HERO3D.accent;
+const lineMats = [];
 let started = false;
 
 export function mount() {
@@ -81,6 +97,7 @@ export function mount() {
   if ("scrollRestoration" in history) history.scrollRestoration = "manual";
 
   if (!webglOk()) {
+    document.documentElement.classList.remove("hold-hero");
     document.documentElement.classList.add("intro-go");
     return;
   }
@@ -94,17 +111,19 @@ export function mount() {
       stencil: false
     });
   } catch (err) {
+    document.documentElement.classList.remove("hold-hero");
     document.documentElement.classList.add("intro-go");
     return;
   }
   if (!renderer.getContext()) {
+    document.documentElement.classList.remove("hold-hero");
     document.documentElement.classList.add("intro-go");
     return;
   }
 
-  renderer.setClearColor(0x000000, 0);
+  renderer.setClearColor(0x1c1d1a, 1);
   renderer.outputColorSpace = THREE.SRGBColorSpace;
-  renderer.toneMapping = THREE.ACESFilmicToneMapping;
+  renderer.toneMapping = THREE.NoToneMapping;
   renderer.toneMappingExposure = 1.0;
   renderer.domElement.setAttribute("aria-hidden", "true");
   stage.insertBefore(renderer.domElement, stage.querySelector(".stage-vignette"));
@@ -114,37 +133,37 @@ export function mount() {
   if (vignette) stage.appendChild(vignette);
 
   const scene = new THREE.Scene();
+  scene.background = new THREE.Color(0x1c1d1a);
   const fogNear = new THREE.Color(0x1c1d1a);
-  const fogFar = new THREE.Color(0x3a3426);
-  scene.fog = new THREE.FogExp2(0x1c1d1a, 0.012);
+  const fogFar = new THREE.Color(0x14140f);
+  scene.fog = new THREE.FogExp2(0x1c1d1a, 0.045);
   const camera = new THREE.PerspectiveCamera(HERO3D.camera.fov, 1, 0.08, 40);
   camera.position.set(0, 0.08, HERO3D.camera.z);
   camera.layers.enable(1);
 
   const pmrem = new THREE.PMREMGenerator(renderer);
-  const room = new RoomEnvironment();
-  const envRim = new THREE.Mesh(
-    new THREE.BoxGeometry(1, 1, 1),
-    new THREE.MeshBasicMaterial({ color: new THREE.Color(ACCENT).multiplyScalar(3.2) })
-  );
-  envRim.position.set(9.5, 7.2, -8.4);
-  envRim.scale.set(0.45, 6.2, 0.18);
-  room.add(envRim);
-  const envMap = pmrem.fromScene(room, 0.04).texture;
+  const studio = buildStudio();
+  const prevSpace = renderer.outputColorSpace;
+  renderer.outputColorSpace = THREE.LinearSRGBColorSpace;
+  renderer.toneMapping = THREE.NoToneMapping;
+  const envMap = pmrem.fromScene(studio, 0).texture;
+  renderer.outputColorSpace = prevSpace;
   scene.environment = envMap;
+  studio.traverse(function (obj) {
+    if (obj.geometry) obj.geometry.dispose();
+    if (obj.material) obj.material.dispose();
+  });
   pmrem.dispose();
 
-  const strip = new THREE.DirectionalLight(ACCENT, 4.2);
-  strip.position.set(2.8, 1.6, -3.4);
-  scene.add(strip);
-  const key = new THREE.DirectionalLight(0xfff6ea, 1.35);
-  key.position.set(-4.2, 5.4, 4.6);
+  const key = new THREE.DirectionalLight(0xfff4e4, 0.18);
+  key.position.set(-4.2, 6.2, 3.4);
   scene.add(key);
-  scene.add(new THREE.AmbientLight(0xd9d4c6, 0.22));
-  const fill = new THREE.DirectionalLight(0xc5d0da, 0.9);
-  fill.position.set(5.2, -1.4, 3.4);
-  scene.add(fill);
-  key.intensity = 2.35;
+
+  const podium = new THREE.Group();
+  podium.position.set(0, -1.05, 0);
+  podium.visible = false;
+  scene.add(podium);
+  const podiumMats = [];
 
   const rig = new THREE.Group();
   const tilt = new THREE.Group();
@@ -160,7 +179,7 @@ export function mount() {
   yaw.add(orbits);
 
   const bodyMat = new THREE.MeshPhysicalMaterial({
-    color: 0x161710,
+    color: HERO3D.material.color,
     metalness: HERO3D.material.metalness,
     roughness: HERO3D.material.roughness,
     clearcoat: HERO3D.material.clearcoat,
@@ -168,9 +187,8 @@ export function mount() {
     ior: HERO3D.material.ior,
     specularIntensity: 1,
     envMap: envMap,
-    envMapIntensity: 1.5,
+    envMapIntensity: HERO3D.material.envMapIntensity,
     iridescence: HERO3D.material.iridescence,
-    iridescenceIOR: 1.3,
     flatShading: false,
     transparent: true,
     opacity: playIntro ? 0 : 1,
@@ -180,39 +198,46 @@ export function mount() {
   });
 
   const hiddenLines = [];
-  const solidMat = lineMat(1.55, 0.62);
-  const glintMat = new THREE.LineDashedMaterial({
+  const solidMat = lineMat(1.55, 0);
+  const glintMat = trackLine(new LineMaterial({
     color: hdr(HERO3D.edges.hdrBoost),
-    dashSize: 0.28,
-    gapSize: 1.05,
+    linewidth: HERO3D.edges.width,
+    dashed: true,
+    dashSize: 0.12,
+    gapSize: 0.16,
+    dashScale: 1,
     transparent: true,
-    opacity: 0.95,
+    opacity: 0,
     toneMapped: false,
-    depthWrite: false
-  });
+    depthWrite: false,
+    alphaToCoverage: true
+  }));
   const hiddenMat = lineMat(1.15, 0);
   hiddenMat.depthFunc = THREE.GreaterDepth;
 
   const nodeMat = new THREE.MeshStandardMaterial({
-    color: 0x14160c,
+    color: 0x050505,
     emissive: ACCENT,
-    emissiveIntensity: 0.55,
+    emissiveIntensity: 0.42,
     roughness: 0.32,
-    metalness: 0.2,
+    metalness: 0.15,
+    envMapIntensity: 1.4,
     transparent: true,
     opacity: playIntro ? 0 : 1
   });
   const nodeEdgeMat = lineMat(2.5, playIntro ? 0 : 1);
-  const ringMat = new THREE.LineBasicMaterial({
+  const ringMat = trackLine(new LineMaterial({
     color: 0xffffff,
+    linewidth: 1,
     transparent: true,
-    opacity: 0.1,
+    opacity: 0.22,
     depthWrite: false,
-    toneMapped: false
-  });
+    toneMapped: false,
+    alphaToCoverage: true
+  }));
 
   const innerMat = new THREE.MeshBasicMaterial({
-    color: hdr(2.3),
+    color: hdr(0.55),
     toneMapped: false,
     transparent: true,
     opacity: 0,
@@ -227,29 +252,38 @@ export function mount() {
   girdleMark.position.set(0.72, 0, 0);
   yaw.add(girdleMark);
 
-  const disc = new THREE.Sprite(new THREE.SpriteMaterial({
-    map: discTexture(),
-    color: 0x050505,
+  const backlight = new THREE.Sprite(new THREE.SpriteMaterial({
+    map: backlightTexture(),
+    color: 0xffffff,
     transparent: true,
     depthWrite: false,
-    opacity: 0
+    depthTest: true,
+    blending: THREE.AdditiveBlending,
+    opacity: 1
   }));
-  disc.scale.set(4.4, 4.4, 1);
-  disc.position.z = -0.85;
-  disc.renderOrder = -2;
-  rig.add(disc);
+  backlight.scale.set(5.2, 5.2, 1);
+  backlight.material.opacity = 0.55;
+  backlight.position.z = -1.15;
+  backlight.renderOrder = -1;
+  rig.add(backlight);
+
+  const dust = makeDust(mobile ? 1100 : 2600);
+  scene.add(dust);
+  const floor = makeFloor();
+  if (!mobile) scene.add(floor);
 
   const sats = HERO3D.nodes.radii.map(function (radius, i) {
     const pivot = new THREE.Group();
     pivot.rotation.x = THREE.MathUtils.degToRad(HERO3D.nodes.inclDeg[i]);
-    const ringGeo = new THREE.BufferGeometry();
     const ringPts = [];
-    for (let s = 0; s <= 96; s += 1) {
-      const a = (s / 96) * Math.PI * 2;
+    for (let s = 0; s <= 256; s += 1) {
+      const a = (s / 256) * Math.PI * 2;
       ringPts.push(Math.cos(a) * radius, 0, Math.sin(a) * radius);
     }
-    ringGeo.setAttribute("position", new THREE.Float32BufferAttribute(ringPts, 3));
-    const ring = new THREE.Line(ringGeo, ringMat);
+    const ringGeo = new LineGeometry();
+    ringGeo.setPositions(ringPts);
+    const ring = new Line2(ringGeo, ringMat);
+    ring.computeLineDistances();
     ring.visible = !mobile || i === 0;
     pivot.add(ring);
     const orb = new THREE.Group();
@@ -277,19 +311,24 @@ export function mount() {
   });
 
   const signLines = [0, 1].map(function () {
-    const geo = new THREE.BufferGeometry();
-    geo.setAttribute("position", new THREE.BufferAttribute(new Float32Array(6), 3));
-    const mat = new THREE.LineBasicMaterial({
-      color: hdr(2.2),
+    const geo = new LineGeometry();
+    geo.setPositions([0, 0, 0, 0, 1.2, 0]);
+    const mat = trackLine(new LineMaterial({
+      color: hdr(1.6),
+      linewidth: HERO3D.edges.width,
+      dashed: true,
+      dashSize: 0.06,
+      gapSize: 0.1,
       transparent: true,
       opacity: 0,
       toneMapped: false,
-      depthWrite: false
-    });
-    const line = new THREE.Line(geo, mat);
+      depthWrite: false,
+      alphaToCoverage: true
+    }));
+    const line = new Line2(geo, mat);
+    line.computeLineDistances();
     line.frustumCulled = false;
     line.layers.enable(1);
-    line.userData.bloom = true;
     scene.add(line);
     return line;
   });
@@ -305,10 +344,13 @@ export function mount() {
   if (playIntro) document.documentElement.classList.add("await-intro");
   else document.documentElement.classList.add("intro-go");
 
-  const bloom = makeBloom(renderer);
-  const dprLadder = mobile
-    ? [Math.min(window.devicePixelRatio || 1, 1.5), 1, 0.75]
-    : [Math.min(window.devicePixelRatio || 1, 2), 1.5, 1, 0.75];
+  const grade = makeComposer(renderer, scene, camera);
+  const forceHQ = /(?:\?|&)forcehq(?:&|=|$)/.test(location.search);
+  const dprLadder = forceHQ
+    ? [topDpr(mobile, true)]
+    : mobile
+      ? [topDpr(mobile, false), 1, 0.75]
+      : [topDpr(mobile, false), 1.5, 1, 0.75];
   let tier = 0;
   let dprCap = dprLadder[0];
   let bloomOn = !reduced;
@@ -317,9 +359,9 @@ export function mount() {
   let raf = 0;
   let posed = false;
   const pose = {
-    x: 0, y: 0, scale: 1, split: 0, body: playIntro ? 0 : 1, edge: playIntro ? 0 : 0.9,
+    x: 0, y: 0, scale: 1, split: 0, body: playIntro ? 0 : 1, edge: 0,
     hidden: 0, orbit: 1, camZ: HERO3D.camera.z, spin: 0, rotZ: 0, light: 0, proof: 0, heroP: 0,
-    side: 0, lift: 0, fog: 0
+    side: 0, lift: 0, fog: 0, podium: 0, dolly: 0
   };
   let storyS = 0;
   const tiltS = { x: 0, vx: 0, y: 0, vy: 0 };
@@ -394,7 +436,7 @@ export function mount() {
       sats.forEach(function (sat) {
         const mesh = new THREE.Mesh(nodeSrc.geometry, nodeMat);
         mesh.scale.setScalar(0.18);
-        const edges = new THREE.LineSegments(edgeGeo, nodeEdgeMat);
+        const edges = fatLines(edgeGeo, nodeEdgeMat);
         edges.scale.setScalar(1.02);
         edges.layers.enable(1);
         edges.userData.bloom = true;
@@ -412,6 +454,24 @@ export function mount() {
     host.dataset.glbMs = String(Math.round(performance.now() - t0));
     host.classList.add("is-live");
     meshReady = true;
+    loadOne(BOARD).then(function (gltf) {
+      const root = gltf.scene;
+      root.scale.setScalar(BOARD_SCALE);
+      root.position.set(0, 0, 0);
+      root.traverse(function (obj) {
+        if (!obj.isMesh) return;
+        const mats = Array.isArray(obj.material) ? obj.material : [obj.material];
+        mats.forEach(function (mat) {
+          if (!mat) return;
+          mat.envMapIntensity = 1.35;
+          mat.transparent = true;
+          mat.opacity = 0;
+          mat.depthWrite = true;
+          podiumMats.push(mat);
+        });
+      });
+      podium.add(root);
+    }).catch(function () { /* board file missing; the crystal stays */ });
     meshReadyAt = performance.now();
     chrome.loaded();
     resize();
@@ -429,21 +489,18 @@ export function mount() {
     mesh.layers.set(0);
     group.add(mesh);
     const edges = makeEdges(mesh.geometry);
-    const solid = new THREE.LineSegments(edges, solidMat);
+    const solid = fatLines(edges, solidMat);
     solid.scale.setScalar(1.004);
     solid.layers.enable(1);
-    solid.userData.bloom = true;
     mesh.add(solid);
-    const glint = new THREE.LineSegments(edges, glintMat);
+    const glint = fatLines(edges, glintMat);
     glint.scale.setScalar(1.006);
     glint.computeLineDistances();
     glint.layers.enable(1);
-    glint.userData.bloom = true;
     mesh.add(glint);
-    const hidden = new THREE.LineSegments(edges, hiddenMat);
+    const hidden = fatLines(edges, hiddenMat);
     hidden.scale.setScalar(1.004);
     hidden.layers.enable(1);
-    hidden.userData.bloom = true;
     hidden.visible = false;
     hiddenLines.push(hidden);
     mesh.add(hidden);
@@ -452,84 +509,40 @@ export function mount() {
   function resize() {
     mobile = window.matchMedia("(max-width: 767px)").matches;
     if (tier === 0) {
-      dprLadder[0] = mobile
-        ? Math.min(window.devicePixelRatio || 1, 1.5)
-        : Math.min(window.devicePixelRatio || 1, 2);
+      dprLadder[0] = topDpr(mobile, forceHQ);
       dprCap = dprLadder[0];
     }
     const w = window.innerWidth;
     const h = Math.max(1, window.innerHeight);
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, dprCap));
+    const ratio = Math.max(0.5, dprCap);
+    renderer.setPixelRatio(ratio);
     renderer.setSize(w, h, false);
     camera.aspect = w / h;
     camera.updateProjectionMatrix();
-    bloom.resize(Math.floor(w * renderer.getPixelRatio()), Math.floor(h * renderer.getPixelRatio()));
+    lineMats.forEach(function (mat) { mat.resolution.set(w, h); });
+    grade.resize(w, h);
     sats.forEach(function (sat, i) { sat.ring.visible = !mobile || i === 0; });
     hud.root.hidden = mobile || reduced;
   }
 
-  function sectionWeight(el) {
-    if (!el) return 0;
-    const r = el.getBoundingClientRect();
-    const vh = window.innerHeight;
-    const anchorY = r.top + Math.min(r.height, vh) * 0.4;
-    const dist = Math.abs(anchorY - vh * 0.44);
-    return Math.max(0, 1 - dist / (vh * 0.9));
-  }
-
-  function corner(isMobile) {
-    return {
-      x: window.innerWidth - (isMobile ? 78 : 110),
-      y: isMobile ? 250 : 168
-    };
-  }
-
   function desired() {
-    const how = document.getElementById("how");
-    const proof = document.getElementById("proof");
-    const road = document.getElementById("roadmap");
-    const problem = document.getElementById("problem");
-    const wh = sectionWeight(hero);
-    const ww = how ? sectionWeight(how) : 0;
-    const wp = proof ? sectionWeight(proof) : 0;
-    const wr = road ? sectionWeight(road) : 0;
-    const wLight = Math.max(problem ? sectionWeight(problem) : 0, wp);
-    const sum = wh + ww + wp + wr || 1;
-    const heroRect = host.getBoundingClientRect();
     const heroP = THREE.MathUtils.clamp(-hero.getBoundingClientRect().top / Math.max(hero.offsetHeight, 1), 0, 1);
-    const heroH = heroRect.height < 8 ? window.innerHeight * 0.5 : heroRect.height;
-    const heroW = heroRect.height < 8 ? window.innerWidth * 0.28 : heroRect.width;
-    const heroLeft = heroRect.height < 8 ? window.innerWidth * 0.62 : heroRect.left;
-    const heroTop = heroRect.height < 8 ? window.innerHeight * 0.22 : heroRect.top;
-    const slots = {
-      hero: {
-        x: heroLeft + heroW * 0.5,
-        y: heroTop + heroH * 0.46,
-        px: mobile ? heroH * 0.86 : heroH * 0.9
-      },
-      how: corner(mobile),
-      proof: corner(mobile),
-      road: corner(mobile)
-    };
-    slots.how.px = mobile ? 150 : 168;
-    slots.proof.px = mobile ? 130 : 156;
-    slots.road.px = mobile ? 110 : 132;
-    const lane = smootherstep(clamp01((storyS - 0.05) / 0.16));
-    const park = corner(mobile);
-    const sx = slots.hero.x * (1 - lane) + park.x * lane;
-    const sy = slots.hero.y * (1 - lane) + park.y * lane;
-    const px = slots.hero.px * (1 - lane) + (mobile ? 140 : 168) * lane;
     const flight = sampleFlight(storyS);
     const camZ = flight.camZ;
     const halfH = Math.tan(THREE.MathUtils.degToRad(camera.fov) / 2) * camZ;
     const halfW = halfH * camera.aspect;
+    const along = smootherstep(clamp01((storyS - 0.04) / 0.18));
+    const sx = window.innerWidth * (mobile ? 0.5 : 0.63 + along * 0.12 + flight.side * 0.03);
+    const sy = window.innerHeight * (mobile ? 0.4 : 0.48 - flight.lift * 0.05);
+    const heroPx = window.innerHeight * (mobile ? 0.62 : 0.86);
+    const px = heroPx * (1 - along * 0.24);
     const ndcX = (sx / Math.max(1, window.innerWidth)) * 2 - 1;
     const ndcY = -((sy / Math.max(1, window.innerHeight)) * 2 - 1);
     const pxPerUnit = window.innerHeight / (2 * halfH);
     return {
       x: ndcX * halfW,
       y: ndcY * halfH,
-      scale: THREE.MathUtils.clamp(px / (HERO3D.crystal.height * pxPerUnit), 0.18, 1.35),
+      scale: THREE.MathUtils.clamp(px / (HERO3D.crystal.height * pxPerUnit), 0.45, 1.85),
       split: flight.split,
       body: flight.body,
       edge: flight.edge,
@@ -537,14 +550,39 @@ export function mount() {
       orbit: flight.orbit,
       camZ: camZ,
       spin: flight.spin + heroP * 0.35,
-      rotZ: flight.side * 0.08,
-      light: Math.max(flight.light, wLight * 0.35),
+      rotZ: flight.side * 0.05,
+      light: 0,
       proof: flight.proof,
       heroP: heroP,
       side: flight.side,
       lift: flight.lift,
-      fog: flight.fog
+      fog: flight.fog,
+      podium: boardPresence(),
+      dolly: boardDolly()
     };
+  }
+
+  function boardPresence() {
+    const el = document.getElementById("board");
+    if (!el) return 0;
+    const r = el.getBoundingClientRect();
+    const vh = window.innerHeight || 1;
+    const bandTop = vh * 0.16;
+    const bandBot = vh * 0.84;
+    const overlap = Math.min(r.bottom, bandBot) - Math.max(r.top, bandTop);
+    return clamp01(overlap / (vh * 0.28));
+  }
+
+  function boardDolly() {
+    const el = document.getElementById("board");
+    if (!el || boardPresence() < 0.02) return 0;
+    const r = el.getBoundingClientRect();
+    const vh = window.innerHeight || 1;
+    const start = vh * 0.92;
+    const end = vh * 0.2 - r.height;
+    const travel = clamp01((start - r.top) / Math.max(1, start - end));
+    const span = mobile ? 0.62 : 1;
+    return THREE.MathUtils.lerp(BOARD_DOLLY.from * span, BOARD_DOLLY.to * span, smootherstep(travel));
   }
 
   function rawStory() {
@@ -613,6 +651,8 @@ export function mount() {
       pose.side = THREE.MathUtils.damp(pose.side, goal.side || 0, 2.8, follow);
       pose.lift = THREE.MathUtils.damp(pose.lift, goal.lift || 0, 2.8, follow);
       pose.fog = THREE.MathUtils.damp(pose.fog, goal.fog || 0, 2.2, follow);
+      pose.podium = THREE.MathUtils.damp(pose.podium, goal.podium || 0, 3.4, follow);
+      pose.dolly = THREE.MathUtils.damp(pose.dolly, goal.dolly || 0, 2.2, follow);
       pose.heroP = goal.heroP;
     }
 
@@ -641,14 +681,16 @@ export function mount() {
     camPx = pose.side + camYaw * 1.4 + drift;
     camPy = pose.lift + pitch * 1.1 + drift * 0.6;
     sweep = THREE.MathUtils.damp(sweep, look.nx * 0.35 * amp, 2, dt);
-    if (scene.environmentRotation) scene.environmentRotation.y = sweep + camYaw;
-    strip.position.x = 2.8 + sweep * 1.6;
-    strip.position.y = 1.6 + sweep * 0.25;
-    scene.fog.color.copy(fogNear).lerp(fogFar, pose.fog);
-    scene.fog.density = 0.008 + pose.fog * 0.028;
+    if (scene.environmentRotation) scene.environmentRotation.y = sweep + camYaw + tSec * 0.05;
+    scene.background.copy(fogNear).lerp(fogFar, pose.fog * 0.65);
+    scene.fog.color.copy(scene.background);
+    scene.fog.density = 0.04 + pose.fog * 0.03;
+    dust.rotation.y = tSec * 0.012;
+    dust.position.y = Math.sin(tSec * 0.15) * 0.08;
 
-    camera.position.set(camPx, 0.08 + camPy, pose.camZ);
-    camera.lookAt(camPx * 0.28, camPy * 0.22, 0);
+    const hall = pose.podium;
+    camera.position.set(camPx + pose.dolly, 0.08 + camPy + hall * 0.06, pose.camZ);
+    camera.lookAt(camPx * 0.28 * (1 - hall) + pose.dolly * 0.7, camPy * 0.22 * (1 - hall) + hall * 0.18, 0);
     camera.rotation.z += roll + driftRot;
     const rule = document.getElementById("hero-rule");
     if (rule) rule.classList.toggle("is-apart", pose.heroP > 0.52);
@@ -662,7 +704,8 @@ export function mount() {
 
     topGroup.position.y = pose.split * 0.35;
     botGroup.position.y = -pose.split * 0.35;
-    const bodyOpacity = pose.body * (playIntro ? bodyEase : 1);
+    const hallFade = 1 - smootherstep(clamp01(pose.podium / 0.7));
+    const bodyOpacity = pose.body * (playIntro ? bodyEase : 1) * hallFade;
     bodyMat.opacity = bodyOpacity;
     const wantTransparent = bodyOpacity < 0.98;
     if (bodyMat.transparent !== wantTransparent) {
@@ -670,17 +713,12 @@ export function mount() {
       bodyMat.depthWrite = !wantTransparent;
       bodyMat.needsUpdate = true;
     }
-    bodyMat.envMapIntensity = 1.15 - pose.light * 0.25;
-    const edgeBoost = 1 + envIn * 0.2;
-    solidMat.opacity = pose.edge * edgeEase * 0.72 * edgeBoost;
-    glintMat.opacity = pose.edge * edgeEase * 0.95;
+    bodyMat.envMapIntensity = HERO3D.material.envMapIntensity;
+    solidMat.opacity = pose.edge * edgeEase * 0.9 * hallFade;
+    glintMat.opacity = pose.edge * edgeEase * 0.32 * hallFade;
     glintMat.dashOffset = -((reduced ? 0 : now * 0.001) * HERO3D.edges.sweep);
-    hiddenMat.opacity = pose.hidden * edgeEase;
+    hiddenMat.opacity = pose.hidden * edgeEase * hallFade;
     hiddenLines.forEach(function (line) { line.visible = hiddenMat.opacity > 0.04; });
-    const lit = hdr(HERO3D.edges.hdrBoost);
-    const ink = new THREE.Color(0.12, 0.13, 0.08);
-    solidMat.color.copy(lit).lerp(ink, pose.light * 0.78);
-    glintMat.color.copy(lit).lerp(ink, pose.light * 0.55);
 
     if (inner) {
       inner.visible = pose.split > 0.04;
@@ -690,11 +728,18 @@ export function mount() {
       inner.rotation.y = idle * 0.6;
     }
 
-    disc.material.opacity = 0.08 + pose.light * 0.62;
     orbits.scale.setScalar(0.6 + 0.4 * nodeEase);
-    nodeMat.opacity = nodeEase;
-    nodeEdgeMat.opacity = nodeEase;
-    ringMat.opacity = HERO3D.nodes.ringOpacity * nodeEase * (0.35 + pose.orbit * 0.65);
+    nodeMat.opacity = nodeEase * hallFade;
+    nodeEdgeMat.opacity = nodeEase * hallFade;
+    ringMat.opacity = HERO3D.nodes.ringOpacity * nodeEase * (0.35 + pose.orbit * 0.65) * hallFade;
+    backlight.material.opacity = 0.55 * hallFade;
+    rig.visible = hallFade > 0.04;
+    orbits.visible = hallFade > 0.04;
+    podium.visible = pose.podium > 0.02;
+    podiumMats.forEach(function (mat) {
+      mat.opacity = pose.podium;
+      mat.depthWrite = pose.podium > 0.82;
+    });
 
     let hoverIndex = -1;
     if (fine && !mobile && !drag.on) {
@@ -719,15 +764,19 @@ export function mount() {
     envIn = THREE.MathUtils.damp(envIn, envTarget, 4.5, dt);
     const pair = Math.floor(now / 1000 / HERO3D.nodes.signEveryS) % 3;
     const pairIdx = [[0, 1], [1, 2], [2, 0]][pair];
+    const gate = window.innerWidth * (mobile ? 0.22 : 0.4);
     signLines.forEach(function (line, i) {
       const sat = sats[pairIdx[i]];
       sat.orb.getWorldPosition(tmp);
       apexMark.getWorldPosition(tmp2);
-      const attr = line.geometry.attributes.position;
-      attr.setXYZ(0, tmp.x, tmp.y, tmp.z);
-      attr.setXYZ(1, tmp2.x, tmp2.y, tmp2.z);
-      attr.needsUpdate = true;
-      line.material.opacity = envIn * nodeEase;
+      line.geometry.setPositions([tmp.x, tmp.y, tmp.z, tmp2.x, tmp2.y, tmp2.z]);
+      line.computeLineDistances();
+      const a = tmp.clone().project(camera);
+      const b = tmp2.clone().project(camera);
+      const ax = (a.x * 0.5 + 0.5) * window.innerWidth;
+      const bx = (b.x * 0.5 + 0.5) * window.innerWidth;
+      const calm = ax > gate && bx > gate && a.z < 1 && b.z < 1 ? 1 : 0;
+      line.material.opacity = envIn * nodeEase * 0.4 * calm * hallFade;
     });
 
     if (shardPieces.length) {
@@ -751,19 +800,31 @@ export function mount() {
       return;
     }
 
-    renderer.toneMapping = THREE.ACESFilmicToneMapping;
-    renderer.setRenderTarget(null);
-    renderer.render(scene, camera);
-    if (bloomOn) bloom.composite(scene, camera, bodyMat, disc);
+    if (bloomOn) {
+      renderer.toneMapping = THREE.NoToneMapping;
+      try {
+        grade.time(Math.floor(now / 41.67));
+        grade.render();
+      } catch (err) {
+        bloomOn = false;
+        renderer.toneMapping = THREE.ACESFilmicToneMapping;
+        renderer.setRenderTarget(null);
+        renderer.render(scene, camera);
+      }
+    } else {
+      renderer.toneMapping = THREE.ACESFilmicToneMapping;
+      renderer.setRenderTarget(null);
+      renderer.render(scene, camera);
+    }
 
-    if (!reduced && tier < dprLadder.length - 1) {
+    if (!reduced && !forceHQ && tier < dprLadder.length - 1) {
       frameMs.push(dt * 1000);
       if (frameMs.length >= 40) {
         const sorted = frameMs.slice().sort(function (a, b) { return a - b; });
         const body = sorted.slice(1, sorted.length - 1);
         const avg = body.reduce(function (a, b) { return a + b; }, 0) / Math.max(1, body.length);
         frameMs.length = 0;
-        if (avg > 22) {
+        if (avg > HERO3D.perf.frameBudgetMs) {
           tier += 1;
           dprCap = dprLadder[Math.min(tier, dprLadder.length - 1)];
           if (tier >= dprLadder.length - 1) bloomOn = false;
@@ -774,23 +835,22 @@ export function mount() {
   }
 
   function snapHero() {
-    const heroRect = host.getBoundingClientRect();
     const camZ = HERO3D.camera.z;
     const halfH = Math.tan(THREE.MathUtils.degToRad(camera.fov) / 2) * camZ;
     const halfW = halfH * camera.aspect;
-    const sx = heroRect.left + heroRect.width * 0.5;
-    const sy = heroRect.top + heroRect.height * 0.46;
+    const sx = window.innerWidth * (mobile ? 0.5 : 0.63);
+    const sy = window.innerHeight * (mobile ? 0.4 : 0.48);
     const ndcX = (sx / Math.max(1, window.innerWidth)) * 2 - 1;
     const ndcY = -((sy / Math.max(1, window.innerHeight)) * 2 - 1);
     const pxPerUnit = window.innerHeight / (2 * halfH);
     return {
       x: ndcX * halfW,
       y: ndcY * halfH,
-      scale: THREE.MathUtils.clamp((heroRect.height * 0.9) / (HERO3D.crystal.height * pxPerUnit), 0.18, 1.35),
+      scale: THREE.MathUtils.clamp((window.innerHeight * (mobile ? 0.62 : 0.86)) / (HERO3D.crystal.height * pxPerUnit), 0.45, 1.85),
       split: 0,
       body: 1,
-      edge: 0.9,
-      hidden: 0.04,
+      edge: 0,
+      hidden: 0,
       orbit: 1,
       camZ: camZ,
       spin: 0.2,
@@ -800,7 +860,9 @@ export function mount() {
       heroP: 0,
       side: 0,
       lift: 0,
-      fog: 0
+      fog: 0,
+      podium: 0,
+      dolly: 0
     };
   }
 
@@ -821,7 +883,7 @@ export function mount() {
 
   function placePins(nodeEase, hoverIndex) {
     if (hud.root.hidden) return;
-    const show = nodeEase > 0.72 ? Math.min(1, (nodeEase - 0.72) / 0.28) : 0;
+    const show = (nodeEase > 0.72 ? Math.min(1, (nodeEase - 0.72) / 0.28) : 0) * (1 - pose.podium);
     projectPin(hud.apex, apexMark, -78, -36, show * faceAmount(apexMark, new THREE.Vector3(0, 1, 0)));
     projectPin(hud.girdle, girdleMark, 22, 18, show * faceAmount(girdleMark, new THREE.Vector3(1, 0, 0)));
     hud.leaders.setAttribute("viewBox", "0 0 " + window.innerWidth + " " + window.innerHeight);
@@ -854,11 +916,30 @@ export function mount() {
     mark.getWorldPosition(tmp);
     tmp.project(camera);
     const behind = tmp.z > 1;
-    const x = (tmp.x * 0.5 + 0.5) * window.innerWidth;
-    const y = (-tmp.y * 0.5 + 0.5) * window.innerHeight;
-    pin.dataset.ax = x.toFixed(1);
-    pin.dataset.ay = y.toFixed(1);
-    pin.style.transform = "translate(" + (x + ox).toFixed(1) + "px," + (y + oy).toFixed(1) + "px)";
+    const ax = (tmp.x * 0.5 + 0.5) * window.innerWidth;
+    const ay = (-tmp.y * 0.5 + 0.5) * window.innerHeight;
+    pin.dataset.ax = ax.toFixed(1);
+    pin.dataset.ay = ay.toFixed(1);
+    const w = Math.max(pin.offsetWidth, 132);
+    const h = Math.max(pin.offsetHeight, 22);
+    const margin = 12;
+    let x = ax + ox;
+    let y = ay + oy;
+    if (x + w > window.innerWidth - margin) x = ax - w - 14;
+    if (x < margin) x = margin;
+    if (x + w > window.innerWidth - margin) x = window.innerWidth - margin - w;
+    if (y < 78) y = 78;
+    if (y + h > window.innerHeight - margin) y = window.innerHeight - margin - h;
+    document.querySelectorAll(".idx").forEach(function (el) {
+      const r = el.getBoundingClientRect();
+      if (r.width < 2 || r.height < 2) return;
+      const hit = x < r.right + 10 && x + w > r.left - 10 && y < r.bottom + 8 && y + h > r.top - 8;
+      if (!hit) return;
+      const below = r.bottom + 10;
+      if (below + h < window.innerHeight - margin) y = below;
+      else y = Math.max(78, r.top - h - 10);
+    });
+    pin.style.transform = "translate(" + x.toFixed(1) + "px," + y.toFixed(1) + "px)";
     pin.style.opacity = behind ? "0" : String(alpha);
   }
 
@@ -897,11 +978,16 @@ export function mount() {
   }
 
   function nearCrystal(x, y) {
-    rig.getWorldPosition(centerNdc);
-    centerNdc.project(camera);
-    const cx = (centerNdc.x * 0.5 + 0.5) * window.innerWidth;
-    const cy = (-centerNdc.y * 0.5 + 0.5) * window.innerHeight;
-    const reach = mobile ? 90 : 160 * pose.scale + 70;
+    rig.getWorldPosition(tmp);
+    const edge = tmp.clone();
+    edge.y += HERO3D.crystal.height * 0.5 * Math.abs(rig.scale.y || 1);
+    tmp.project(camera);
+    edge.project(camera);
+    if (tmp.z > 1) return false;
+    const cx = (tmp.x * 0.5 + 0.5) * window.innerWidth;
+    const cy = (-tmp.y * 0.5 + 0.5) * window.innerHeight;
+    const ey = (-edge.y * 0.5 + 0.5) * window.innerHeight;
+    const reach = Math.max(28, Math.abs(cy - ey) * 0.62);
     return Math.hypot(x - cx, y - cy) < reach;
   }
 
@@ -973,7 +1059,7 @@ export function mount() {
   window.addEventListener("pagehide", function () {
     try { sessionStorage.setItem("axv-scroll", String(window.scrollY)); } catch (err) { /* ignore */ }
     setActive(false);
-    bloom.dispose();
+    grade.dispose();
     renderer.dispose();
     envMap.dispose();
   }, { once: true });
@@ -1002,7 +1088,7 @@ function buildChrome(playIntro) {
   const loader = document.createElement("div");
   loader.id = "ax-loader";
   loader.hidden = !playIntro;
-  loader.innerHTML = "<div class=\"ax-mark\" aria-hidden=\"true\"><i class=\"ring ring-a\"></i><i class=\"ring ring-b\"></i><span class=\"orbit o1\"><i></i></span><span class=\"orbit o2\"><i></i></span><span class=\"orbit o3\"><i></i></span></div><p class=\"pct\">[ 000% SYNCING ]</p><div class=\"bar\"><i></i></div>";
+  loader.innerHTML = "<div class=\"frame\"><div class=\"ax-mark\" aria-hidden=\"true\"><i class=\"ring ring-a\"></i><i class=\"ring ring-b\"></i><span class=\"orbit o1\"><i></i></span><span class=\"orbit o2\"><i></i></span><span class=\"orbit o3\"><i></i></span></div><p class=\"pct\">[ 000% SYNCING ]</p><div class=\"bar\"><i></i></div></div>";
   const status = document.createElement("p");
   status.id = "ax-status";
   status.className = "ax-status";
@@ -1014,6 +1100,7 @@ function buildChrome(playIntro) {
   skip.textContent = "[ SKIP ]";
   skip.hidden = !playIntro;
   skip.tabIndex = playIntro ? 0 : -1;
+  document.documentElement.classList.remove("hold-hero");
   document.body.appendChild(loader);
   document.body.appendChild(status);
   document.body.appendChild(skip);
@@ -1083,24 +1170,49 @@ function hdr(boost) {
   return new THREE.Color(c.r * boost, c.g * boost, c.b * boost);
 }
 
+function trackLine(mat) {
+  mat.resolution.set(window.innerWidth || 1, window.innerHeight || 1);
+  lineMats.push(mat);
+  return mat;
+}
+
 function lineMat(boost, opacity) {
-  return new THREE.LineBasicMaterial({
+  return trackLine(new LineMaterial({
     color: hdr(boost),
+    linewidth: HERO3D.edges.width,
     transparent: true,
     opacity: opacity,
     toneMapped: false,
-    depthWrite: false
-  });
+    depthWrite: false,
+    alphaToCoverage: true
+  }));
+}
+
+function fatLines(edges, material) {
+  const geo = new LineSegmentsGeometry();
+  geo.fromEdgesGeometry(edges);
+  const line = new LineSegments2(geo, material);
+  line.computeLineDistances();
+  return line;
+}
+
+function topDpr(isMobile, force) {
+  const native = window.devicePixelRatio || 1;
+  const cap = isMobile ? HERO3D.perf.maxDprMobile : HERO3D.perf.maxDprDesktop;
+  if (force) return Math.max(native, cap, isMobile ? 1.5 : 1.75);
+  if (isMobile) return Math.min(native, cap);
+  return Math.min(Math.max(native, 1.5), Math.max(cap, 1.5));
 }
 
 function sampleFlight(p) {
   const stops = [
-    { at: 0, split: 0, body: 1, hidden: 0.02, orbit: 1, edge: 0.9, camZ: 7.6, side: 0.02, lift: 0.02, spin: 0.1, fog: 0, proof: 0, light: 0 },
-    { at: 0.18, split: 0.12, body: 1, hidden: 0.08, orbit: 0.5, edge: 0.95, camZ: 6.35, side: -0.16, lift: 0.1, spin: 0.85, fog: 0.72, proof: 0, light: 0.45 },
-    { at: 0.4, split: 1, body: 1, hidden: 0.1, orbit: 0.62, edge: 1, camZ: 5.85, side: 0.1, lift: 0.02, spin: 1.55, fog: 0.38, proof: 0.15, light: 0.15 },
-    { at: 0.62, split: 0.02, body: 0.18, hidden: 0.34, orbit: 0.95, edge: 1, camZ: 6.55, side: -0.1, lift: 0.06, spin: 2.15, fog: 0.12, proof: 1, light: 0.8 },
-    { at: 0.8, split: 0, body: 1, hidden: 0.03, orbit: 0.32, edge: 0.86, camZ: 8.6, side: 0.12, lift: 0.1, spin: 2.55, fog: 0.4, proof: 0.1, light: 0.08 },
-    { at: 1, split: 0, body: 1, hidden: 0, orbit: 0.16, edge: 0.7, camZ: 10.4, side: 0.06, lift: 0.14, spin: 2.9, fog: 0.18, proof: 0, light: 0 }
+    { at: 0, split: 0, body: 1, hidden: 0, orbit: 1, edge: 0, camZ: 6.8, side: 0, lift: 0, spin: 0.12, fog: 0.12, proof: 0, light: 0 },
+    { at: 0.15, split: 0, body: 1, hidden: 0, orbit: 0.8, edge: 0, camZ: 6.9, side: -0.04, lift: 0.03, spin: 0.45, fog: 0.22, proof: 0, light: 0 },
+    { at: 0.31, split: 0.55, body: 1, hidden: 0, orbit: 0.9, edge: 0, camZ: 6.5, side: 0.08, lift: 0.02, spin: 1.1, fog: 0.24, proof: 0.05, light: 0 },
+    { at: 0.5, split: 0.04, body: 0.42, hidden: 0.9, orbit: 1, edge: 0.85, camZ: 6.6, side: -0.02, lift: 0.04, spin: 1.8, fog: 0.18, proof: 1, light: 0 },
+    { at: 0.69, split: 0, body: 1, hidden: 0, orbit: 0.2, edge: 0, camZ: 5.7, side: 0, lift: 0.02, spin: 2.2, fog: 0.2, proof: 0, light: 0 },
+    { at: 0.84, split: 0, body: 1, hidden: 0, orbit: 0.28, edge: 0, camZ: 7.8, side: 0.04, lift: 0.08, spin: 2.5, fog: 0.22, proof: 0, light: 0 },
+    { at: 1, split: 0, body: 1, hidden: 0, orbit: 0.18, edge: 0, camZ: 8.6, side: 0.02, lift: 0.1, spin: 2.8, fog: 0.18, proof: 0, light: 0 }
   ];
   const x = clamp01(p);
   let i = 0;
@@ -1199,164 +1311,148 @@ function keepLongest(edges, maxSegments) {
   return geo;
 }
 
-function makeBloom(renderer) {
-  const rtOpts = { type: THREE.HalfFloatType, depthBuffer: true, stencilBuffer: false };
-  const src = new THREE.WebGLRenderTarget(2, 2, rtOpts);
-  const ping = new THREE.WebGLRenderTarget(2, 2, { type: THREE.HalfFloatType, depthBuffer: false });
-  const pong = new THREE.WebGLRenderTarget(2, 2, { type: THREE.HalfFloatType, depthBuffer: false });
-  [src, ping, pong].forEach(function (rt) {
-    rt.texture.colorSpace = THREE.LinearSRGBColorSpace;
-  });
-  const blurMat = new THREE.ShaderMaterial({
-    uniforms: {
-      tDiffuse: { value: null },
-      direction: { value: new THREE.Vector2(1, 0) },
-      resolution: { value: new THREE.Vector2(1, 1) },
-      threshold: { value: 0 }
-    },
-    vertexShader: "varying vec2 vUv; void main(){ vUv = uv; gl_Position = vec4(position.xy, 0.0, 1.0); }",
-    fragmentShader: [
-      "uniform sampler2D tDiffuse;",
-      "uniform vec2 direction;",
-      "uniform vec2 resolution;",
-      "uniform float threshold;",
-      "varying vec2 vUv;",
-      "void main(){",
-      "  if (threshold > 0.0) {",
-      "    vec4 s = texture2D(tDiffuse, vUv);",
-      "    float lum = max(s.r, max(s.g, s.b));",
-      "    gl_FragColor = lum >= threshold ? s : vec4(0.0);",
-      "    return;",
-      "  }",
-      "  vec2 px = direction / resolution;",
-      "  vec4 c = texture2D(tDiffuse, vUv) * 0.227;",
-      "  c += texture2D(tDiffuse, vUv + px * 1.35) * 0.194;",
-      "  c += texture2D(tDiffuse, vUv - px * 1.35) * 0.194;",
-      "  c += texture2D(tDiffuse, vUv + px * 3.2) * 0.122;",
-      "  c += texture2D(tDiffuse, vUv - px * 3.2) * 0.122;",
-      "  c += texture2D(tDiffuse, vUv + px * 5.4) * 0.071;",
-      "  c += texture2D(tDiffuse, vUv - px * 5.4) * 0.071;",
-      "  gl_FragColor = c;",
-      "}"
-    ].join("\n"),
-    depthTest: false,
-    depthWrite: false
-  });
-  const compMat = new THREE.ShaderMaterial({
-    uniforms: {
-      tBloom: { value: null },
-      strength: { value: HERO3D.bloom.strength }
-    },
-    vertexShader: "varying vec2 vUv; void main(){ vUv = uv; gl_Position = vec4(position.xy, 0.0, 1.0); }",
-    fragmentShader: [
-      "uniform sampler2D tBloom;",
-      "uniform float strength;",
-      "varying vec2 vUv;",
-      "void main(){ gl_FragColor = vec4(texture2D(tBloom, vUv).rgb * strength, 0.0); }"
-    ].join("\n"),
-    transparent: true,
-    depthTest: false,
-    depthWrite: false,
-    blending: THREE.CustomBlending,
-    blendSrc: THREE.OneFactor,
-    blendDst: THREE.OneFactor,
-    blendSrcAlpha: THREE.ZeroFactor,
-    blendDstAlpha: THREE.OneFactor
-  });
-  const quad = new THREE.Mesh(new THREE.PlaneGeometry(2, 2), blurMat);
-  const compQuad = new THREE.Mesh(new THREE.PlaneGeometry(2, 2), compMat);
-  const ortho = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1);
-  const pass = new THREE.Scene();
-  pass.add(quad);
-  const compScene = new THREE.Scene();
-  compScene.add(compQuad);
-  const saved = [];
 
-  function blit(materialTarget, input, output) {
-    blurMat.uniforms.tDiffuse.value = input.texture;
-    renderer.setRenderTarget(output);
-    renderer.render(pass, ortho);
+function buildStudio() {
+  const studio = new THREE.Scene();
+  studio.background = new THREE.Color(0x000000);
+  function strip(w, h, x, y, z, color, intensity) {
+    const mesh = new THREE.Mesh(
+      new THREE.PlaneGeometry(w, h),
+      new THREE.MeshBasicMaterial({
+        color: new THREE.Color(color).multiplyScalar(intensity),
+        side: THREE.DoubleSide
+      })
+    );
+    mesh.position.set(x, y, z);
+    mesh.lookAt(0, 0, 0);
+    studio.add(mesh);
   }
-
-  return {
-    resize: function (w, h) {
-      const hw = Math.max(1, Math.floor(w / 2));
-      const hh = Math.max(1, Math.floor(h / 2));
-      src.setSize(hw, hh);
-      ping.setSize(hw, hh);
-      pong.setSize(hw, hh);
-      blurMat.uniforms.resolution.value.set(hw, hh);
-    },
-    composite: function (scene, camera, bodyMat, disc) {
-      const prevTarget = renderer.getRenderTarget();
-      const prevTone = renderer.toneMapping;
-      const prevAlpha = renderer.getClearAlpha();
-      const prevAuto = renderer.autoClear;
-      const discWas = disc.visible;
-      try {
-        renderer.toneMapping = THREE.NoToneMapping;
-        renderer.setRenderTarget(src);
-        renderer.setClearColor(0x000000, 0);
-        renderer.clear(true, true, true);
-        disc.visible = false;
-        bodyMat.colorWrite = false;
-        scene.traverse(function (obj) {
-          if (obj.userData && obj.userData.bloom) {
-            saved.push(obj, obj.visible);
-            obj.visible = false;
-          }
-        });
-        renderer.render(scene, camera);
-        for (let i = 0; i < saved.length; i += 2) saved[i].visible = saved[i + 1];
-        saved.length = 0;
-        bodyMat.colorWrite = true;
-        camera.layers.disable(0);
-        renderer.render(scene, camera);
-        blurMat.uniforms.threshold.value = HERO3D.bloom.threshold;
-        blit(blurMat, src, ping);
-        blurMat.uniforms.threshold.value = 0;
-        blurMat.uniforms.direction.value.set(1, 0);
-        blit(blurMat, ping, pong);
-        blurMat.uniforms.direction.value.set(0, 1);
-        blit(blurMat, pong, ping);
-        renderer.autoClear = false;
-        renderer.setRenderTarget(null);
-        renderer.render(compScene, ortho);
-      } finally {
-        camera.layers.enable(0);
-        disc.visible = discWas;
-        bodyMat.colorWrite = true;
-        for (let i = 0; i < saved.length; i += 2) saved[i].visible = saved[i + 1];
-        saved.length = 0;
-        renderer.toneMapping = prevTone;
-        renderer.autoClear = prevAuto;
-        renderer.setClearAlpha(prevAlpha);
-        renderer.setRenderTarget(prevTarget);
-      }
-    },
-    dispose: function () {
-      src.dispose();
-      ping.dispose();
-      pong.dispose();
-      blurMat.dispose();
-      compMat.dispose();
-    }
-  };
+  strip(0.22, 7.2, -2.2, 1.1, 2.4, 0xffffff, 9);
+  strip(0.16, 7.2, 2.4, 0.4, -2.2, 0xffffff, 6);
+  strip(4.2, 0.16, 0.2, 2.6, 1.1, 0xffffff, 3.5);
+  strip(0.16, 5.5, 1.8, -1.6, 2.2, 0xeef94b, 7);
+  return studio;
 }
 
-function discTexture() {
+function makeDust(count) {
+  const geo = new THREE.BufferGeometry();
+  const pos = new Float32Array(count * 3);
+  for (let i = 0; i < count; i += 1) {
+    pos[i * 3] = (Math.random() - 0.5) * 14;
+    pos[i * 3 + 1] = (Math.random() - 0.5) * 8;
+    pos[i * 3 + 2] = -0.4 - Math.random() * 10;
+  }
+  geo.setAttribute("position", new THREE.BufferAttribute(pos, 3));
+  const mat = new THREE.PointsMaterial({
+    size: 0.018,
+    sizeAttenuation: true,
+    transparent: true,
+    opacity: 0.45,
+    depthWrite: false,
+    color: 0xd9d6c8,
+    fog: true
+  });
+  const points = new THREE.Points(geo, mat);
+  points.frustumCulled = false;
+  return points;
+}
+
+function makeFloor() {
+  const mat = new THREE.ShaderMaterial({
+    transparent: true,
+    depthWrite: false,
+    uniforms: {},
+    vertexShader: "varying vec3 vPos; void main(){ vPos = position; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }",
+    fragmentShader: [
+      "varying vec3 vPos;",
+      "void main(){",
+      "  vec2 g = abs(fract(vPos.xz * 1.5) - 0.5);",
+      "  float fw = max(fwidth(vPos.x), fwidth(vPos.z)) * 1.5;",
+      "  float line = 1.0 - smoothstep(0.0, fw * 1.5, min(g.x, g.y));",
+      "  float fade = exp(-length(vPos.xz) * 0.16);",
+      "  gl_FragColor = vec4(0.93, 0.976, 0.294, line * fade * 0.22);",
+      "}"
+    ].join("\n")
+  });
+  const floor = new THREE.Mesh(new THREE.PlaneGeometry(48, 48), mat);
+  floor.rotation.x = -Math.PI / 2;
+  floor.position.y = -1.9;
+  floor.frustumCulled = false;
+  return floor;
+}
+
+function backlightTexture() {
   const canvas = document.createElement("canvas");
-  canvas.width = 128;
-  canvas.height = 128;
+  canvas.width = 256;
+  canvas.height = 256;
   const ctx = canvas.getContext("2d");
-  const g = ctx.createRadialGradient(64, 64, 8, 64, 64, 64);
-  g.addColorStop(0, "rgba(0,0,0,0.72)");
-  g.addColorStop(0.55, "rgba(0,0,0,0.28)");
-  g.addColorStop(1, "rgba(0,0,0,0)");
+  const g = ctx.createRadialGradient(128, 128, 4, 128, 128, 128);
+  g.addColorStop(0, "rgba(255,255,255,0.22)");
+  g.addColorStop(0.18, "rgba(238,249,75,0.08)");
+  g.addColorStop(0.46, "rgba(238,249,75,0.03)");
+  g.addColorStop(1, "rgba(238,249,75,0)");
   ctx.fillStyle = g;
-  ctx.fillRect(0, 0, 128, 128);
+  ctx.fillRect(0, 0, 256, 256);
   const tex = new THREE.CanvasTexture(canvas);
   tex.colorSpace = THREE.SRGBColorSpace;
   return tex;
 }
 
+function makeComposer(renderer, scene, camera) {
+  const composer = new EffectComposer(renderer);
+  composer.renderTarget1.samples = 4;
+  composer.renderTarget2.samples = 4;
+  const renderPass = new RenderPass(scene, camera);
+  const bloomPass = new UnrealBloomPass(new THREE.Vector2(2, 2), HERO3D.bloom.strength, HERO3D.bloom.radius, HERO3D.bloom.threshold);
+  const gradePass = new ShaderPass({
+    uniforms: {
+      tDiffuse: { value: null },
+      uTime: { value: 0 }
+    },
+    vertexShader: "varying vec2 vUv; void main(){ vUv = uv; gl_Position = vec4(position.xy, 0.0, 1.0); }",
+    fragmentShader: [
+      "uniform sampler2D tDiffuse;",
+      "uniform float uTime;",
+      "varying vec2 vUv;",
+      "vec3 aces(vec3 x){",
+      "  return clamp((x * (2.51 * x + 0.03)) / (x * (2.43 * x + 0.59) + 0.14), 0.0, 1.0);",
+      "}",
+      "float hash(vec2 p){ return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453); }",
+      "void main(){",
+      "  vec2 dir = vUv - 0.5;",
+      "  float r = length(dir);",
+      "  vec2 off = dir * pow(r, 3.0) * 0.004;",
+      "  float cr = texture2D(tDiffuse, vUv + off).r;",
+      "  float cg = texture2D(tDiffuse, vUv).g;",
+      "  float cb = texture2D(tDiffuse, vUv - off).b;",
+      "  vec3 col = aces(vec3(cr, cg, cb));",
+      "  col = clamp(col * 1.03 - 0.012, 0.0, 1.0);",
+      "  float vig = smoothstep(1.12, 0.32, r);",
+      "  col *= mix(0.74, 1.0, vig);",
+      "  float n = hash(vUv * vec2(1440.0, 900.0) + uTime);",
+      "  col += (n - 0.5) * 0.012;",
+      "  gl_FragColor = vec4(col, 1.0);",
+      "}"
+    ].join("\n")
+  });
+  const output = new OutputPass();
+  composer.addPass(renderPass);
+  composer.addPass(bloomPass);
+  composer.addPass(gradePass);
+  composer.addPass(output);
+  return {
+    resize: function (w, h) {
+      composer.setPixelRatio(renderer.getPixelRatio());
+      composer.setSize(w, h);
+    },
+    time: function (frame) {
+      gradePass.uniforms.uTime.value = frame;
+    },
+    render: function () {
+      composer.render();
+    },
+    dispose: function () {
+      composer.dispose();
+    }
+  };
+}

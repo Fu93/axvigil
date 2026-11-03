@@ -72,7 +72,7 @@ def serve(port: int) -> http.server.ThreadingHTTPServer:
 def run_viewport(page, url: str, viewport: dict) -> tuple[int, int, list]:
     page.set_viewport_size(viewport)
     page.goto(url, wait_until="domcontentloaded")
-    page.wait_for_selector("[data-reveal]", timeout=5000)
+    page.wait_for_selector("[data-reveal]", state="attached", timeout=20000)
     page.evaluate("document.documentElement.style.scrollBehavior = 'auto'; window.scrollTo(0, 0)")
     first: dict[int, float] = {}
     passed: set[int] = set()
@@ -110,6 +110,58 @@ def run_viewport(page, url: str, viewport: dict) -> tuple[int, int, list]:
     for item in failures:
         print(f"  FAIL opacity={item['op']:.3f} top={item['top']} {item['label']}")
     return seen, len(first), failures
+
+
+def check_scroll_input(page, url: str, viewport: dict) -> list:
+    """Wheel, PageDown and a real click must move the page after the cursor wakes."""
+    page.set_viewport_size(viewport)
+    page.goto(url, wait_until="domcontentloaded")
+    page.wait_for_function(
+        """() => {
+          const loader = document.getElementById('ax-loader');
+          if (!loader) return document.readyState === 'complete';
+          return loader.hidden || loader.classList.contains('is-out');
+        }""",
+        timeout=15000,
+    )
+    page.evaluate("document.documentElement.style.scrollBehavior = 'auto'")
+    page.mouse.move(int(viewport["width"] * 0.42), int(viewport["height"] * 0.5))
+    page.wait_for_timeout(120)
+    page.mouse.wheel(0, 800)
+    wheel_y = 0
+    for _ in range(6):
+        page.wait_for_timeout(200)
+        wheel_y = max(wheel_y, page.evaluate("window.scrollY"))
+    page.evaluate("window.scrollTo(0, 0)")
+    page.mouse.click(8, 8)
+    page.keyboard.press("PageDown")
+    key_y = 0
+    for _ in range(8):
+        page.wait_for_timeout(150)
+        key_y = max(key_y, page.evaluate("window.scrollY"))
+    page.evaluate("window.scrollTo(0, 0)")
+    page.locator(".hero-actions a.btn.yellow").first.click()
+    page.wait_for_timeout(400)
+    proof_top = page.evaluate(
+        "() => { const el = document.getElementById('proof'); return el ? el.getBoundingClientRect().top : 9999; }"
+    )
+    fixed = page.evaluate("getComputedStyle(document.body).position")
+    print(
+        f"input {viewport['width']}x{viewport['height']} "
+        f"wheel={wheel_y:.0f} pageDown={key_y:.0f} proofTop={proof_top:.0f} body={fixed}"
+    )
+    failures = []
+    if wheel_y < 40:
+        failures.append({"label": "wheel did not scroll", "op": wheel_y, "top": 0})
+    if key_y < 40:
+        failures.append({"label": "PageDown did not scroll", "op": key_y, "top": 0})
+    if proof_top > 140:
+        failures.append({"label": "click did not reach proof", "op": proof_top, "top": int(proof_top)})
+    if fixed == "fixed":
+        failures.append({"label": "body is position fixed", "op": 0, "top": 0})
+    page.goto(url, wait_until="domcontentloaded")
+    page.evaluate("window.scrollTo(0, 0)")
+    return failures
 
 
 def check_board(page, url: str, viewport: dict) -> list:
@@ -159,6 +211,7 @@ def main() -> int:
             page = browser.new_page(viewport=VIEWPORTS[0])
             print(f"scroll step {STEP_PX}px every {STEP_MS}ms, opacity window {WINDOW_MS}ms")
             for viewport in VIEWPORTS:
+                failures.extend(check_scroll_input(page, url, viewport))
                 _, _, bad = run_viewport(page, url, viewport)
                 failures.extend(bad)
                 failures.extend(check_board(page, board, viewport))
