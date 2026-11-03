@@ -277,6 +277,10 @@ PYTHONPATH=agent:verifier:variantgen python -m axvigil_agent arena \
 
 This is a hackathon prototype for a BSC testnet/whitehat sandbox. It is not audited and should not be used with production funds. The demo commit-reveal randomness has known owner/validator influence and liveness limitations; the production plan is to replace it with Chainlink VRF v2.5. Admin powers, metadata mutability and skill revocation are documented in [`contracts/README.md`](contracts/README.md).
 
+## Real-incident track and invariant grading
+
+Five mothers are minimal offline reproductions of public DeFi incidents (Qubit, Hundred/Sonne, Platypus, Nomad, Beanstalk). Every mother is also graded with a fifth check, `invariantsHold`: Foundry fuzz and stateful invariant tests on the patched contract at a fixed seed (`0xA11CE`), 2000 fuzz runs, and 256 invariant runs of depth 32. Patches that only special-case the hidden unit tests fail that check. Sources, timings, and the two cheating-patch fixtures are in [`docs/real-incident-track.md`](docs/real-incident-track.md).
+
 ## License
 
 This project is MIT-licensed. See [LICENSE](LICENSE).
