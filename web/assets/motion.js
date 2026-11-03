@@ -1,26 +1,5 @@
 /* Scroll reveal, cursor, magnets, counters. Native scroll stays intact. */
 (function () {
-  window.addEventListener("wheel", function (event) {
-    if (event.ctrlKey) return;
-    var node = event.target;
-    var dy = event.deltaY;
-    if (event.deltaMode === 1) dy *= 16;
-    else if (event.deltaMode === 2) dy *= window.innerHeight * 0.9;
-    while (node && node !== document.body && node !== document.documentElement) {
-      var oy = getComputedStyle(node).overflowY;
-      if ((oy === "auto" || oy === "scroll") && node.scrollHeight > node.clientHeight + 1) {
-        if (dy > 0 && node.scrollTop + node.clientHeight < node.scrollHeight - 1) return;
-        if (dy < 0 && node.scrollTop > 0) return;
-      }
-      node = node.parentElement;
-    }
-    if (!dy) return;
-    event.preventDefault();
-    var root = document.scrollingElement || document.documentElement;
-    var max = root.scrollHeight - root.clientHeight;
-    root.scrollTop = Math.max(0, Math.min(max, root.scrollTop + dy));
-  }, { passive: false });
-
   if (location.hash) {
     var jumped = document.querySelector(location.hash);
     if (jumped) jumped.scrollIntoView();

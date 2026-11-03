@@ -38,7 +38,7 @@ export const HERO3D = {
     iridescence: 0
   },
   edges: { thresholdDeg: 25, hdrBoost: 2.2, opacity: 0.9, sweep: 0.18, width: 1.25 },
-  bloom: { strength: 0.42, radius: 0.32, threshold: 0.96, halfRes: false },
+  bloom: { strength: 0.42, radius: 0.32, threshold: 0.96, halfRes: true },
   nodes: {
     radii: [1.75, 2.0, 2.3],
     inclDeg: [12, -20, 34],
@@ -49,7 +49,7 @@ export const HERO3D = {
     signEveryS: 7
   },
   intro: { edgesS: 0.9, bodyDelayS: 0.5, textDelayS: 0.7, totalS: 1.8 },
-  perf: { maxDprDesktop: 1.75, maxDprMobile: 1.5, frameBudgetMs: 22 }
+  perf: { maxDprDesktop: 1.25, maxDprMobile: 1.5, frameBudgetMs: 22 }
 };
 
 const HALVES = "assets/3d/halves_meshopt.glb";
@@ -1807,8 +1807,8 @@ function backlightTexture() {
 
 function makeComposer(renderer, scene, camera) {
   const composer = new EffectComposer(renderer);
-  composer.renderTarget1.samples = 4;
-  composer.renderTarget2.samples = 4;
+  composer.renderTarget1.samples = 0;
+  composer.renderTarget2.samples = 0;
   const renderPass = new RenderPass(scene, camera);
   const clampPass = new ShaderPass({
     uniforms: {
