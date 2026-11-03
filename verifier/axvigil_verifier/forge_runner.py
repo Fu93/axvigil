@@ -18,6 +18,7 @@ import tempfile
 from dataclasses import dataclass, field
 from pathlib import Path
 
+from .storage_guard import StorageSlot, extract_storage_layout_from_project
 from .toolchain import effective_nproc_limit, uid_thread_count
 
 try:
@@ -69,6 +70,7 @@ class RunResult:
     tests: dict[str, bool] = field(default_factory=dict)  # "testName()" -> passed
     reasons: dict[str, str | None] = field(default_factory=dict)  # "testName()" -> failure reason
     gas_used: dict[str, int | None] = field(default_factory=dict)  # "testName()" -> gas units
+    storage_layout: list[StorageSlot] | None = None
     raw: str = ""
 
     @property
@@ -218,6 +220,7 @@ def run_test(
     mem_limit_bytes: int = 4 << 30,
     fsize_limit_bytes: int = 256 << 20,
     nproc_limit: int = int(os.environ.get("AXVIGIL_NPROC_LIMIT", "4096")),
+    inspect_contract: str | None = None,
 ) -> RunResult:
     """Compile `sources`+`tests` and run forge tests matching `match_path`.
 
@@ -287,12 +290,18 @@ def run_test(
         if not compiled:
             return RunResult(compiled=False, timed_out=False, raw=proc_stderr + stdout)
         tests_map, reasons_map, gas_map = details
+        storage_layout: list[StorageSlot] | None = None
+        if inspect_contract:
+            storage_layout = extract_storage_layout_from_project(
+                forge_bin, workdir, inspect_contract, solc=solc, timeout_s=min(timeout_s, 30)
+            )
         return RunResult(
             compiled=True,
             timed_out=False,
             tests=tests_map,
             reasons=reasons_map,
             gas_used=gas_map,
+            storage_layout=storage_layout,
             raw=stdout,
         )
     finally:

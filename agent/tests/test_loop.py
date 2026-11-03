@@ -89,3 +89,23 @@ def test_json_payload_includes_analysis_and_patch():
     assert payload["iterations"][0]["analysis"] == "because reentrancy"
     assert payload["finalPatch"] == "patch"
     assert payload["finalPoc"] == "poc"
+
+
+def test_solve_cli_emit_zk_bundle(tmp_path):
+    from axvigil_agent.__main__ import main
+    bundle_out = tmp_path / "bundle.json"
+    challenges_dir = Path(__file__).resolve().parents[2] / "challenges" / "reentrancy-vault"
+    code = main([
+        "solve",
+        "--challenge", str(challenges_dir),
+        "--oracle",
+        "--emit-zk-bundle", str(bundle_out),
+        "--agent-id", "42",
+    ])
+    assert code == 0
+    assert bundle_out.is_file()
+    data = json.loads(bundle_out.read_text())
+    assert data["agentId"] == 42
+    assert data["challengeId"] == "reentrancy-vault"
+    assert data["passed"] is True
+    assert data["checksBitmap"] in (15, 31)

@@ -26,6 +26,7 @@ The current public prototype implements the smart-contract capability record lay
 
 - `AxVigilCollectible`: ERC-721 collectible with EIP-712 mint authorization, fixed tier pools, staged rarity release, commit-reveal demo randomness, per-Agent ID quota, hourly cap and pause controls.
 - `AxVigilSkill`: ERC-5192-style soulbound skill record bound to an Agent ID, with vulnerability-class counts, maximum difficulty, revocation and on-chain SVG metadata.
+- `AxVigilZKVerifier`: on-chain SP1 zkVM verifier binding certified offline audits to the ERC-5192 SBT with nullifier anti-replay and quota enforcement.
 - `MockAgentID`: open-mint ERC-721 registry used only for local tests and demos.
 - `contracts/test`: unit, fuzz, rarity-distribution and invariant tests.
 - `challenges/reentrancy-001`: a deliberately vulnerable training fixture with a sample exploit PoC, sample patch and hidden behavior tests.

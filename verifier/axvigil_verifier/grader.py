@@ -99,6 +99,27 @@ def _interface_preserved(patched: str, contract_name: str, required_selectors: l
     return (not missing, missing)
 
 
+def check_poc_decoy_probes(poc_text: str) -> tuple[bool, str | None]:
+    """Detect whether a submitted PoC attempts anti-cheat bypass via EVM bytecode introspection.
+
+    A valid security PoC exercises contract functions and state invariants, not
+    low-level bytecode size/hash inspections (.code.length, extcodesize, extcodehash, .codehash)
+    that artificially pass or fail depending on whether bytecode changed.
+    """
+    suspicious_patterns = [
+        (r"\.code\.length\b", "bytecode length inspection (.code.length)"),
+        (r"\bextcodesize\b", "assembly extcodesize inspection"),
+        (r"\bextcodehash\b", "assembly extcodehash inspection"),
+        (r"\.codehash\b", "bytecode hash inspection (.codehash)"),
+        (r"type\s*\([^)]+\)\.runtimeCode", "runtimeCode bytecode introspection"),
+        (r"type\s*\([^)]+\)\.creationCode", "creationCode bytecode introspection"),
+    ]
+    for pattern, desc in suspicious_patterns:
+        if re.search(pattern, poc_text, re.IGNORECASE):
+            return False, f"Decoy PoC rejected: contains bytecode introspection '{desc}'"
+    return True, None
+
+
 def grade(
     challenge_dir: str | Path,
     submission_dir: str | Path,
@@ -153,6 +174,7 @@ def grade(
         invariant_runs: int = 32,
         invariant_depth: int = 15,
         fuzz_seed: int = FUZZ_SEED,
+        inspect_contract: str | None = None,
     ) -> RunResult:
         try:
             r = run_test(
@@ -160,6 +182,7 @@ def grade(
                 forge_bin=forge_bin, solc=solc, timeout_s=timeout_s,
                 fuzz_seed=fuzz_seed, fuzz_runs=fuzz_runs,
                 invariant_runs=invariant_runs, invariant_depth=invariant_depth,
+                inspect_contract=inspect_contract,
             )
         except FileNotFoundError:
             log.append(
@@ -200,12 +223,19 @@ def grade(
             log.append(f"{label}: {sum(r.tests.values())}/{len(r.tests)} tests passed {r.tests}")
         return r
 
-    # 1. PoC proves the bug on the ORIGINAL contract.
-    r1 = _run("pocProvesBug", original_sources, {poc_name: poc_text}, f"test/{poc_name}")
-    poc_proves_bug = r1.all_passed
+    # Check for decoy PoC bytecode probing anti-cheat bypass
+    poc_decoy_ok, decoy_err = check_poc_decoy_probes(poc_text)
+    if not poc_decoy_ok:
+        log.append(f"pocProvesBug: {decoy_err}")
+        poc_proves_bug = False
+        r1 = RunResult(compiled=True, timed_out=False, tests={}, raw=decoy_err or "")
+    else:
+        # 1. PoC proves the bug on the ORIGINAL contract.
+        r1 = _run("pocProvesBug", original_sources, {poc_name: poc_text}, f"test/{poc_name}", inspect_contract=contract_name)
+        poc_proves_bug = r1.all_passed
 
     # 2. The same PoC FAILS on the PATCHED contract (and the patch compiles).
-    r2 = _run("pocFailsAfterPatch", patched_sources, {poc_name: poc_text}, f"test/{poc_name}")
+    r2 = _run("pocFailsAfterPatch", patched_sources, {poc_name: poc_text}, f"test/{poc_name}", inspect_contract=contract_name)
     # Every PoC test must fail after the patch. "At least one failed" let a
     # submission keep the exploit working and add a decoy test that the patch
     # breaks, which still counted as closing the bug.
@@ -231,7 +261,14 @@ def grade(
 
     storage_ok = True
     storage_violations: list[str] = []
-    if meta.get("checkStorageLayout", False) and iface_ok:
+    
+    # Priority 1: Dynamic storage layout inspection from compiled contract bytecode
+    if r1.storage_layout is not None and r2.storage_layout is not None and iface_ok:
+        storage_ok, storage_violations = verify_storage_layout_preservation(
+            r1.storage_layout, r2.storage_layout
+        )
+    # Priority 2: Static layout fallback if specified in metadata
+    elif meta.get("checkStorageLayout", False) and iface_ok:
         orig_layout_raw = meta.get("originalStorageLayout")
         patched_layout_raw = meta.get("patchedStorageLayout")
         if orig_layout_raw and patched_layout_raw:
@@ -241,7 +278,7 @@ def grade(
 
     patch_within_limits = within_lines and within_bytes and iface_ok and storage_ok
     storage_note = ""
-    if meta.get("checkStorageLayout", False):
+    if r1.storage_layout is not None or meta.get("checkStorageLayout", False):
         storage_note = f" storage={'ok' if storage_ok else 'CORRUPTED ' + '; '.join(storage_violations)}"
     log.append(
         f"patchWithinLimits: changedLines={changed}/{max_changed} bytes={nbytes}/{max_bytes} "

@@ -12,3 +12,6 @@ backend/evidence/
 /tmp/axvigil-challenges/
 verifier/out/
 variantgen/out/
+*.egg-info/
+.venv/
+uv.lock

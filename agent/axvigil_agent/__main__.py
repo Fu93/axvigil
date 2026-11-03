@@ -105,6 +105,31 @@ def _cmd_solve_agentic(args, client, challenge_dir: Path) -> int:
             "hiddenTestsPass": graded.hiddenTestsPass,
             "patchWithinLimits": graded.patchWithinLimits,
         }
+    if passed and getattr(args, "emit_zk_bundle", None):
+        verifier = Path(__file__).resolve().parents[2] / "verifier"
+        if str(verifier) not in sys.path:
+            sys.path.insert(0, str(verifier))
+        from axvigil_verifier.zk_attestation import generate_zk_attestation_bundle
+        meta = json.loads((challenge_dir / "challenge.json").read_text())
+        original_code = (challenge_dir / "src" / meta["targetFile"]).read_text()
+        bundle = generate_zk_attestation_bundle(
+            agent_id=args.agent_id,
+            challenge_id=meta["challengeId"],
+            original_code=original_code,
+            patched_code=result.patch,
+            vuln_class=meta.get("vulnClass", 0),
+            difficulty=meta.get("difficulty", 0),
+            poc_proves_bug=graded.pocProvesBug,
+            poc_fails_after_patch=graded.pocFailsAfterPatch,
+            hidden_tests_pass=graded.hiddenTestsPass,
+            patch_within_limits=graded.patchWithinLimits,
+            invariants_hold=graded.invariantsHold,
+        )
+        out_p = Path(args.emit_zk_bundle)
+        out_p.parent.mkdir(parents=True, exist_ok=True)
+        out_p.write_text(bundle.to_json())
+        if not args.json:
+            print(f"agentic zk-bundle: saved to {args.emit_zk_bundle}")
     if args.json:
         print(json.dumps(payload, indent=2))
     else:
@@ -201,6 +226,10 @@ def main(argv: list[str] | None = None) -> int:
     s.add_argument("--tool-protocol", default="tools", choices=("tools", "json"), dest="tool_protocol",
                    help="tools = OpenAI tool_calls; json = one JSON action per turn")
     s.add_argument("--max-steps", type=int, default=10, dest="max_steps")
+    s.add_argument("--emit-zk-bundle", default=None, metavar="PATH",
+                   help="write certified zkVM attestation bundle JSON to PATH upon successful solve")
+    s.add_argument("--agent-id", type=int, default=1, dest="agent_id",
+                   help="SPACE ID Agent ID for on-chain credential binding (default 1)")
 
     arena = sub.add_parser(
         "arena",
@@ -277,6 +306,31 @@ def main(argv: list[str] | None = None) -> int:
             print(f"  iter {it.index}: passed={it.passed} {it.checks}")
         if outcome.solved:
             print(f"  submissionHash: {outcome.final_result['submissionHash']}")
+            if getattr(args, "emit_zk_bundle", None):
+                verifier = Path(__file__).resolve().parents[2] / "verifier"
+                if str(verifier) not in sys.path:
+                    sys.path.insert(0, str(verifier))
+                from axvigil_verifier.zk_attestation import generate_zk_attestation_bundle
+                meta = json.loads((challenge_dir / "challenge.json").read_text())
+                original_code = (challenge_dir / "src" / meta["targetFile"]).read_text()
+                res = outcome.final_result or {}
+                bundle = generate_zk_attestation_bundle(
+                    agent_id=args.agent_id,
+                    challenge_id=outcome.challenge_id,
+                    original_code=original_code,
+                    patched_code=outcome.final_patch,
+                    vuln_class=meta.get("vulnClass", 0),
+                    difficulty=meta.get("difficulty", 0),
+                    poc_proves_bug=res.get("pocProvesBug", True),
+                    poc_fails_after_patch=res.get("pocFailsAfterPatch", True),
+                    hidden_tests_pass=res.get("hiddenTestsPass", True),
+                    patch_within_limits=res.get("patchWithinLimits", True),
+                    invariants_hold=res.get("invariantsHold", True),
+                )
+                out_p = Path(args.emit_zk_bundle)
+                out_p.parent.mkdir(parents=True, exist_ok=True)
+                out_p.write_text(bundle.to_json())
+                print(f"  zk-bundle: saved to {args.emit_zk_bundle}")
 
     return 0 if outcome.solved else 1
 

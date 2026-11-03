@@ -10,4 +10,6 @@ interface IAxVigilSkill {
     function confirmSolve(uint256 agentId, uint8 vulnClass) external;
 
     function revokeSolve(uint256 agentId, uint8 vulnClass) external;
+
+    function totalSolves(uint256 agentId) external view returns (uint32);
 }

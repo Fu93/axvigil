@@ -7,8 +7,9 @@ Hackathon demo contracts for AxVigil on BSC testnet (chainId 97). The binding in
 |---|---|
 | `src/AxVigilCollectible.sol` | Tradeable ERC-721. EIP-712 `MintAuth` mint, fixed tier pools, staged release, commit-reveal rarity, per-agent quota, hourly cap, pause |
 | `src/AxVigilSkill.sol` | ERC-5192 soulbound skill record, one per Agent ID, ownership proxied to the Agent ID registry, on-chain SVG |
+| `src/AxVigilZKVerifier.sol` | On-chain SP1 zkVM verifier binding certified offline audits to the ERC-5192 SBT with nullifier anti-replay and quota enforcement |
 | `src/MockAgentID.sol` | Open-mint ERC-721 standing in for the SPACE ID Agent ID registry (testnet/tests only) |
-| `src/interfaces/*` | `IAgentRegistry` (ownerOf), `IERC5192`, `IAxVigilSkill` |
+| `src/interfaces/*` | `IAgentRegistry` (ownerOf), `IERC5192`, `IAxVigilSkill`, `ISP1Verifier` |
 | `script/Deploy.s.sol` | BSC testnet deploy (the live addresses are in `deployments/bsc-testnet-97.json`) |
 | `test/*` | Unit, fuzz and invariant tests |
 

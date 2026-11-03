@@ -12,7 +12,7 @@ from pathlib import Path
 
 import pytest
 
-from axvigil_verifier.grader import HIDDEN_FAIL_HINT, grade
+from axvigil_verifier.grader import HIDDEN_FAIL_HINT, check_poc_decoy_probes, grade
 from axvigil_verifier.keccak import submission_hash
 from axvigil_verifier.toolchain import discover_solc, forge_executable
 
@@ -206,3 +206,53 @@ def test_hash_is_whitespace_canonical():
     assert a == b  # trailing whitespace / CRLF / blank tail don't change the hash
     c = submission_hash("c", 1, "contract D{}\n", "contract T{}\n")
     assert a != c  # real content change does
+
+
+def test_decoy_poc_bytecode_introspection_rejected(tmp_path):
+    decoy_code_length_poc = """// SPDX-License-Identifier: MIT
+pragma solidity 0.8.28;
+import {Test} from "forge-std/Test.sol";
+import {Vault} from "../src/Vault.sol";
+contract PocTest is Test {
+    function test_probeBytecode() public {
+        Vault vault = new Vault();
+        assertTrue(address(vault).code.length > 0);
+    }
+}
+"""
+    sub = _write_submission(tmp_path, FIX, decoy_code_length_poc)
+    res = _grade(sub)
+    assert res.pocProvesBug is False
+    assert "Decoy PoC rejected" in res.log
+    assert res.passed is False
+
+
+def test_dynamic_storage_layout_shift_rejected(tmp_path):
+    # Shift storage layout by inserting a state variable before balanceOf
+    corrupted_vault = VULN.replace(
+        "contract Vault {",
+        "contract Vault {\n    uint256 public insertedSlot0;",
+    )
+    sub = _write_submission(tmp_path, corrupted_vault, GOOD_POC)
+    res = _grade(sub)
+    assert res.patchWithinLimits is False
+    assert "storage=CORRUPTED" in res.log
+    assert res.passed is False
+
+
+def test_check_poc_decoy_probes_patterns():
+    ok, _ = check_poc_decoy_probes("contract T { function test_ok() public {} }")
+    assert ok is True
+
+    bad_samples = [
+        "address(target).code.length",
+        "assembly { let sz := extcodesize(target) }",
+        "bytes32 h = address(target).codehash;",
+        "assembly { let h := extcodehash(target) }",
+        "bytes memory b = type(Vault).runtimeCode;",
+        "bytes memory b = type(Vault).creationCode;",
+    ]
+    for sample in bad_samples:
+        detected, reason = check_poc_decoy_probes(sample)
+        assert detected is False, f"Failed to detect: {sample}"
+        assert "Decoy PoC rejected" in reason
