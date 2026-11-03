@@ -335,6 +335,9 @@ def compile_failure_note(raw: str, *, include_error_line: bool) -> str:
     if not include_error_line:
         return ""
     line = first_compiler_error(raw)
+    if line is None:
+        lines = [line.strip() for line in (raw or "").splitlines() if line.strip()]
+        line = lines[-1][:200] if lines else None
     return f" — {line}" if line else ""
 
 
