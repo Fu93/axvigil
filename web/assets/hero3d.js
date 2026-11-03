@@ -55,12 +55,16 @@ export const HERO3D = {
 const HALVES = "assets/3d/halves_meshopt.glb";
 const SHARDS = "assets/3d/shards_meshopt.glb";
 const NODE = "assets/3d/node_meshopt.glb";
-/* board_podium.glb drop-in. Swap the file, not this transform:
-   scale 1, origin at the plinth center, y = 0 on the underside,
-   four columns along +X (outer centers ±1.35), height 2.4, facing +Z. */
-const BOARD = "assets/3d/board_podium.glb";
-const BOARD_SCALE = 1;
-const BOARD_DOLLY = { from: -1.15, to: 1.15 };
+/* Section GLBs are max-dimension 1.90, centred, +Y up. Loaded one section ahead. */
+const SECTION_FILES = [
+  null,
+  { id: "problem", url: "assets/3d/problem.glb", motion: "vault", cam: 5.5, dolly: 0.22 },
+  { id: "how", url: "assets/3d/how.glb", motion: "cage", cam: 6.15, dolly: -0.12 },
+  { id: "proof", url: "assets/3d/proof.glb", motion: "record", cam: 6.35, dolly: 0.08 },
+  { id: "board", url: "assets/3d/board.glb", motion: "podium", cam: 6.2, dolly: 0 },
+  { id: "roadmap", url: "assets/3d/roadmap.glb", motion: "lattice", cam: 6.9, dolly: 0.16 },
+  { id: "faq", url: "assets/3d/faq.glb", motion: "plumb", cam: 5.7, dolly: -0.06 }
+];
 const MODEL_SCALE = 2.4 / 1.9;
 const SHARD_CENTROIDS = [
   [0.0235, 0.5383, 0.0131],
@@ -99,6 +103,7 @@ export function mount() {
   if (!webglOk()) {
     document.documentElement.classList.remove("hold-hero");
     document.documentElement.classList.add("intro-go");
+    document.documentElement.classList.add("no-webgl");
     return;
   }
 
@@ -113,11 +118,13 @@ export function mount() {
   } catch (err) {
     document.documentElement.classList.remove("hold-hero");
     document.documentElement.classList.add("intro-go");
+    document.documentElement.classList.add("no-webgl");
     return;
   }
   if (!renderer.getContext()) {
     document.documentElement.classList.remove("hold-hero");
     document.documentElement.classList.add("intro-go");
+    document.documentElement.classList.add("no-webgl");
     return;
   }
 
@@ -159,11 +166,16 @@ export function mount() {
   key.position.set(-4.2, 6.2, 3.4);
   scene.add(key);
 
-  const podium = new THREE.Group();
-  podium.position.set(0, -1.05, 0);
-  podium.visible = false;
-  scene.add(podium);
-  const podiumMats = [];
+  const slot = new THREE.Group();
+  scene.add(slot);
+  const shows = SECTION_FILES.map(function (spec, index) {
+    return {
+      spec: spec, index: index, root: null, mats: [], state: "idle",
+      weight: 0, travel: 0, yaw: 0, swing: 0, step: 0, raw: 0
+    };
+  });
+  let scrollV = 0;
+  let lastScroll = window.scrollY;
 
   const rig = new THREE.Group();
   const tilt = new THREE.Group();
@@ -453,25 +465,8 @@ export function mount() {
     host.dataset.glbBytes = String(bytes);
     host.dataset.glbMs = String(Math.round(performance.now() - t0));
     host.classList.add("is-live");
+    document.documentElement.classList.add("ax-3d");
     meshReady = true;
-    loadOne(BOARD).then(function (gltf) {
-      const root = gltf.scene;
-      root.scale.setScalar(BOARD_SCALE);
-      root.position.set(0, 0, 0);
-      root.traverse(function (obj) {
-        if (!obj.isMesh) return;
-        const mats = Array.isArray(obj.material) ? obj.material : [obj.material];
-        mats.forEach(function (mat) {
-          if (!mat) return;
-          mat.envMapIntensity = 1.35;
-          mat.transparent = true;
-          mat.opacity = 0;
-          mat.depthWrite = true;
-          podiumMats.push(mat);
-        });
-      });
-      podium.add(root);
-    }).catch(function () { /* board file missing; the crystal stays */ });
     meshReadyAt = performance.now();
     chrome.loaded();
     resize();
@@ -528,7 +523,8 @@ export function mount() {
   function desired() {
     const heroP = THREE.MathUtils.clamp(-hero.getBoundingClientRect().top / Math.max(hero.offsetHeight, 1), 0, 1);
     const flight = sampleFlight(storyS);
-    const camZ = flight.camZ;
+    const mix = sectionMix();
+    const camZ = mix.cam;
     const halfH = Math.tan(THREE.MathUtils.degToRad(camera.fov) / 2) * camZ;
     const halfW = halfH * camera.aspect;
     const along = smootherstep(clamp01((storyS - 0.04) / 0.18));
@@ -557,32 +553,177 @@ export function mount() {
       side: flight.side,
       lift: flight.lift,
       fog: flight.fog,
-      podium: boardPresence(),
-      dolly: boardDolly()
+      podium: 1 - mix.hero,
+      dolly: mix.dolly
     };
   }
 
-  function boardPresence() {
-    const el = document.getElementById("board");
+  function anchorWeight(el) {
     if (!el) return 0;
     const r = el.getBoundingClientRect();
     const vh = window.innerHeight || 1;
-    const bandTop = vh * 0.16;
-    const bandBot = vh * 0.84;
-    const overlap = Math.min(r.bottom, bandBot) - Math.max(r.top, bandTop);
-    return clamp01(overlap / (vh * 0.28));
+    const mid = r.top + Math.min(r.height, vh) * 0.42;
+    return Math.max(0, 1 - Math.abs(mid - vh * 0.46) / (vh * 0.62));
   }
 
-  function boardDolly() {
-    const el = document.getElementById("board");
-    if (!el || boardPresence() < 0.02) return 0;
+  function sectionTravel(el) {
+    if (!el) return 0;
     const r = el.getBoundingClientRect();
     const vh = window.innerHeight || 1;
     const start = vh * 0.92;
-    const end = vh * 0.2 - r.height;
-    const travel = clamp01((start - r.top) / Math.max(1, start - end));
-    const span = mobile ? 0.62 : 1;
-    return THREE.MathUtils.lerp(BOARD_DOLLY.from * span, BOARD_DOLLY.to * span, smootherstep(travel));
+    const end = vh * 0.15 - r.height;
+    return clamp01((start - r.top) / Math.max(1, start - end));
+  }
+
+  function sectionMix() {
+    let sum = 0;
+    const weights = shows.map(function (show, i) {
+      const id = i === 0 ? "top" : show.spec.id;
+      const w = anchorWeight(document.getElementById(id));
+      show.raw = w;
+      sum += w;
+      return w;
+    });
+    if (sum < 0.001) sum = 1;
+    let cam = 0;
+    let dolly = 0;
+    weights.forEach(function (w, i) {
+      const n = w / sum;
+      if (i === 0) cam += 6.8 * n;
+      else {
+        cam += shows[i].spec.cam * n;
+        dolly += (shows[i].spec.dolly || 0) * n;
+      }
+    });
+    return { hero: weights[0] / sum, cam: cam, dolly: dolly };
+  }
+
+  function tuneShowMats(root, bucket) {
+    root.traverse(function (obj) {
+      if (!obj.isMesh || !obj.material) return;
+      const list = Array.isArray(obj.material) ? obj.material : [obj.material];
+      list.forEach(function (mat) {
+        mat.envMap = scene.environment;
+        mat.envMapIntensity = 2.35;
+        if (mat.roughness !== undefined) mat.roughness = Math.min(mat.roughness, 0.32);
+        if (mat.metalness !== undefined) mat.metalness = Math.max(mat.metalness, 0.25);
+        mat.transparent = true;
+        mat.opacity = 0;
+        mat.depthWrite = false;
+        bucket.push(mat);
+      });
+    });
+  }
+
+  function releaseShow(show) {
+    if (show.root) {
+      slot.remove(show.root);
+      show.root.traverse(function (obj) {
+        if (obj.geometry) obj.geometry.dispose();
+        if (!obj.material) return;
+        const list = Array.isArray(obj.material) ? obj.material : [obj.material];
+        list.forEach(function (mat) {
+          ["map", "normalMap", "roughnessMap", "metalnessMap", "emissiveMap", "aoMap"].forEach(function (key) {
+            if (mat[key]) mat[key].dispose();
+          });
+          mat.dispose();
+        });
+      });
+    }
+    show.root = null;
+    show.mats = [];
+    show.state = "idle";
+    const el = show.spec && document.getElementById(show.spec.id);
+    if (el && mobile) el.classList.add("still-on");
+  }
+
+  function loadShow(show) {
+    if (!show.spec || show.state !== "idle") return;
+    show.state = "loading";
+    const el = document.getElementById(show.spec.id);
+    if (el && mobile) el.classList.add("still-on");
+    loadOne(show.spec.url).then(function (gltf) {
+      if (show.state === "dead") {
+        releaseShow(show);
+        return;
+      }
+      const root = gltf.scene;
+      root.scale.setScalar(MODEL_SCALE);
+      tuneShowMats(root, show.mats);
+      show.root = root;
+      show.state = "ready";
+      slot.add(root);
+      if (el) el.classList.remove("still-on");
+    }).catch(function () { show.state = "idle"; });
+  }
+
+  function streamShows() {
+    let best = 0;
+    let bestW = -1;
+    shows.forEach(function (show, i) {
+      if (show.raw > bestW) { bestW = show.raw; best = i; }
+    });
+    const scrolled = window.scrollY > 40;
+    shows.forEach(function (show, i) {
+      if (!show.spec) return;
+      const keep = scrolled && (i === best || i === best + 1);
+      const far = Math.abs(i - best) > 1;
+      if (keep && show.state === "idle") loadShow(show);
+      if (far && show.state === "ready" && show.weight < 0.02) releaseShow(show);
+    });
+  }
+
+  function updateShows(dt, tSec) {
+    sectionMix();
+    streamShows();
+    let sum = 0;
+    const sharp = shows.map(function (show) {
+      const s = Math.pow(Math.max(0, show.raw), 2.4);
+      sum += s;
+      return s;
+    });
+    if (sum < 0.001) sum = 1;
+    const stepEl = document.querySelector("#how .step.is-on");
+    let step = 0;
+    document.querySelectorAll("#how .step").forEach(function (el, n) { if (el === stepEl) step = n; });
+    shows.forEach(function (show, i) {
+      const el = document.getElementById(i === 0 ? "top" : show.spec.id);
+      show.travel = sectionTravel(el);
+      show.weight = THREE.MathUtils.damp(show.weight, sharp[i] / sum, 4.2, dt);
+      if (!show.root || !show.spec) return;
+      const vis = show.weight > 0.34 ? show.weight : 0;
+      show.root.visible = vis > 0;
+      show.mats.forEach(function (mat) {
+        mat.opacity = vis;
+        mat.depthWrite = vis > 0.82;
+      });
+      const tr = show.travel;
+      const motion = show.spec.motion;
+      if (motion === "vault") {
+        show.yaw = THREE.MathUtils.damp(show.yaw, (tr - 0.5) * 1.15, 2.2, dt);
+        show.root.rotation.set(0.06, show.yaw + tSec * 0.05, 0);
+        show.root.scale.setScalar(MODEL_SCALE);
+      } else if (motion === "cage") {
+        show.step = THREE.MathUtils.damp(show.step, step, 2.6, dt);
+        show.root.rotation.set(0.04, show.step * (Math.PI / 2) + tSec * 0.04, 0);
+        show.root.scale.setScalar(MODEL_SCALE);
+      } else if (motion === "record") {
+        show.root.rotation.set(0.18, tr * 1.25 + tSec * 0.03, 0);
+        show.root.scale.setScalar(MODEL_SCALE);
+      } else if (motion === "podium") {
+        show.root.rotation.set(0, (tr - 0.5) * THREE.MathUtils.degToRad(50), 0);
+        const grow = 0.18 + 0.82 * smootherstep(clamp01(vis * 1.35));
+        show.root.scale.set(MODEL_SCALE, MODEL_SCALE * grow, MODEL_SCALE);
+      } else if (motion === "lattice") {
+        show.root.rotation.set(0.22 * Math.sin(tr * Math.PI), tr * 1.5 + tSec * 0.07, 0.08);
+        show.root.scale.setScalar(MODEL_SCALE);
+      } else if (motion === "plumb") {
+        show.swing = show.swing * Math.exp(-1.4 * dt) + scrollV * 0.0011;
+        show.swing = THREE.MathUtils.clamp(show.swing, -0.11, 0.11);
+        show.root.rotation.set(0, tSec * 0.08, show.swing);
+        show.root.scale.setScalar(MODEL_SCALE);
+      }
+    });
   }
 
   function rawStory() {
@@ -689,14 +830,19 @@ export function mount() {
     dust.position.y = Math.sin(tSec * 0.15) * 0.08;
 
     const hall = pose.podium;
-    camera.position.set(camPx + pose.dolly, 0.08 + camPy + hall * 0.06, pose.camZ);
-    camera.lookAt(camPx * 0.28 * (1 - hall) + pose.dolly * 0.7, camPy * 0.22 * (1 - hall) + hall * 0.18, 0);
+    camera.position.set(camPx + pose.dolly, 0.12 + camPy + hall * 0.04, pose.camZ);
+    camera.lookAt(camPx * 0.28 * (1 - hall) + pose.dolly * 0.35, camPy * 0.22 * (1 - hall) + hall * 0.05, 0);
     camera.rotation.z += roll + driftRot;
     const rule = document.getElementById("hero-rule");
     if (rule) rule.classList.toggle("is-apart", pose.heroP > 0.52);
 
     rig.position.set(pose.x, pose.y + bob, 0);
     rig.scale.setScalar(pose.scale * introScale);
+    slot.position.copy(rig.position);
+    slot.scale.copy(rig.scale);
+    scrollV = THREE.MathUtils.damp(scrollV, (window.scrollY - lastScroll) / Math.max(dt, 0.016), 3, dt);
+    lastScroll = window.scrollY;
+    updateShows(dt, tSec);
     tilt.rotation.x = tiltS.x;
     tilt.rotation.y = tiltS.y;
     tilt.rotation.z = pose.rotZ;
@@ -735,11 +881,6 @@ export function mount() {
     backlight.material.opacity = 0.55 * hallFade;
     rig.visible = hallFade > 0.04;
     orbits.visible = hallFade > 0.04;
-    podium.visible = pose.podium > 0.02;
-    podiumMats.forEach(function (mat) {
-      mat.opacity = pose.podium;
-      mat.depthWrite = pose.podium > 0.82;
-    });
 
     let hoverIndex = -1;
     if (fine && !mobile && !drag.on) {
@@ -792,8 +933,8 @@ export function mount() {
     placePins(nodeEase, hoverIndex);
     placeGlow();
 
-    const road = document.getElementById("roadmap");
-    const pastStory = road && road.getBoundingClientRect().bottom < 48;
+    const tail = document.getElementById("faq");
+    const pastStory = tail && tail.getBoundingClientRect().bottom < 48;
     stage.style.opacity = pastStory ? "0" : "1";
     if (pastStory) {
       setActive(false);
@@ -1036,8 +1177,8 @@ export function mount() {
 
   function storyOn() {
     if (document.hidden) return false;
-    const roadEl = document.getElementById("roadmap");
-    if (roadEl && roadEl.getBoundingClientRect().bottom < 48) return false;
+    const tailEl = document.getElementById("faq");
+    if (tailEl && tailEl.getBoundingClientRect().bottom < 48) return false;
     return true;
   }
   const seenIO = new IntersectionObserver(function () {
