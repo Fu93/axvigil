@@ -217,6 +217,11 @@ def run_test(
     """
     workdir = Path(tempfile.mkdtemp(prefix="axv-verify-"))
     try:
+        # Docker runs as uid 1000, while mkdtemp defaults to 0700 for the host
+        # user. Make only the directory traversable; the mounted input remains
+        # read-only and generated files retain normal non-writable-to-container
+        # ownership semantics.
+        workdir.chmod(0o755)
         (workdir / "src").mkdir()
         (workdir / "test").mkdir()
         (workdir / "foundry.toml").write_text(_foundry_toml(
