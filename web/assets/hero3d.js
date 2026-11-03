@@ -162,9 +162,12 @@ export function mount() {
   });
   pmrem.dispose();
 
-  const key = new THREE.DirectionalLight(0xfff4e4, 0.18);
-  key.position.set(-4.2, 6.2, 3.4);
+  const key = new THREE.DirectionalLight(0xfff4e4, 0.42);
+  key.position.set(-3.4, 4.8, 3.6);
   scene.add(key);
+  const rim = new THREE.DirectionalLight(0xeef3ff, 0.7);
+  rim.position.set(4.8, 1.6, -5.2);
+  scene.add(rim);
 
   const slot = new THREE.Group();
   scene.add(slot);
@@ -373,7 +376,7 @@ export function mount() {
   const pose = {
     x: 0, y: 0, scale: 1, split: 0, body: playIntro ? 0 : 1, edge: 0,
     hidden: 0, orbit: 1, camZ: HERO3D.camera.z, spin: 0, rotZ: 0, light: 0, proof: 0, heroP: 0,
-    side: 0, lift: 0, fog: 0, podium: 0, dolly: 0
+    side: 0, lift: 0, fog: 0, podium: 0, dolly: 0, book: 0
   };
   let storyS = 0;
   const tiltS = { x: 0, vx: 0, y: 0, vy: 0 };
@@ -527,11 +530,16 @@ export function mount() {
     const camZ = mix.cam;
     const halfH = Math.tan(THREE.MathUtils.degToRad(camera.fov) / 2) * camZ;
     const halfW = halfH * camera.aspect;
-    const along = smootherstep(clamp01((storyS - 0.04) / 0.18));
-    const sx = window.innerWidth * (mobile ? 0.5 : 0.63 + along * 0.12 + flight.side * 0.03);
-    const sy = window.innerHeight * (mobile ? 0.4 : 0.48 - flight.lift * 0.05);
-    const heroPx = window.innerHeight * (mobile ? 0.62 : 0.86);
-    const px = heroPx * (1 - along * 0.24);
+    const closeW = anchorWeight(document.getElementById("close"));
+    const away = (1 - mix.hero) * (1 - closeW);
+    const book = closeW * (1 - mix.hero);
+    const laneX = window.innerWidth * (mobile ? 0.5 : 0.8);
+    const laneW = window.innerWidth * (mobile ? 0.42 : 0.28);
+    const sx = laneX;
+    const sy = window.innerHeight * (mobile ? 0.16 : 0.46);
+    const px = mobile
+      ? Math.min(window.innerHeight * 0.2, laneW)
+      : Math.min(window.innerHeight * 0.56, laneW * 1.35) * (book > 0.35 ? 0.42 : 1);
     const ndcX = (sx / Math.max(1, window.innerWidth)) * 2 - 1;
     const ndcY = -((sy / Math.max(1, window.innerHeight)) * 2 - 1);
     const pxPerUnit = window.innerHeight / (2 * halfH);
@@ -553,7 +561,8 @@ export function mount() {
       side: flight.side,
       lift: flight.lift,
       fog: flight.fog,
-      podium: 1 - mix.hero,
+      podium: away,
+      book: book,
       dolly: mix.dolly
     };
   }
@@ -602,31 +611,38 @@ export function mount() {
     const mat = new THREE.MeshStandardMaterial({
       color: 0x14140c,
       emissive: 0xeef94b,
-      emissiveIntensity: 0.85,
-      roughness: 0.4,
+      emissiveIntensity: 1.9,
+      roughness: 0.35,
       metalness: 0,
       transparent: true,
       opacity: 0,
+      toneMapped: false,
       depthWrite: false
     });
-    const strip = new THREE.Mesh(new THREE.BoxGeometry(1.72, 0.008, 0.01), mat);
-    strip.position.set(0, -0.662, 0.216);
+    const strip = new THREE.Mesh(new THREE.BoxGeometry(1.74, 0.012, 0.018), mat);
+    strip.position.set(0, -0.63, 0.28);
     root.add(strip);
     mats.push(mat);
   }
 
-  function tuneShowMats(root, bucket) {
+  function tuneShowMats(root, bucket, motion) {
     root.traverse(function (obj) {
       if (!obj.isMesh || !obj.material) return;
       const list = Array.isArray(obj.material) ? obj.material : [obj.material];
       list.forEach(function (mat) {
         mat.envMap = scene.environment;
-        mat.envMapIntensity = 2.35;
-        if (mat.roughness !== undefined) mat.roughness = Math.min(mat.roughness, 0.32);
-        if (mat.metalness !== undefined) mat.metalness = Math.max(mat.metalness, 0.25);
+        mat.envMapIntensity = 2.2;
+        if (mat.roughness !== undefined) {
+          if (motion === "vault") mat.roughness = Math.max(mat.roughness, 0.5);
+          else if (motion === "podium") mat.roughness = Math.max(mat.roughness, 0.58);
+          else if (motion === "record") mat.roughness = 0.34;
+          else mat.roughness = Math.min(Math.max(mat.roughness, 0.22), 0.42);
+        }
+        if (motion === "record") mat.envMapIntensity = 2.8;
+        if (mat.metalness !== undefined) mat.metalness = Math.max(mat.metalness, 0.2);
         mat.transparent = true;
         mat.opacity = 0;
-        mat.depthWrite = false;
+        mat.depthWrite = true;
         bucket.push(mat);
       });
     });
@@ -658,7 +674,6 @@ export function mount() {
     if (!show.spec || show.state !== "idle") return;
     show.state = "loading";
     const el = document.getElementById(show.spec.id);
-    if (el && mobile) el.classList.add("still-on");
     loadOne(show.spec.url).then(function (gltf) {
       if (show.state === "dead") {
         releaseShow(show);
@@ -666,12 +681,11 @@ export function mount() {
       }
       const root = gltf.scene;
       root.scale.setScalar(MODEL_SCALE);
-      tuneShowMats(root, show.mats);
+      tuneShowMats(root, show.mats, show.spec.motion);
       show.root = root;
       show.state = "ready";
       if (show.spec.motion === "podium") addPlinthStrip(root, show.mats);
       slot.add(root);
-      if (el) el.classList.remove("still-on");
     }).catch(function () { show.state = "idle"; });
   }
 
@@ -685,9 +699,7 @@ export function mount() {
     shows.forEach(function (show, i) {
       if (!show.spec) return;
       const keep = scrolled && (i === best || i === best + 1);
-      const far = Math.abs(i - best) > 1;
       if (keep && show.state === "idle") loadShow(show);
-      if (far && show.state === "ready" && show.weight < 0.02) releaseShow(show);
     });
   }
 
@@ -709,11 +721,10 @@ export function mount() {
       show.travel = sectionTravel(el);
       show.weight = THREE.MathUtils.damp(show.weight, sharp[i] / sum, 4.2, dt);
       if (!show.root || !show.spec) return;
-      const vis = show.weight > 0.34 ? show.weight : 0;
-      show.root.visible = vis > 0;
+      const vis = mobile ? show.weight * 0.25 : show.weight;
+      show.root.visible = vis > 0.02;
       show.mats.forEach(function (mat) {
         mat.opacity = vis;
-        mat.depthWrite = vis > 0.82;
       });
       const tr = show.travel;
       const motion = show.spec.motion;
@@ -811,6 +822,7 @@ export function mount() {
       pose.fog = THREE.MathUtils.damp(pose.fog, goal.fog || 0, 2.2, follow);
       pose.podium = THREE.MathUtils.damp(pose.podium, goal.podium || 0, 3.4, follow);
       pose.dolly = THREE.MathUtils.damp(pose.dolly, goal.dolly || 0, 2.2, follow);
+      pose.book = THREE.MathUtils.damp(pose.book || 0, goal.book || 0, 3.2, follow);
       pose.heroP = goal.heroP;
     }
 
@@ -849,7 +861,7 @@ export function mount() {
     const hall = pose.podium;
     const boardShow = shows[4];
     const boardSlide = boardShow && boardShow.weight > 0.04
-      ? boardShow.weight * THREE.MathUtils.lerp(-1.15, 1.15, sectionTravel(document.getElementById("board")))
+      ? boardShow.weight * THREE.MathUtils.lerp(-0.42, 0.42, sectionTravel(document.getElementById("board")))
       : 0;
     camera.position.set(camPx + pose.dolly + boardSlide, 0.12 + camPy + hall * 0.04, pose.camZ);
     camera.lookAt(camPx * 0.28 * (1 - hall) + pose.dolly * 0.35 + boardSlide * 0.28, camPy * 0.22 * (1 - hall) + hall * 0.02, 0);
@@ -872,14 +884,10 @@ export function mount() {
     topGroup.position.y = pose.split * 0.35;
     botGroup.position.y = -pose.split * 0.35;
     const hallFade = 1 - smootherstep(clamp01(pose.podium / 0.7));
-    const bodyOpacity = pose.body * (playIntro ? bodyEase : 1) * hallFade;
+    const dim = mobile ? 0.25 : 1;
+    const bodyOpacity = pose.body * (playIntro ? bodyEase : 1) * hallFade * dim;
     bodyMat.opacity = bodyOpacity;
-    const wantTransparent = bodyOpacity < 0.98;
-    if (bodyMat.transparent !== wantTransparent) {
-      bodyMat.transparent = wantTransparent;
-      bodyMat.depthWrite = !wantTransparent;
-      bodyMat.needsUpdate = true;
-    }
+    bodyMat.depthWrite = bodyOpacity > 0.9;
     bodyMat.envMapIntensity = HERO3D.material.envMapIntensity;
     solidMat.opacity = pose.edge * edgeEase * 0.9 * hallFade;
     glintMat.opacity = pose.edge * edgeEase * 0.32 * hallFade;
@@ -938,7 +946,7 @@ export function mount() {
       const ax = (a.x * 0.5 + 0.5) * window.innerWidth;
       const bx = (b.x * 0.5 + 0.5) * window.innerWidth;
       const calm = ax > gate && bx > gate && a.z < 1 && b.z < 1 ? 1 : 0;
-      line.material.opacity = envIn * nodeEase * 0.4 * calm * hallFade;
+      line.material.opacity = envIn * nodeEase * 0.4 * calm * hallFade * (1 - Math.min(1, (pose.book || 0) * 3));
     });
 
     if (shardPieces.length) {
@@ -954,7 +962,7 @@ export function mount() {
     placePins(nodeEase, hoverIndex);
     placeGlow();
 
-    const tail = document.getElementById("faq");
+    const tail = document.getElementById("close") || document.getElementById("faq");
     const pastStory = tail && tail.getBoundingClientRect().bottom < 48;
     stage.style.opacity = pastStory ? "0" : "1";
     if (pastStory) {
@@ -964,6 +972,9 @@ export function mount() {
 
     if (bloomOn) {
       renderer.toneMapping = THREE.NoToneMapping;
+      const crossing = pose.podium > 0.12 && pose.podium < 0.88;
+      grade.strength(HERO3D.bloom.strength * (crossing ? 0.28 : 1));
+      renderer.toneMappingExposure = crossing ? 0.82 : 1;
       try {
         grade.time(Math.floor(now / 41.67));
         grade.render();
@@ -1024,7 +1035,8 @@ export function mount() {
       lift: 0,
       fog: 0,
       podium: 0,
-      dolly: 0
+      dolly: 0,
+      book: 0
     };
   }
 
@@ -1045,7 +1057,7 @@ export function mount() {
 
   function placePins(nodeEase, hoverIndex) {
     if (hud.root.hidden) return;
-    const show = (nodeEase > 0.72 ? Math.min(1, (nodeEase - 0.72) / 0.28) : 0) * (1 - pose.podium);
+    const show = (nodeEase > 0.72 ? Math.min(1, (nodeEase - 0.72) / 0.28) : 0) * (1 - pose.podium) * (1 - Math.min(1, (pose.book || 0) * 2));
     projectPin(hud.apex, apexMark, -78, -36, show * faceAmount(apexMark, new THREE.Vector3(0, 1, 0)));
     projectPin(hud.girdle, girdleMark, 22, 18, show * faceAmount(girdleMark, new THREE.Vector3(1, 0, 0)));
     hud.leaders.setAttribute("viewBox", "0 0 " + window.innerWidth + " " + window.innerHeight);
@@ -1140,16 +1152,22 @@ export function mount() {
   }
 
   function nearCrystal(x, y) {
-    rig.getWorldPosition(tmp);
+    let shown = pose.podium < 0.4 && rig.visible;
+    shows.forEach(function (show) {
+      if (show.root && show.root.visible && show.weight > 0.45) shown = true;
+    });
+    if (!shown) return false;
+    const anchor = pose.podium < 0.4 ? rig : slot;
+    anchor.getWorldPosition(tmp);
     const edge = tmp.clone();
-    edge.y += HERO3D.crystal.height * 0.5 * Math.abs(rig.scale.y || 1);
+    edge.y += HERO3D.crystal.height * 0.35 * Math.abs(anchor.scale.y || 1);
     tmp.project(camera);
     edge.project(camera);
     if (tmp.z > 1) return false;
     const cx = (tmp.x * 0.5 + 0.5) * window.innerWidth;
     const cy = (-tmp.y * 0.5 + 0.5) * window.innerHeight;
     const ey = (-edge.y * 0.5 + 0.5) * window.innerHeight;
-    const reach = Math.max(28, Math.abs(cy - ey) * 0.62);
+    const reach = Math.max(24, Math.abs(cy - ey) * 0.42);
     return Math.hypot(x - cx, y - cy) < reach;
   }
 
@@ -1181,7 +1199,8 @@ export function mount() {
       drag.lastX = event.clientX;
       drag.lastT = t;
     }
-    const zone = !reduced && fine && !mobile && nearCrystal(event.clientX, event.clientY);
+    const overUi = event.target.closest && event.target.closest("a, button, input, textarea, summary, .nav-bar, .ax-skip, .hero-actions, .close");
+    const zone = !reduced && fine && !mobile && !overUi && nearCrystal(event.clientX, event.clientY);
     document.body.dataset.axCursor = zone ? "drag" : "";
   }
 
@@ -1198,7 +1217,7 @@ export function mount() {
 
   function storyOn() {
     if (document.hidden) return false;
-    const tailEl = document.getElementById("faq");
+    const tailEl = document.getElementById("close") || document.getElementById("faq");
     if (tailEl && tailEl.getBoundingClientRect().bottom < 48) return false;
     return true;
   }
@@ -1477,22 +1496,18 @@ function keepLongest(edges, maxSegments) {
 function buildStudio() {
   const studio = new THREE.Scene();
   studio.background = new THREE.Color(0x000000);
-  function strip(w, h, x, y, z, color, intensity) {
+  function bulb(radius, x, y, z, color, intensity) {
     const mesh = new THREE.Mesh(
-      new THREE.PlaneGeometry(w, h),
-      new THREE.MeshBasicMaterial({
-        color: new THREE.Color(color).multiplyScalar(intensity),
-        side: THREE.DoubleSide
-      })
+      new THREE.SphereGeometry(radius, 20, 14),
+      new THREE.MeshBasicMaterial({ color: new THREE.Color(color).multiplyScalar(intensity) })
     );
     mesh.position.set(x, y, z);
-    mesh.lookAt(0, 0, 0);
     studio.add(mesh);
   }
-  strip(0.22, 7.2, -2.2, 1.1, 2.4, 0xffffff, 9);
-  strip(0.16, 7.2, 2.4, 0.4, -2.2, 0xffffff, 6);
-  strip(4.2, 0.16, 0.2, 2.6, 1.1, 0xffffff, 3.5);
-  strip(0.16, 5.5, 1.8, -1.6, 2.2, 0xeef94b, 7);
+  bulb(0.38, -2.2, 1.3, 2.2, 0xffffff, 2.4);
+  bulb(0.28, 2.4, 0.4, -2.0, 0xffffff, 1.8);
+  bulb(0.22, 0.1, 2.5, 0.5, 0xffffff, 1.15);
+  bulb(0.16, 1.6, -0.4, 2.0, 0xeef94b, 1.6);
   return studio;
 }
 
@@ -1609,6 +1624,9 @@ function makeComposer(renderer, scene, camera) {
     },
     time: function (frame) {
       gradePass.uniforms.uTime.value = frame;
+    },
+    strength: function (value) {
+      bloomPass.strength = value;
     },
     render: function () {
       composer.render();

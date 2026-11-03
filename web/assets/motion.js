@@ -1,12 +1,10 @@
 /* Scroll reveal, cursor, magnets, counters. Native scroll stays intact. */
 (function () {
-  /* The fixed WebGL stage covers the viewport. In Chrome that layer swallows
-     wheel deltas even with pointer-events: none, so the page applies them. */
   window.addEventListener("wheel", function (event) {
     if (event.ctrlKey) return;
     var node = event.target;
     var dy = event.deltaY;
-    if (event.deltaMode === 1) dy *= 32;
+    if (event.deltaMode === 1) dy *= 16;
     else if (event.deltaMode === 2) dy *= window.innerHeight * 0.9;
     while (node && node !== document.body && node !== document.documentElement) {
       var oy = getComputedStyle(node).overflowY;
@@ -17,20 +15,11 @@
       node = node.parentElement;
     }
     if (!dy) return;
+    event.preventDefault();
     var root = document.scrollingElement || document.documentElement;
-    var before = root.scrollTop;
     var max = root.scrollHeight - root.clientHeight;
-    requestAnimationFrame(function () {
-      if (root.scrollTop === before) {
-        root.scrollTop = Math.max(0, Math.min(max, before + dy));
-      }
-      requestAnimationFrame(function () {
-        if (Math.abs(root.scrollTop - (before + dy * 2)) < 3) {
-          root.scrollTop = Math.max(0, Math.min(max, before + dy));
-        }
-      });
-    });
-  }, { passive: true });
+    root.scrollTop = Math.max(0, Math.min(max, root.scrollTop + dy));
+  }, { passive: false });
 
   if (location.hash) {
     var jumped = document.querySelector(location.hash);
@@ -60,6 +49,17 @@
 
   var header = document.querySelector(".site-header");
   var lastY = window.scrollY;
+  if (header) {
+    var peek = document.createElement("div");
+    peek.className = "nav-peek";
+    peek.setAttribute("aria-hidden", "true");
+    document.body.appendChild(peek);
+    peek.addEventListener("pointerenter", function () { header.classList.remove("nav-hide"); });
+    header.addEventListener("pointerenter", function () { header.classList.remove("nav-hide"); });
+    window.addEventListener("pointermove", function (event) {
+      if (event.clientY < 28) header.classList.remove("nav-hide");
+    }, { passive: true });
+  }
   function syncSteps() {
     var how = document.getElementById("how");
     if (!how) return;

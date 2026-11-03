@@ -125,6 +125,12 @@ def check_scroll_input(page, url: str, viewport: dict) -> list:
         timeout=15000,
     )
     page.evaluate("document.documentElement.style.scrollBehavior = 'auto'")
+    page.keyboard.press("PageDown")
+    key_y = 0
+    for _ in range(8):
+        page.wait_for_timeout(120)
+        key_y = max(key_y, page.evaluate("window.scrollY"))
+    page.evaluate("window.scrollTo(0, 0)")
     page.mouse.move(int(viewport["width"] * 0.42), int(viewport["height"] * 0.5))
     page.wait_for_timeout(120)
     page.mouse.wheel(0, 800)
@@ -133,12 +139,10 @@ def check_scroll_input(page, url: str, viewport: dict) -> list:
         page.wait_for_timeout(200)
         wheel_y = max(wheel_y, page.evaluate("window.scrollY"))
     page.evaluate("window.scrollTo(0, 0)")
-    page.mouse.click(8, 8)
-    page.keyboard.press("PageDown")
-    key_y = 0
-    for _ in range(8):
-        page.wait_for_timeout(150)
-        key_y = max(key_y, page.evaluate("window.scrollY"))
+    page.wait_for_timeout(80)
+    page.mouse.wheel(0, 400)
+    page.wait_for_timeout(450)
+    once = page.evaluate("window.scrollY")
     page.evaluate("window.scrollTo(0, 0)")
     page.locator(".hero-actions a.btn.yellow").first.click()
     page.wait_for_timeout(400)
@@ -159,6 +163,9 @@ def check_scroll_input(page, url: str, viewport: dict) -> list:
         failures.append({"label": "click did not reach proof", "op": proof_top, "top": int(proof_top)})
     if fixed == "fixed":
         failures.append({"label": "body is position fixed", "op": 0, "top": 0})
+    if once > 650:
+        failures.append({"label": "wheel delta doubled", "op": once, "top": 0})
+    print(f"  wheel400={once:.0f}")
     page.goto(url, wait_until="domcontentloaded")
     page.evaluate("window.scrollTo(0, 0)")
     return failures
