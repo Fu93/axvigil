@@ -738,8 +738,8 @@ export function mount() {
 
   function tuneShowMats(root, bucket, motion) {
     const look = {
-      vault: { env: 0.95, metal: 0.3, rough: 1.05, glow: 0x302e2a },
-      cage: { env: 0.88, metal: 0.28, rough: 1.02, glow: 0x2c2a26 },
+      vault: { env: 0.42, metal: 0.06, rough: 0.74, glow: 0x3a3e36, flatSpec: true },
+      cage: { env: 0.36, metal: 0.05, rough: 0.78, glow: 0x363a34, flatSpec: true },
       record: { env: 1.3, metal: 0.36, rough: 0.7, glow: 0x343830 },
       podium: { env: 1.15, metal: 0.46, rough: 0.86, glow: 0x2c302a },
       lattice: { env: 1.25, metal: 0.4, rough: 0.76, glow: 0x32362f },
@@ -753,6 +753,10 @@ export function mount() {
         mat.envMap = scene.environment;
         mat.envMapIntensity = look.env;
         mat.fog = false;
+        if (look.flatSpec) {
+          mat.metalnessMap = null;
+          mat.roughnessMap = null;
+        }
         if (mat.metalness !== undefined) mat.metalness = look.metal;
         if (mat.roughness !== undefined) mat.roughness = look.rough;
         if (mat.emissive) {
@@ -857,13 +861,12 @@ export function mount() {
       const vis = show.weight * (1 - Math.min(1, (pose.book || 0) * 1.7));
       const alpha = vis <= 0.02 ? 0 : Math.min(1, (vis - 0.02) / 0.72);
       show.root.visible = alpha > 0.02;
-      const hot = mobile && (show.spec.motion === "vault" || show.spec.motion === "cage") ? 0.58 : 1;
       show.mats.forEach(function (mat) {
         mat.opacity = alpha;
         mat.depthWrite = alpha > 0.35;
         if (mat.userData.baseEnv) {
-          mat.envMapIntensity = mat.userData.baseEnv * hot;
-          mat.emissiveIntensity = (mat.userData.baseEmit || 1) * hot;
+          mat.envMapIntensity = mat.userData.baseEnv;
+          mat.emissiveIntensity = mat.userData.baseEmit || 1;
         }
       });
       const tr = show.travel;
@@ -1015,11 +1018,10 @@ export function mount() {
     const boardSlide = boardShow && boardShow.weight > 0.04
       ? boardShow.weight * THREE.MathUtils.lerp(-0.42, 0.42, sectionTravel(document.getElementById("board")))
       : 0;
-    const sectionGain = mobile ? 0.62 : 1;
-    sectionAmb.intensity = 0.32 * sectionGain;
-    sectionKey.intensity = 1.05 * sectionGain;
-    sectionFill.intensity = 0.8 * sectionGain;
-    sectionRim.intensity = 1.35 * sectionGain;
+    sectionAmb.intensity = 0.38;
+    sectionKey.intensity = 1.15;
+    sectionFill.intensity = 0.9;
+    sectionRim.intensity = 1.05;
     const lock = mobile ? 1 : smootherstep(clamp01((bookK - 0.12) / 0.5));
     const freeX = camPx + pose.dolly + boardSlide;
     const freeY = 0.12 + camPy + hall * 0.04;
@@ -1067,10 +1069,12 @@ export function mount() {
     const bodyOpacity = pose.body * (playIntro ? bodyEase : 1) * Math.max(hallFade, bookK);
     bodyMat.opacity = bodyOpacity;
     bodyMat.depthWrite = bodyOpacity > 0.9;
-    bodyMat.envMapIntensity = HERO3D.material.envMapIntensity;
-    bodyMat.emissive.setHex(0x3a3428);
-    bodyMat.emissiveIntensity = bookK * 1.15;
-    solidMat.opacity = pose.edge * edgeEase * hallFade * 0.9 + bookK * 0.28;
+    bodyMat.roughness = THREE.MathUtils.lerp(HERO3D.material.roughness, 0.62, bookK);
+    bodyMat.clearcoatRoughness = THREE.MathUtils.lerp(HERO3D.material.clearcoatRoughness, 0.45, bookK);
+    bodyMat.envMapIntensity = THREE.MathUtils.lerp(HERO3D.material.envMapIntensity, 0.4, bookK);
+    bodyMat.emissive.setHex(0x2a2824);
+    bodyMat.emissiveIntensity = bookK * 0.18;
+    solidMat.opacity = pose.edge * edgeEase * hallFade * 0.85;
     glintMat.opacity = pose.edge * edgeEase * 0.32 * hallFade;
     glintMat.dashOffset = -((reduced ? 0 : now * 0.001) * HERO3D.edges.sweep);
     hiddenMat.opacity = pose.hidden * edgeEase * hallFade;
@@ -1806,6 +1810,24 @@ function makeComposer(renderer, scene, camera) {
   composer.renderTarget1.samples = 4;
   composer.renderTarget2.samples = 4;
   const renderPass = new RenderPass(scene, camera);
+  const clampPass = new ShaderPass({
+    uniforms: {
+      tDiffuse: { value: null },
+      uCap: { value: 0.72 }
+    },
+    vertexShader: "varying vec2 vUv; void main(){ vUv = uv; gl_Position = vec4(position.xy, 0.0, 1.0); }",
+    fragmentShader: [
+      "uniform sampler2D tDiffuse;",
+      "uniform float uCap;",
+      "varying vec2 vUv;",
+      "void main(){",
+      "  vec3 col = texture2D(tDiffuse, vUv).rgb;",
+      "  float l = dot(col, vec3(0.2126, 0.7152, 0.0722));",
+      "  col *= min(1.0, uCap / max(l, 1e-4));",
+      "  gl_FragColor = vec4(col, 1.0);",
+      "}"
+    ].join("\n")
+  });
   const bloomPass = new UnrealBloomPass(new THREE.Vector2(2, 2), HERO3D.bloom.strength, HERO3D.bloom.radius, HERO3D.bloom.threshold);
   const gradePass = new ShaderPass({
     uniforms: {
@@ -1840,6 +1862,7 @@ function makeComposer(renderer, scene, camera) {
   });
   const output = new OutputPass();
   composer.addPass(renderPass);
+  composer.addPass(clampPass);
   composer.addPass(bloomPass);
   composer.addPass(gradePass);
   composer.addPass(output);

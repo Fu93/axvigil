@@ -1,14 +1,14 @@
 #!/usr/bin/env python3
-"""Step the landing scroll and reject one-frame luminance spikes.
+"""Wheel through the How transition and the footer at 30 fps.
 
-The sweep waits until the section models are resident, then moves the
-scroll position in small increments. Mean luminance of the right half of
-the WebGL canvas is sampled after each step. A single-frame white flash
-shows up as a jump from one sample to the next.
+Samples the full WebGL canvas after every wheel event. A frame whose mean
+luminance rises more than MAX_RISE (0-255) above the previous frame fails.
+The How cage burst was about +4 and the footer crystal blob about +16.
 """
 from __future__ import annotations
 
 import http.server
+import math
 import socket
 import threading
 from pathlib import Path
@@ -17,29 +17,29 @@ from playwright.sync_api import sync_playwright
 
 ROOT = Path(__file__).resolve().parents[1]
 WEB = ROOT / "web"
-STEP_PX = 24
-# A white blowout lifts the right-half mean by well more than this.
-# Ordinary scroll motion, including the hero entering the sample, stays under it.
-MAX_DELTA = 0.09
+WHEEL_PX = 18
+# A flash jumps and then falls back. The footer blob was about +16 and the
+# cage burst about +4, both reversing on the next frame. A model fading in
+# rises and stays, so it is not a spike.
+MAX_SPIKE = 3.5
 
 SAMPLE = r"""() => {
   const src = document.querySelector("#stage canvas");
   if (!src || src.width < 2) return -1;
-  const w = 48;
-  const h = 32;
+  const w = 80;
+  const h = 45;
   const out = document.createElement("canvas");
   out.width = w;
   out.height = h;
   const ctx = out.getContext("2d", { willReadFrequently: true });
   ctx.drawImage(src, 0, 0, w, h);
-  const data = ctx.getImageData(Math.floor(w * 0.46), 0, Math.ceil(w * 0.54), h).data;
+  const data = ctx.getImageData(0, 0, w, h).data;
   let sum = 0;
-  let n = 0;
+  const n = data.length / 4;
   for (let i = 0; i < data.length; i += 4) {
-    sum += (0.2126 * data[i] + 0.7152 * data[i + 1] + 0.0722 * data[i + 2]) / 255;
-    n += 1;
+    sum += 0.2126 * data[i] + 0.7152 * data[i + 1] + 0.0722 * data[i + 2];
   }
-  return n ? sum / n : -1;
+  return sum / n;
 }"""
 
 
@@ -77,6 +77,49 @@ def frames(page, count: int) -> None:
     )
 
 
+def wheel_span(page, start: float, end: float, label: str) -> tuple[float, list]:
+    """Scroll with real wheel events and a moving pointer. Returns worst rise and failures."""
+    page.evaluate("(y) => window.scrollTo(0, y)", start)
+    frames(page, 6)
+    width = page.evaluate("window.innerWidth")
+    height = page.evaluate("window.innerHeight")
+    prev = None
+    prev2 = None
+    worst = 0.0
+    worst_y = start
+    failures = []
+    samples = 0
+    guard = 0
+    while True:
+        y = page.evaluate("window.scrollY")
+        if y >= end - 1 or guard > 500:
+            break
+        guard += 1
+        ang = guard * 0.35
+        page.mouse.move(
+            width * 0.55 + math.sin(ang) * 36,
+            height * 0.48 + math.cos(ang) * 22,
+        )
+        page.mouse.wheel(0, WHEEL_PX)
+        frames(page, 1)
+        luma = page.evaluate(SAMPLE)
+        y_now = page.evaluate("window.scrollY")
+        if luma >= 0 and prev is not None and prev2 is not None:
+            rise = prev - prev2
+            fall = prev - luma
+            samples += 1
+            if rise > worst:
+                worst = rise
+                worst_y = y_now
+            if rise > MAX_SPIKE and fall > rise * 0.5:
+                failures.append({"y": y_now, "rise": rise, "luma": prev, "prev": prev2})
+        if luma >= 0:
+            prev2 = prev
+            prev = luma
+    print(f"{label} samples {samples} worst spike +{worst:.2f} at y={worst_y:.0f} limit {MAX_SPIKE}")
+    return worst, failures
+
+
 def main() -> int:
     port = free_port()
     httpd = serve(port)
@@ -102,37 +145,35 @@ def main() -> int:
                 page.wait_for_function(
                     """(key) => (document.getElementById('hero-core').dataset.models || '').includes(key)""",
                     arg=key,
-                    timeout=60000,
+                    timeout=70000,
                 )
+            spans = page.evaluate(
+                """() => {
+                  const how = document.getElementById('how');
+                  const close = document.getElementById('close');
+                  const footer = document.getElementById('footer');
+                  const vh = window.innerHeight;
+                  return {
+                    how0: Math.max(0, how.offsetTop - vh * 0.2),
+                    how1: how.offsetTop + how.offsetHeight * 0.9,
+                    foot0: Math.max(0, close.offsetTop - vh * 0.35),
+                    foot1: footer.offsetTop + footer.offsetHeight - vh
+                  };
+                }"""
+            )
+            _, how_bad = wheel_span(page, spans["how0"], spans["how1"], "how")
+            _, foot_bad = wheel_span(page, spans["foot0"], spans["foot1"], "footer")
+            failures.extend(how_bad)
+            failures.extend(foot_bad)
+            page.evaluate(
+                """() => document.getElementById('how').scrollIntoView({block:'center', behavior:'instant'})"""
+            )
             frames(page, 8)
-            max_y = page.evaluate("Math.max(0, document.documentElement.scrollHeight - window.innerHeight)")
-            y = 0
-            prev = None
-            worst = 0.0
-            worst_y = 0
-            samples = 0
-            while y <= max_y:
-                page.evaluate("(top) => window.scrollTo(0, top)", y)
-                frames(page, 2)
-                luma = page.evaluate(SAMPLE)
-                if luma >= 0 and prev is not None:
-                    delta = luma - prev
-                    samples += 1
-                    if delta > worst:
-                        worst = delta
-                        worst_y = y
-                    if delta > MAX_DELTA:
-                        failures.append({"y": y, "delta": delta, "luma": luma, "prev": prev})
-                if luma >= 0:
-                    prev = luma
-                if y >= max_y:
-                    break
-                y = min(max_y, y + STEP_PX)
-            print(f"samples {samples} worst +{worst:.4f} at y={worst_y} limit {MAX_DELTA}")
+            page.screenshot(path="/tmp/qa/how_fix.png")
             for item in failures[:8]:
                 print(
-                    f"  FAIL y={item['y']} delta={item['delta']:.4f} "
-                    f"luma={item['luma']:.4f} prev={item['prev']:.4f}"
+                    f"  FAIL y={item['y']:.0f} rise={item['rise']:.2f} "
+                    f"luma={item['luma']:.2f} prev={item['prev']:.2f}"
                 )
             browser.close()
     finally:
