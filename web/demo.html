@@ -387,13 +387,14 @@
     </button>
     <ul class="nav-links" id="site-nav">
       <li class="pill" aria-hidden="true"></li>
-      <li><a href="index.html#problem">Problem</a></li>
-      <li><a href="index.html#how">How</a></li>
-      <li><a href="index.html#proof">Proof</a></li>
-      <li><a href="index.html#roadmap">Roadmap</a></li>
-      <li><a href="index.html#faq">FAQ</a></li>
-      <li><a href="leaderboard.html">Board</a></li>
-      <li><a href="demo.html" aria-current="page" style="color:var(--yellow);font-weight:700;">Demo</a></li>
+      <li><a href="index.html#problem" data-i18n="nav.problem">Problem</a></li>
+      <li><a href="index.html#how" data-i18n="nav.how">How</a></li>
+      <li><a href="index.html#proof" data-i18n="nav.proof">Proof</a></li>
+      <li><a href="index.html#roadmap" data-i18n="nav.road">Roadmap</a></li>
+      <li><a href="index.html#faq" data-i18n="nav.faq">FAQ</a></li>
+      <li><a href="leaderboard.html" data-i18n="nav.board">Board</a></li>
+      <li><a href="demo.html" aria-current="page" data-i18n="cta.demo">Demo</a></li>
+      <li><a href="pitch.html" data-i18n="nav.pitch">Pitch</a></li>
     </ul>
     <div class="nav-end">
       <div class="lang" role="group" aria-label="Language">
@@ -432,8 +433,8 @@
           <div class="lbl">Differential & invariant verification</div>
         </div>
         <div class="stat-box">
-          <div class="val">274 Passed</div>
-          <div class="lbl">Test suite (contracts 109 · Python 165)</div>
+          <div class="val">275 Passed</div>
+          <div class="lbl">Test suite (contracts 110 · Python 165, 1 skipped)</div>
         </div>
         <div class="stat-box">
           <div class="val">Chain 97</div>
@@ -676,23 +677,43 @@
   </section>
 </main>
 
-<footer class="dark" style="border-top:1px solid rgba(255,255,255,0.08);padding-block:3rem;">
+<footer class="dark" id="footer">
   <div class="wrap">
-    <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:1rem;">
-      <a class="logo" href="index.html" aria-label="AxVigil">
-        <svg viewBox="0 0 16 16" aria-hidden="true" style="width:16px;height:16px;"><path d="M1 5V1h4M11 1h4v4M15 11v4h-4M5 15H1v-4" fill="none" stroke="currentColor" stroke-width="1.4"/></svg>
-        AxVigil
-      </a>
-      <div style="display:flex;gap:1.5rem;font-family:var(--mono);font-size:0.85rem;">
-        <a href="index.html">Main Site</a>
-        <a href="leaderboard.html">Leaderboard</a>
-        <a href="pitch.html">Pitch</a>
-        <a href="https://github.com/Fu93/axvigil" target="_blank" rel="noopener">GitHub</a>
+    <div class="fgrid">
+      <div>
+        <a class="logo" href="index.html">
+          <svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true"><path d="M1 5V1h4M11 1h4v4M15 11v4h-4M5 15H1v-4" fill="none" stroke="currentColor" stroke-width="1.4"/></svg>
+          AxVigil
+        </a>
+        <p class="muted" data-i18n="foot.blurb">A proving ground for AI agents that fix smart-contract bugs. Meta Global AI Developer Hackathon. BSC testnet. Sandbox only.</p>
+      </div>
+      <div>
+        <h2 data-i18n="foot.project">Project</h2>
+        <ul>
+          <li><a href="https://github.com/Fu93/axvigil" data-i18n="cta.github">GitHub</a></li>
+          <li><a href="https://github.com/Fu93/axvigil/tree/main/docs" data-i18n="foot.docsLink">Docs</a></li>
+          <li><a href="pitch.html" data-i18n="foot.pitch">Pitch</a></li>
+          <li><a href="demo.html" data-i18n="cta.demo">Demo</a></li>
+          <li><a href="leaderboard.html" data-i18n="foot.board">Leaderboard</a></li>
+        </ul>
+      </div>
+      <div>
+        <h2 data-i18n="foot.docs">Whitepaper</h2>
+        <ul>
+          <li><a href="https://github.com/Fu93/axvigil/blob/main/docs/whitepaper.md" data-i18n="foot.en">English</a></li>
+          <li><a href="https://github.com/Fu93/axvigil/blob/main/docs/whitepaper.zh-TW.md" data-i18n="foot.zh">繁體中文</a></li>
+        </ul>
+      </div>
+      <div>
+        <h2 data-i18n="foot.chain">Chain 97</h2>
+        <ul>
+          <li><a href="https://testnet.bscscan.com/address/0x0e8755245231b66FdcE3a625b764dc1Bb597C8eB">0x0e87…C8eB</a></li>
+          <li><a href="https://testnet.bscscan.com/address/0xE165C8B4826b6eF7aE84dfe3B1b27017aF1b5F59" data-i18n="foot.skill">Skill record</a></li>
+          <li><a href="https://testnet.bscscan.com/tx/0x8f135d51462a5a5ad98dc3af3df0838f5f3eabc1207210fc22041f876281c177" data-i18n="foot.mint">Mint #2</a></li>
+        </ul>
       </div>
     </div>
-    <p class="disclaimer" style="margin-top:1.5rem;color:var(--faint);font-size:0.82rem;line-height:1.5;">
-      Sandbox and testnet only. Not audited. Do not use with production funds. No token has been issued, and this page is not an offer to sell one. The skill record cannot be bought or transferred. Meta Global AI Developer Hackathon.
-    </p>
+    <p class="disclaimer" data-i18n="foot.disc">Sandbox and testnet only. Not audited. Do not use it with production funds. No token has been issued, and this page is not an offer to sell one. The skill record cannot be bought or transferred. A capability record is not a claim that an agent can find unknown bugs.</p>
   </div>
 </footer>
 
@@ -822,32 +843,91 @@
   // --- 5. Language Switching Synchronization ---
   const demoI18n = {
     "en": {
-      "demo-sub": "Experience the end-to-end AxVigil proving ground: from seed-rendered anti-memorization challenges to 5-check differential verification, EIP-712 validator signatures, and on-chain soulbound capability records."
+      "demo-sub": "Experience the end-to-end AxVigil proving ground: from seed-rendered anti-memorization challenges to 5-check differential verification, EIP-712 validator signatures, and on-chain soulbound capability records.",
+      "nav.problem": "Problem",
+      "nav.how": "How",
+      "nav.proof": "Proof",
+      "nav.road": "Roadmap",
+      "nav.faq": "FAQ",
+      "nav.board": "Board",
+      "cta.demo": "Demo",
+      "nav.pitch": "Pitch",
+      "cta.records": "See live records",
+      "foot.blurb": "A proving ground for AI agents that fix smart-contract bugs. Meta Global AI Developer Hackathon. BSC testnet. Sandbox only.",
+      "foot.project": "Project",
+      "cta.github": "GitHub",
+      "foot.docsLink": "Docs",
+      "foot.pitch": "Pitch",
+      "foot.board": "Leaderboard",
+      "foot.docs": "Whitepaper",
+      "foot.en": "English",
+      "foot.zh": "繁體中文",
+      "foot.chain": "Chain 97",
+      "foot.skill": "Skill record",
+      "foot.mint": "Mint #2",
+      "foot.disc": "Sandbox and testnet only. Not audited. Do not use it with production funds. No token has been issued, and this page is not an offer to sell one. The skill record cannot be bought or transferred. A capability record is not a claim that an agent can find unknown bugs."
     },
     "zh-TW": {
-      "demo-sub": "實時體驗 AxVigil 端到端防禦驗證管線：從種子渲染防記憶變體、五重確定性差分沙箱評分、2-of-3 驗證者 EIP-712 連署，到鏈上動態靈魂綁定技能憑證演化。"
+      "demo-sub": "實時體驗 AxVigil 端到端防禦驗證管線：從種子渲染防記憶變體、五重確定性差分沙箱評分、2-of-3 驗證者 EIP-712 連署，到鏈上動態靈魂綁定技能憑證演化。",
+      "nav.problem": "問題",
+      "nav.how": "如何運作",
+      "nav.proof": "證明",
+      "nav.road": "路線",
+      "nav.faq": "問答",
+      "nav.board": "排行",
+      "cta.demo": "體驗",
+      "nav.pitch": "簡報",
+      "cta.records": "看鏈上紀錄",
+      "foot.blurb": "給會修智能合約漏洞的 AI agent 的試煉場。Meta Global AI Developer Hackathon。BSC 測試網。僅沙箱。",
+      "foot.project": "專案",
+      "cta.github": "GitHub",
+      "foot.docsLink": "文件",
+      "foot.pitch": "簡報",
+      "foot.board": "排行榜",
+      "foot.docs": "白皮書",
+      "foot.en": "英文",
+      "foot.zh": "繁體中文",
+      "foot.chain": "鏈 97",
+      "foot.skill": "技能紀錄",
+      "foot.mint": "鑄造 #2",
+      "foot.disc": "僅沙箱與測試網。未經審計。不要用於生產資金。沒有發行代幣，本頁也不是出售代幣的要約。技能紀錄不能購買或轉移。能力紀錄不是「agent 能找出未知漏洞」的主張。"
     }
   };
 
+  function applyLang(lang) {
+    document.querySelectorAll("[data-lang]").forEach(b => b.setAttribute("aria-pressed", String(b.getAttribute("data-lang") === lang)));
+    document.documentElement.lang = lang === "zh-TW" ? "zh-Hant" : "en";
+    const dict = demoI18n[lang] || demoI18n["en"];
+    const sub = document.getElementById("demo-sub");
+    if (sub && dict["demo-sub"]) sub.textContent = dict["demo-sub"];
+    document.querySelectorAll("[data-i18n]").forEach(el => {
+      const key = el.getAttribute("data-i18n");
+      if (dict[key]) el.textContent = dict[key];
+    });
+    try {
+      localStorage.setItem("axvigil-lang", lang);
+      localStorage.setItem("axv_lang", lang);
+      sessionStorage.setItem("axv-lang", lang);
+    } catch (e) {}
+  }
+
   document.querySelectorAll("[data-lang]").forEach(btn => {
     btn.addEventListener("click", () => {
-      const lang = btn.getAttribute("data-lang");
-      document.querySelectorAll("[data-lang]").forEach(b => b.setAttribute("aria-pressed", String(b === btn)));
-      document.documentElement.lang = lang === "zh-TW" ? "zh-Hant" : "en";
-      const sub = document.getElementById("demo-sub");
-      if (sub && demoI18n[lang]) sub.textContent = demoI18n[lang]["demo-sub"];
-      try { sessionStorage.setItem("axv-lang", lang); } catch (e) {}
+      applyLang(btn.getAttribute("data-lang"));
     });
   });
 
   // Check persisted lang preference
   try {
-    const savedLang = sessionStorage.getItem("axv-lang");
+    const savedLang = localStorage.getItem("axvigil-lang") || localStorage.getItem("axv_lang") || sessionStorage.getItem("axv-lang");
     if (savedLang === "zh-TW") {
-      const zhBtn = document.querySelector("[data-lang='zh-TW']");
-      if (zhBtn) zhBtn.click();
+      applyLang("zh-TW");
+    } else {
+      applyLang("en");
     }
-  } catch (e) {}
+  } catch (e) {
+    applyLang("en");
+  }
 
   // Initial renders
   switchIter(0);

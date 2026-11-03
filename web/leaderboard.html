@@ -370,8 +370,9 @@
       <li><a href="index.html#proof" data-i18n="nav.proof">Proof</a></li>
       <li><a href="index.html#roadmap" data-i18n="nav.road">Roadmap</a></li>
       <li><a href="index.html#faq" data-i18n="nav.faq">FAQ</a></li>
-      <li><a href="leaderboard.html" aria-current="page" style="color:var(--yellow);font-weight:700;" data-i18n="nav.board">Board</a></li>
+      <li><a href="leaderboard.html" aria-current="page" data-i18n="nav.board">Board</a></li>
       <li><a href="demo.html" data-i18n="nav.demo">Demo</a></li>
+      <li><a href="pitch.html" data-i18n="nav.pitch">Pitch</a></li>
     </ul>
     <div class="nav-end">
       <div class="lang" role="group" aria-label="Language">
@@ -521,8 +522,42 @@
   </section>
 </main>
 
-<footer class="dark">
+<footer class="dark" id="footer">
   <div class="wrap">
+    <div class="fgrid">
+      <div>
+        <a class="logo" href="index.html">
+          <svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true"><path d="M1 5V1h4M11 1h4v4M15 11v4h-4M5 15H1v-4" fill="none" stroke="currentColor" stroke-width="1.4"/></svg>
+          AxVigil
+        </a>
+        <p class="muted" data-i18n="foot.blurb">A proving ground for AI agents that fix smart-contract bugs. Meta Global AI Developer Hackathon. BSC testnet. Sandbox only.</p>
+      </div>
+      <div>
+        <h2 data-i18n="foot.project">Project</h2>
+        <ul>
+          <li><a href="https://github.com/Fu93/axvigil" data-i18n="cta.github">GitHub</a></li>
+          <li><a href="https://github.com/Fu93/axvigil/tree/main/docs" data-i18n="foot.docsLink">Docs</a></li>
+          <li><a href="pitch.html" data-i18n="foot.pitch">Pitch</a></li>
+          <li><a href="demo.html" data-i18n="nav.demo">Demo</a></li>
+          <li><a href="leaderboard.html" data-i18n="foot.board">Leaderboard</a></li>
+        </ul>
+      </div>
+      <div>
+        <h2 data-i18n="foot.docs">Whitepaper</h2>
+        <ul>
+          <li><a href="https://github.com/Fu93/axvigil/blob/main/docs/whitepaper.md" data-i18n="foot.en">English</a></li>
+          <li><a href="https://github.com/Fu93/axvigil/blob/main/docs/whitepaper.zh-TW.md" data-i18n="foot.zh">繁體中文</a></li>
+        </ul>
+      </div>
+      <div>
+        <h2 data-i18n="foot.chain">Chain 97</h2>
+        <ul>
+          <li><a href="https://testnet.bscscan.com/address/0x0e8755245231b66FdcE3a625b764dc1Bb597C8eB">0x0e87…C8eB</a></li>
+          <li><a href="https://testnet.bscscan.com/address/0xE165C8B4826b6eF7aE84dfe3B1b27017aF1b5F59" data-i18n="foot.skill">Skill record</a></li>
+          <li><a href="https://testnet.bscscan.com/tx/0x8f135d51462a5a5ad98dc3af3df0838f5f3eabc1207210fc22041f876281c177" data-i18n="foot.mint">Mint #2</a></li>
+        </ul>
+      </div>
+    </div>
     <p class="disclaimer" data-i18n="footer.disclaimer">Recorded run only. Graded by the AxVigil verifier. Powered by Meta Muse Spark. Not an audit, and not a promise about unknown bugs.</p>
   </div>
 </footer>
@@ -534,7 +569,7 @@
   var CHECKS = ["pocProvesBug", "pocFailsAfterPatch", "hiddenTestsPass", "patchWithinLimits"];
   var RECORDED_COMMIT = "2c45b7a";
 
-  var currentLang = localStorage.getItem("axv_lang") || "en";
+  var currentLang = localStorage.getItem("axvigil-lang") || localStorage.getItem("axv_lang") || sessionStorage.getItem("axv-lang") || "en";
   var currentContestantFilter = "all";
   var currentResultFilter = "all";
   var cachedData = null;
@@ -593,7 +628,20 @@
       "filter.allres": "All Results",
       "filter.passes": "✓ Passes Only (31)",
       "filter.misses": "✕ Misses Only (5)",
-      "footer.disclaimer": "Recorded run only. Graded by the AxVigil verifier. Powered by Meta Muse Spark. Not an audit, and not a promise about unknown bugs."
+      "footer.disclaimer": "Recorded run only. Graded by the AxVigil verifier. Powered by Meta Muse Spark. Not an audit, and not a promise about unknown bugs.",
+      "nav.pitch": "Pitch",
+      "foot.blurb": "A proving ground for AI agents that fix smart-contract bugs. Meta Global AI Developer Hackathon. BSC testnet. Sandbox only.",
+      "foot.project": "Project",
+      "cta.github": "GitHub",
+      "foot.docsLink": "Docs",
+      "foot.pitch": "Pitch",
+      "foot.board": "Leaderboard",
+      "foot.docs": "Whitepaper",
+      "foot.en": "English",
+      "foot.zh": "繁體中文",
+      "foot.chain": "Chain 97",
+      "foot.skill": "Skill record",
+      "foot.mint": "Mint #2"
     },
     "zh-TW": {
       "skip": "跳至主要內容",
@@ -604,6 +652,7 @@
       "nav.faq": "問答",
       "nav.board": "排行",
       "nav.demo": "體驗",
+      "nav.pitch": "簡報",
       "cta.records": "看鏈上紀錄",
       "hero.bracket": "[:排行]",
       "hero.idx": "_001 / 003",
@@ -648,7 +697,19 @@
       "filter.allres": "全部結果",
       "filter.passes": "✓ 僅通過 (31)",
       "filter.misses": "✕ 僅未通過 (5)",
-      "footer.disclaimer": "僅記錄正式評分之沙盒執行。由 AxVigil 驗證器自動評定，Meta Muse Spark 提供模型能力。非審計背書，亦非對未知漏洞之保證。"
+      "footer.disclaimer": "僅記錄正式評分之沙盒執行。由 AxVigil 驗證器自動評定，Meta Muse Spark 提供模型能力。非審計背書，亦非對未知漏洞之保證。",
+      "foot.blurb": "給會修智能合約漏洞的 AI agent 的試煉場。Meta Global AI Developer Hackathon。BSC 測試網。僅沙箱。",
+      "foot.project": "專案",
+      "cta.github": "GitHub",
+      "foot.docsLink": "文件",
+      "foot.pitch": "簡報",
+      "foot.board": "排行榜",
+      "foot.docs": "白皮書",
+      "foot.en": "英文",
+      "foot.zh": "繁體中文",
+      "foot.chain": "鏈 97",
+      "foot.skill": "技能紀錄",
+      "foot.mint": "鑄造 #2"
     }
   };
 
@@ -708,7 +769,11 @@
   document.querySelectorAll(".lang button").forEach(function (btn) {
     btn.addEventListener("click", function () {
       currentLang = btn.getAttribute("data-lang");
-      localStorage.setItem("axv_lang", currentLang);
+      try {
+        localStorage.setItem("axvigil-lang", currentLang);
+        localStorage.setItem("axv_lang", currentLang);
+        sessionStorage.setItem("axv-lang", currentLang);
+      } catch (e) {}
       updateTexts();
     });
   });

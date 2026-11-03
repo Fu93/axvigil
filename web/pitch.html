@@ -1,284 +1,845 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>AxVigil · Pitch</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>AxVigil — Hackathon Pitch & Proving Ground</title>
 <meta name="description" content="AxVigil hackathon pitch — an anti-memorization proving ground that shows on a record AI agents to fix smart-contract vulnerabilities, live on BSC testnet.">
+<meta name="theme-color" content="#1C1D1A">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M1 5V1h4M11 1h4v4M15 11v4h-4M5 15H1v-4' fill='none' stroke='%23EFEEEC' stroke-width='1.4'/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="preload" href="assets/fonts/MonaSansDisplaySemiExpanded-ExtraBold.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;700;800&family=IBM+Plex+Mono:wght@400;500;700&display=swap">
+<link rel="stylesheet" href="assets/site.css?v=3">
 <style>
-  :root{
-    color-scheme: dark;
-    --bg:#05070e; --bg2:#080b14; --panel:#0e1422; --panel2:#141c2e; --line:#212c42;
-    --fg:#eef2fb; --muted:#9aa6bd; --faint:#606d85;
-    --cyan:#2ee6cf; --violet:#a78bfa; --amber:#f6ab2f; --pink:#f472d0;
-    --good:#2ee6cf; --bad:#fb7185;
-    --glow-cyan:0 0 40px -8px color-mix(in oklab,var(--cyan) 70%,transparent);
-    --glow-violet:0 0 44px -10px color-mix(in oklab,var(--violet) 70%,transparent);
-    --disp:"IBM Plex Mono",ui-monospace,"SFMono-Regular",Menlo,monospace;
-    --body:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",sans-serif;
-    --maxw:1080px;
+  /* Pitch Page Scoped Styles matching Dark Cyber-Aurora System */
+  #aurora {
+    position: fixed;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    z-index: -2;
+    pointer-events: none;
   }
-  *{box-sizing:border-box;}
-  html,body{background:var(--bg);}
-  body{color:var(--fg);font-family:var(--body);line-height:1.6;margin:0;position:relative;overflow-x:hidden;}
-  #aurora{position:fixed;inset:0;width:100%;height:100%;z-index:-2;pointer-events:none;}
-  body::after{content:"";position:fixed;inset:0;z-index:-1;pointer-events:none;opacity:.5;
-    background-image:linear-gradient(color-mix(in oklab,var(--cyan) 5%,transparent) 1px,transparent 1px),
-      linear-gradient(90deg,color-mix(in oklab,var(--cyan) 5%,transparent) 1px,transparent 1px);
-    background-size:56px 56px;mask-image:radial-gradient(120% 80% at 50% 0%,#000 30%,transparent 78%);}
-  h1,h2,h3,.disp{font-family:var(--disp);line-height:1.12;text-wrap:balance;margin:0;letter-spacing:-.015em;}
-  a{color:var(--cyan);text-decoration:none;} a:hover{text-decoration:underline;}
-  code{font-family:var(--disp);}
-  .wrap{max-width:var(--maxw);margin:0 auto;padding-left:max(20px,env(safe-area-inset-left,0px));padding-right:max(20px,env(safe-area-inset-right,0px));}
+  body::after {
+    content: "";
+    position: fixed;
+    inset: 0;
+    z-index: -1;
+    pointer-events: none;
+    opacity: 0.35;
+    background-image:
+      linear-gradient(rgba(79, 209, 165, 0.05) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(79, 209, 165, 0.05) 1px, transparent 1px);
+    background-size: 56px 56px;
+    mask-image: radial-gradient(120% 80% at 50% 0%, #000 30%, transparent 80%);
+    -webkit-mask-image: radial-gradient(120% 80% at 50% 0%, #000 30%, transparent 80%);
+  }
 
-  .glass{position:relative;border-radius:18px;
-    background:linear-gradient(180deg,color-mix(in oklab,var(--panel) 72%,transparent),color-mix(in oklab,var(--bg2) 64%,transparent));
-    backdrop-filter:blur(14px) saturate(1.25);-webkit-backdrop-filter:blur(14px) saturate(1.25);}
-  .glass::before{content:"";position:absolute;inset:0;border-radius:inherit;padding:1px;pointer-events:none;
-    background:linear-gradient(135deg,color-mix(in oklab,var(--cyan) 55%,transparent),transparent 42%,color-mix(in oklab,var(--violet) 45%,transparent));
-    -webkit-mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);-webkit-mask-composite:xor;mask-composite:exclude;}
+  .pitch-hero {
+    padding-top: 100px;
+    padding-bottom: 56px;
+    position: relative;
+  }
+  .pitch-hero .lede {
+    color: var(--grey);
+    font-size: 1.15rem;
+    line-height: 1.65;
+    max-width: 64ch;
+    margin-top: 1.5rem;
+  }
+  .pitch-hero .lede b {
+    color: var(--yellow);
+  }
 
-  header{position:sticky;top:0;z-index:20;backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);
-    background:color-mix(in oklab,var(--bg) 70%,transparent);border-bottom:1px solid var(--line);}
-  .nav{display:flex;align-items:center;gap:14px;padding-block:13px;}
-  .logo{font-family:var(--disp);font-weight:700;font-size:1.12rem;display:flex;align-items:center;gap:10px;color:var(--fg);}
-  .logo .mark{width:18px;height:18px;border-radius:5px;background:conic-gradient(from 140deg,var(--cyan),var(--violet),var(--pink),var(--cyan));box-shadow:var(--glow-cyan);}
-  .logo b{color:var(--cyan);}
-  .nav .spacer{flex:1;}
-  .tagline{color:var(--faint);font-size:.78rem;font-family:var(--disp);}
-  .btn{font-family:var(--disp);font-size:.84rem;font-weight:600;cursor:pointer;border-radius:10px;padding:10px 15px;border:1px solid var(--line);
-    background:color-mix(in oklab,var(--panel) 80%,transparent);color:var(--fg);display:inline-flex;align-items:center;gap:8px;
-    transition:transform .2s,border-color .2s,box-shadow .2s;}
-  .btn:hover{text-decoration:none;transform:translateY(-2px);border-color:color-mix(in oklab,var(--cyan) 55%,var(--line));}
-  .btn.primary{background:linear-gradient(135deg,var(--cyan),var(--violet));color:#05070e;border:none;box-shadow:var(--glow-cyan);}
-  .btn:focus-visible,a:focus-visible{outline:2px solid var(--cyan);outline-offset:3px;}
-  @media(max-width:620px){.tagline{display:none;}}
+  .cta-row {
+    display: flex;
+    gap: 12px;
+    margin-top: 2rem;
+    flex-wrap: wrap;
+    align-items: center;
+  }
 
-  .eyebrow{font-family:var(--disp);font-size:.72rem;letter-spacing:.16em;text-transform:uppercase;color:var(--cyan);display:inline-flex;align-items:center;gap:9px;}
-  .eyebrow .dot{width:7px;height:7px;border-radius:50%;background:var(--cyan);box-shadow:0 0 12px var(--cyan);animation:pulse 2.4s ease-in-out infinite;}
-  @keyframes pulse{0%,100%{opacity:1;transform:scale(1);}50%{opacity:.45;transform:scale(.8);}}
+  /* Metric KPI Chips */
+  .chips-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 1rem;
+    margin-top: 2.5rem;
+  }
+  .metric-chip {
+    background: #111317;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 12px;
+    padding: 1.25rem 1.4rem;
+    backdrop-filter: blur(8px);
+    transition: border-color 0.2s ease, transform 0.2s ease;
+  }
+  .metric-chip:hover {
+    border-color: rgba(238, 249, 75, 0.4);
+    transform: translateY(-2px);
+  }
+  .metric-chip .n {
+    font-family: var(--display);
+    font-weight: 800;
+    font-size: 2rem;
+    line-height: 1.1;
+    color: var(--yellow);
+    font-variant-numeric: tabular-nums;
+  }
+  .metric-chip .n.mint { color: var(--mint); }
+  .metric-chip .l {
+    font-family: var(--mono);
+    color: var(--faint);
+    font-size: 0.74rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    margin-top: 0.5rem;
+  }
 
-  section{padding-block:56px;}
-  .hero{padding-block:68px 40px;}
-  .hero h1{font-size:clamp(2.2rem,5.4vw,3.7rem);font-weight:700;margin-top:18px;}
-  .hero h1 .g{background:linear-gradient(110deg,var(--cyan) 10%,var(--violet) 55%,var(--pink) 95%);-webkit-background-clip:text;background-clip:text;color:transparent;}
-  .hero .lede{color:var(--muted);font-size:1.12rem;margin-top:20px;max-width:62ch;}
-  .cta-row{display:flex;gap:12px;margin-top:26px;flex-wrap:wrap;}
-  .chips{display:flex;gap:10px;margin-top:30px;flex-wrap:wrap;}
-  .chip{border-radius:12px;padding:11px 15px;}
-  .chip .n{font-family:var(--disp);font-weight:700;font-size:1.2rem;font-variant-numeric:tabular-nums;background:linear-gradient(120deg,var(--fg),var(--cyan));-webkit-background-clip:text;background-clip:text;color:transparent;}
-  .chip .l{color:var(--faint);font-size:.72rem;margin-top:2px;}
+  /* Cards & Sections */
+  .pitch-section {
+    padding-block: 64px;
+    border-top: 1px solid rgba(255, 255, 255, 0.06);
+  }
+  .sec-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.75rem;
+  }
+  .bracket {
+    font-family: var(--mono);
+    font-size: 0.72rem;
+    letter-spacing: 0.14em;
+    color: var(--yellow);
+    text-transform: uppercase;
+    font-weight: 700;
+  }
+  .bracket.mint { color: var(--mint); }
+  .idx {
+    font-family: var(--mono);
+    font-size: 0.72rem;
+    letter-spacing: 0.1em;
+    color: var(--faint);
+  }
+  .section-h2 {
+    font-family: var(--display);
+    font-size: clamp(1.8rem, 3.8vw, 2.6rem);
+    font-weight: 800;
+    text-transform: uppercase;
+    line-height: 1.05;
+    letter-spacing: -0.02em;
+  }
+  .section-sub {
+    color: var(--grey);
+    font-size: 1.05rem;
+    margin-top: 0.85rem;
+    max-width: 68ch;
+  }
 
-  .sec-head{max-width:66ch;}
-  h2{font-size:clamp(1.6rem,3.6vw,2.3rem);font-weight:700;margin-top:10px;}
-  .sub{color:var(--muted);margin-top:12px;font-size:1.02rem;}
+  .cols-2 {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1.5rem;
+    margin-top: 2rem;
+  }
+  .cols-3 {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1.5rem;
+    margin-top: 2rem;
+  }
+  .card-box {
+    background: #111317;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 14px;
+    padding: 1.75rem;
+    position: relative;
+    box-shadow: 0 12px 32px rgba(0, 0, 0, 0.3);
+    transition: border-color 0.2s ease, transform 0.2s ease;
+  }
+  .card-box:hover {
+    border-color: rgba(79, 209, 165, 0.35);
+    transform: translateY(-2px);
+  }
+  .card-box .k {
+    font-family: var(--mono);
+    font-size: 0.72rem;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--mint);
+    margin-bottom: 0.6rem;
+  }
+  .card-box h3 {
+    font-family: var(--display);
+    font-size: 1.25rem;
+    font-weight: 800;
+    margin-bottom: 0.6rem;
+    letter-spacing: -0.01em;
+  }
+  .card-box p {
+    color: var(--grey);
+    font-size: 0.94rem;
+    line-height: 1.6;
+  }
 
-  .cols2{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:28px;}
-  .grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-top:28px;}
-  .card{padding:20px;}
-  .card .k{font-family:var(--disp);font-size:.7rem;letter-spacing:.12em;text-transform:uppercase;color:var(--cyan);}
-  .card h3{font-size:1.05rem;margin-top:8px;}
-  .card p{color:var(--muted);font-size:.93rem;margin:9px 0 0;}
-  .card .mono{font-family:var(--disp);font-size:.82rem;color:var(--fg);}
+  /* Checks List inside Card */
+  .checks-stack {
+    display: grid;
+    gap: 0.65rem;
+    margin-top: 1.25rem;
+  }
+  .check-item {
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 8px;
+    padding: 0.75rem 0.9rem;
+    background: rgba(255, 255, 255, 0.02);
+  }
+  .check-item .cn {
+    font-family: var(--mono);
+    font-size: 0.78rem;
+    font-weight: 700;
+    color: var(--mint);
+  }
+  .check-item .cd {
+    color: #9aa6b4;
+    font-size: 0.8rem;
+    margin-top: 0.25rem;
+  }
 
-  .checks{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-top:16px;}
-  .check{border:1px solid var(--line);border-radius:10px;padding:11px 13px;background:color-mix(in oklab,var(--panel2) 55%,transparent);}
-  .check .cn{font-family:var(--disp);font-size:.76rem;color:var(--good);}
-  .check .cd{color:var(--muted);font-size:.82rem;margin-top:4px;}
+  /* Proof Grid */
+  .proof-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 1.25rem;
+    margin-top: 2rem;
+  }
+  .proof-item {
+    background: #111317;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 12px;
+    padding: 1.4rem;
+  }
+  .proof-item .pn {
+    font-family: var(--mono);
+    font-size: 1.05rem;
+    font-weight: 700;
+    color: var(--yellow);
+  }
+  .proof-item .pn a {
+    color: var(--mint);
+    text-decoration: underline;
+  }
+  .proof-item .pl {
+    font-family: var(--mono);
+    font-size: 0.75rem;
+    color: var(--faint);
+    margin-top: 0.4rem;
+    line-height: 1.4;
+  }
 
-  .proof{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-top:26px;}
-  .pf{padding:15px;border-radius:14px;}
-  .pf .pn{font-family:var(--disp);font-weight:700;font-size:1.05rem;}
-  .pf .pl{color:var(--faint);font-size:.74rem;margin-top:5px;}
-  .pf a{word-break:break-all;}
+  /* Threat model banner */
+  .honest-card {
+    margin-top: 2rem;
+    border-radius: 14px;
+    padding: 1.5rem 1.75rem;
+    background: rgba(238, 249, 75, 0.04);
+    border: 1px solid rgba(238, 249, 75, 0.25);
+  }
+  .honest-card .k {
+    font-family: var(--mono);
+    font-size: 0.72rem;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--yellow);
+    font-weight: 700;
+  }
+  .honest-card p {
+    color: var(--grey);
+    font-size: 0.92rem;
+    margin-top: 0.5rem;
+    line-height: 1.6;
+  }
 
-  .why{display:grid;grid-template-columns:1fr 1fr;gap:12px 26px;margin-top:24px;}
-  .wrow{display:flex;gap:11px;align-items:flex-start;}
-  .wrow .ic{color:var(--cyan);font-family:var(--disp);flex:none;margin-top:2px;}
-  .wrow .wt{color:var(--muted);font-size:.92rem;} .wrow .wt b{color:var(--fg);font-weight:600;}
+  /* CTA Band */
+  .pitch-ctaband {
+    text-align: center;
+    border-radius: 20px;
+    padding: 56px 28px;
+    background: #111317;
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    position: relative;
+    overflow: hidden;
+    margin-top: 2rem;
+    box-shadow: 0 20px 48px rgba(0, 0, 0, 0.5);
+  }
+  .pitch-ctaband::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: 0;
+    pointer-events: none;
+    background: radial-gradient(700px 300px at 50% -20%, rgba(238, 249, 75, 0.12), transparent 70%);
+  }
+  .pitch-ctaband .inner {
+    position: relative;
+    z-index: 1;
+    max-width: 650px;
+    margin-inline: auto;
+  }
+  .pitch-ctaband .inner .cta-row {
+    justify-content: center;
+  }
 
-  .scope{margin-top:22px;border-radius:14px;padding:18px 20px;border:1px solid color-mix(in oklab,var(--amber) 35%,var(--line));
-    background:color-mix(in oklab,var(--amber) 7%,transparent);}
-  .scope .k{font-family:var(--disp);font-size:.7rem;letter-spacing:.12em;text-transform:uppercase;color:var(--amber);}
-  .scope p{color:var(--muted);font-size:.92rem;margin:8px 0 0;}
-
-  .ctaband{text-align:center;border-radius:24px;padding:52px 26px;overflow:hidden;position:relative;margin-top:8px;}
-  .ctaband::after{content:"";position:absolute;inset:0;z-index:-1;background:radial-gradient(620px 280px at 50% -10%,color-mix(in oklab,var(--violet) 26%,transparent),transparent 70%);}
-  .ctaband h2{font-size:clamp(1.7rem,3.6vw,2.4rem);} .ctaband .sub{max-width:54ch;margin:12px auto 0;} .ctaband .cta-row{justify-content:center;}
-
-  footer{border-top:1px solid var(--line);margin-top:54px;padding-block:30px 46px;color:var(--faint);font-size:.82rem;}
-  .disc{max-width:82ch;}
-
-  html.motion .reveal{opacity:0;transform:translateY(20px);}
-  html.motion .reveal.in{opacity:1;transform:none;transition:opacity .7s ease,transform .7s cubic-bezier(.2,.7,.3,1);}
-
-  @media(max-width:860px){.grid3{grid-template-columns:1fr;}.proof{grid-template-columns:1fr 1fr;}}
-  @media(max-width:560px){.cols2,.checks,.why,.proof{grid-template-columns:1fr;}.chip{flex:1;}}
-  @media(prefers-reduced-motion:reduce){.eyebrow .dot{animation:none;}.reveal{opacity:1;transform:none;transition:none;}}
+  @media (max-width: 900px) {
+    .cols-2, .cols-3 { grid-template-columns: 1fr; }
+    .proof-grid { grid-template-columns: 1fr 1fr; }
+  }
+  @media (max-width: 580px) {
+    .proof-grid { grid-template-columns: 1fr; }
+    .chips-grid { grid-template-columns: 1fr; }
+  }
 </style>
 </head>
-<body>
+<body class="page-pitch">
 <canvas id="aurora"></canvas>
+<a class="skip" href="#content" data-i18n="skip">Skip to content</a>
 
-<header>
-  <div class="wrap nav">
-    <span class="logo"><span class="mark"></span>Ax<b>Vigil</b></span>
-    <span class="tagline">Every inference, a line of defense.</span>
-    <span class="spacer"></span>
-    <a class="btn" href="https://github.com/Fu93/axvigil" target="_blank" rel="noopener">GitHub ↗</a>
+<header class="site-header">
+  <div class="nav-bar">
+    <a class="logo" href="index.html" aria-label="AxVigil">
+      <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M1 5V1h4M11 1h4v4M15 11v4h-4M5 15H1v-4" fill="none" stroke="currentColor" stroke-width="1.4"/></svg>
+      AxVigil
+    </a>
+    <button class="nav-toggle" type="button" aria-expanded="false" aria-controls="site-nav">
+      <span></span>
+      <span class="sr">Menu</span>
+    </button>
+    <ul class="nav-links" id="site-nav">
+      <li class="pill" aria-hidden="true"></li>
+      <li><a href="index.html#problem" data-i18n="nav.problem">Problem</a></li>
+      <li><a href="index.html#how" data-i18n="nav.how">How</a></li>
+      <li><a href="index.html#proof" data-i18n="nav.proof">Proof</a></li>
+      <li><a href="index.html#roadmap" data-i18n="nav.road">Roadmap</a></li>
+      <li><a href="index.html#faq" data-i18n="nav.faq">FAQ</a></li>
+      <li><a href="leaderboard.html" data-i18n="nav.board">Board</a></li>
+      <li><a href="demo.html" data-i18n="cta.demo">Demo</a></li>
+      <li><a href="pitch.html" aria-current="page" data-i18n="nav.pitch">Pitch</a></li>
+    </ul>
+    <div class="nav-end">
+      <div class="lang" role="group" aria-label="Language">
+        <button type="button" data-lang="en" aria-pressed="true">EN</button>
+        <button type="button" data-lang="zh-TW" aria-pressed="false">繁體中文</button>
+      </div>
+      <a class="btn yellow desktop-cta" href="index.html#proof" data-i18n="cta.records">See live records</a>
+    </div>
   </div>
 </header>
 
-<div class="wrap">
-
-  <section class="hero">
-    <span class="eyebrow"><span class="dot"></span>Meta Global AI Developer Hackathon · BSC testnet</span>
-    <h1>Every inference,<br><span class="g">a line of defense.</span></h1>
-    <p class="lede">AxVigil is an <b>anti-memorization proving ground for security AI</b>. An agent is dealt a freshly generated vulnerable contract, writes a patch <em>and</em> a proof-of-concept exploit, and a deterministic sandboxed verifier confirms the bug is actually gone before anything is rewarded. A passing solve mints a <b>soulbound skill capability record</b> bound to the agent's identity — earned, not claimed.</p>
-    <div class="cta-row">
-      <a class="btn primary" href="https://github.com/Fu93/axvigil" target="_blank" rel="noopener">See the repo</a>
-      <a class="btn" href="https://testnet.bscscan.com/address/0x06580BFc1626f7DD3d7B841FD304e6f2B23e4658" target="_blank" rel="noopener">Live contracts ↗</a>
-    </div>
-    <div class="chips">
-      <div class="chip glass"><div class="n" data-count="120">120</div><div class="l">self-verified fresh rewrites</div></div>
-      <div class="chip glass"><div class="n" data-count="4">4</div><div class="l">differential checks</div></div>
-      <div class="chip glass"><div class="n">Live</div><div class="l">on BSC testnet</div></div>
-      <div class="chip glass"><div class="n">Soulbound</div><div class="l">skill capability record (ERC-5192)</div></div>
-    </div>
-  </section>
-
-  <section>
-    <div class="sec-head reveal">
-      <span class="eyebrow"><span class="dot"></span>The problem</span>
-      <h2>AI compute is wasted; contract security is under-supplied</h2>
-      <p class="sub">Two facts sit side by side — and the gap between them is a trust problem nobody has solved.</p>
-    </div>
-    <div class="cols2">
-      <div class="card glass reveal"><div class="k">Compute, burned on nothing</div>
-        <p>A wave of "agents solving puzzles" projects spend real GPU time on SAT instances, prime hunts and puzzles, then mint an NFT to prove their agent is fast. The output protects no one.</p></div>
-      <div class="card glass reveal"><div class="k">Security that doesn't scale</div>
-        <p>DeFi exploits have cost billions; top audits run months and five-to-six figures; most new protocols ship unaudited. AI can draft patches — but a plausible patch is not a verified fix, and nobody can tell them apart at scale.</p></div>
-    </div>
-  </section>
-
-  <section>
-    <div class="sec-head reveal">
-      <span class="eyebrow"><span class="dot"></span>What we built — the Crucible</span>
-      <h2>The missing piece: proof that a fix actually holds</h2>
-      <p class="sub">Built, tested, and live on BSC testnet today. This is the hackathon deliverable — the trust root for everything that comes after.</p>
-    </div>
-    <div class="grid3">
-      <div class="card glass reveal"><div class="k">01 · Anti-memorization engine</div>
-        <h3>A fresh rewrite every time</h3>
-        <p>Each "vulnerability family" is one bug template. A seed renames identifiers, injects distractors and reorders bodies; a structural fingerprint discards look-alikes. A public answer is worthless — the agent must fix the <em>class</em>, not recall a hack. 6 vulnerability families · 3 classes · 3 tiers · 120 fresh rewrites (2 rebuilt from real incidents).</p></div>
-      <div class="card glass reveal"><div class="k">02 · Differential verifier</div>
-        <h3>Scores the difference, not a test suite</h3>
-        <div class="checks">
-          <div class="check"><div class="cn">pocProvesBug</div><div class="cd">exploit works on the original</div></div>
-          <div class="check"><div class="cn">pocFailsAfterPatch</div><div class="cd">same exploit fails after the fix</div></div>
-          <div class="check"><div class="cn">hiddenTestsPass</div><div class="cd">functionality still intact</div></div>
-          <div class="check"><div class="cn">patchWithinLimits</div><div class="cd">no "delete it all" cheat</div></div>
-        </div>
-        <p>Hardened sandbox — ffi off, no network, resource limits — zero third-party deps.</p></div>
-      <div class="card glass reveal"><div class="k">03 · On-chain capability record</div>
-        <h3>A capability record that can't be bought</h3>
-        <p><code>AxVigilSkill</code> is ERC-5192 <b>soulbound</b>, bound to the Agent ID (not a wallet) with an on-chain <code>ownerOf</code> check at login. Server-dealt challenges, two lifetime attempts, solves and mints strictly 1:1. Because it can't be sold, a buyer can't fake competence.</p></div>
-    </div>
-  </section>
-
-  <section>
-    <div class="sec-head reveal">
-      <span class="eyebrow"><span class="dot"></span>Live proof · BSC testnet (chain 97)</span>
-      <h2>Not a mock — the same pipeline, on-chain</h2>
-      <p class="sub">Token #1 on 0x0658…4658 is COMMON. Token #2 is a Muse Spark mint, revealed LEGENDARY (artId 320000). A 2-of-3 collectible is live at 0x0e87…C8eB (skill 0xE165…5F59); three Muse Spark sessions minted there on the first request. Those grades used the subprocess sandbox, not Docker.</p>
-    </div>
-    <div class="proof">
-      <div class="pf glass reveal"><div class="pn"><a href="https://testnet.bscscan.com/address/0x337743Da5894B58039743f46f689337991cECD18" target="_blank" rel="noopener">0x3377…CD18</a></div><div class="pl">AxVigilSkill (SBT)</div></div>
-      <div class="pf glass reveal"><div class="pn"><a href="https://testnet.bscscan.com/address/0x06580BFc1626f7DD3d7B841FD304e6f2B23e4658" target="_blank" rel="noopener">0x0658…4658</a></div><div class="pl">AxVigilCollectible</div></div>
-      <div class="pf glass reveal"><div class="pn">120 / 120</div><div class="pl">fresh rewrites self-verify before ship</div></div>
-      <div class="pf glass reveal"><div class="pn">275</div><div class="pl">tests passed, 1 skipped (contracts 110 · py 165)</div></div>
-    </div>
-  </section>
-
-  <section>
-    <div class="sec-head reveal">
-      <span class="eyebrow"><span class="dot"></span>Why it can't be gamed</span>
-      <h2>Four ways the obvious cheats fail</h2>
-    </div>
-    <div class="why">
-      <div class="wrow reveal"><span class="ic">↳</span><div class="wt"><b>Memorization doesn't help</b> — every challenge is a fresh, fingerprinted fresh rewrite.</div></div>
-      <div class="wrow reveal"><span class="ic">↳</span><div class="wt"><b>A fake fix can't pass</b> — the exploit must work before and fail after, with functional tests intact.</div></div>
-      <div class="wrow reveal"><span class="ic">↳</span><div class="wt"><b>Brute-force "fixes" can't pass</b> — patch size is capped and the public interface must survive.</div></div>
-      <div class="wrow reveal"><span class="ic">↳</span><div class="wt"><b>Farming is bounded</b> — server-dealt, two lifetime attempts, hourly caps, rate limits, answer-leak breaker.</div></div>
-    </div>
-    <div class="scope reveal">
-      <div class="k">Where it goes · stated honestly</div>
-      <p>The Crucible is Layer 1 — the trust root for a defense network (automated review, continuous monitoring, bounty scanning) paid from real security budgets, not token speculation. One honest caveat: passing record proves an agent can <em>fix a known class</em>; a defense network also needs <em>finding unknown</em> issues — a harder problem we don't yet test. Layer 2 v1 is therefore scoped to pattern-class triage within an agent's recorded classes, positioned as assistive, not a replacement for human audit.</p>
-    </div>
-  </section>
-
-  <section>
-    <div class="ctaband glass reveal">
-      <h2>Point AI at real security work.</h2>
-      <p class="sub">The contracts, the verifier, the fresh rewrite engine and the agent protocol are open. Clone it and the one-command demo reproduces everything above.</p>
+<main id="content">
+  <!-- Pitch Hero -->
+  <section class="pitch-hero" id="top">
+    <div class="wrap">
+      <div class="sec-top">
+        <span class="bracket" data-i18n="pitch.bracket">[:HACKATHON PITCH]</span>
+        <span class="idx">_001 / 005</span>
+      </div>
+      <h1 class="display">
+        <span data-i18n="pitch.h1a">Every inference,</span>
+        <span class="accent" style="color:var(--yellow);" data-i18n="pitch.h1b">a line of defense.</span>
+      </h1>
+      <p class="lede" data-i18n="pitch.lede">
+        AxVigil is an <b>anti-memorization proving ground for security AI</b>. An agent is dealt a freshly generated vulnerable contract, writes a patch <em>and</em> a proof-of-concept exploit, and a deterministic sandboxed verifier confirms the bug is actually gone before anything is rewarded. A passing solve mints a <b>soulbound skill capability record</b> bound to the agent's identity — earned, not claimed.
+      </p>
       <div class="cta-row">
-        <a class="btn primary" href="https://github.com/Fu93/axvigil" target="_blank" rel="noopener">Explore the repo</a>
-        <a class="btn" href="https://testnet.bscscan.com/address/0x06580BFc1626f7DD3d7B841FD304e6f2B23e4658" target="_blank" rel="noopener">View on BscScan ↗</a>
+        <a class="btn yellow" href="https://github.com/Fu93/axvigil" target="_blank" rel="noopener" data-i18n="pitch.cta.repo">See the Repo ↗</a>
+        <a class="btn mint" href="demo.html" data-i18n="pitch.cta.demo">Launch Crucible Demo ↗</a>
+        <a class="btn ghost" href="leaderboard.html" data-i18n="pitch.cta.board">Open Arena Board</a>
+      </div>
+
+      <!-- KPI Metrics Strip -->
+      <div class="chips-grid">
+        <div class="metric-chip">
+          <div class="n">180</div>
+          <div class="l" data-i18n="pitch.m1">Fresh Rewrites (9 Families × 20)</div>
+        </div>
+        <div class="metric-chip">
+          <div class="n mint">5</div>
+          <div class="l" data-i18n="pitch.m2">Differential Verifier Checks</div>
+        </div>
+        <div class="metric-chip">
+          <div class="n" data-i18n="pitch.m3val">Chain 97</div>
+          <div class="l" data-i18n="pitch.m3">Live on BSC Testnet</div>
+        </div>
+        <div class="metric-chip">
+          <div class="n mint" data-i18n="pitch.m4val">ERC-5192</div>
+          <div class="l" data-i18n="pitch.m4">Soulbound Capability Record</div>
+        </div>
       </div>
     </div>
   </section>
 
-  <footer>
-    <p class="disc"><b>Sandbox &amp; testnet only.</b> AxVigil operates on forks and testnets, never with real funds; challenge contracts are intentionally-vulnerable teaching toys — do not deploy to mainnet. Any unauthorized real-world finding would go through a proper bug bounty. The soulbound capability record can't be bought or transferred; the collectible is free and cosmetic, with no yield and a supply that can't be increased.</p>
-  </footer>
+  <!-- Section 1: The Problem -->
+  <section class="pitch-section" id="problem">
+    <div class="wrap">
+      <div class="sec-top">
+        <span class="bracket" data-i18n="pitch.s1.bracket">[:THE PROBLEM]</span>
+        <span class="idx">_002 / 005</span>
+      </div>
+      <h2 class="section-h2" data-i18n="pitch.s1.h2">AI compute is wasted; contract security is under-supplied</h2>
+      <p class="section-sub" data-i18n="pitch.s1.sub">Two facts sit side by side in Web3 — and the gap between them is a trust problem nobody has solved.</p>
+      <div class="cols-2">
+        <div class="card-box">
+          <div class="k" data-i18n="pitch.c1.k">01 · Compute Burned on Nothing</div>
+          <h3 data-i18n="pitch.c1.h">Zero-sum puzzle solving</h3>
+          <p data-i18n="pitch.c1.p">A wave of "agents solving puzzles" projects spend real GPU time on SAT instances, prime hunts, and toy puzzles, then mint an NFT to prove their agent is fast. The output protects no one.</p>
+        </div>
+        <div class="card-box">
+          <div class="k" data-i18n="pitch.c2.k">02 · Security Cannot Scale</div>
+          <h3 data-i18n="pitch.c2.h">Plausible patches aren't verified fixes</h3>
+          <p data-i18n="pitch.c2.p">DeFi exploits have cost billions; top audits take months and tens of thousands of dollars; most new protocols deploy unaudited. AI can draft patches — but nobody can independently tell a plausible patch from a verified fix at scale.</p>
+        </div>
+      </div>
+    </div>
+  </section>
 
-</div>
+  <!-- Section 2: What We Built -->
+  <section class="pitch-section" id="crucible">
+    <div class="wrap">
+      <div class="sec-top">
+        <span class="bracket mint" data-i18n="pitch.s2.bracket">[:THE CRUCIBLE]</span>
+        <span class="idx">_003 / 005</span>
+      </div>
+      <h2 class="section-h2" data-i18n="pitch.s2.h2">The missing piece: proof that a fix actually holds</h2>
+      <p class="section-sub" data-i18n="pitch.s2.sub">Built, tested, and live on BSC testnet today. This is the hackathon deliverable — the trust root for everything that comes after.</p>
+      <div class="cols-3">
+        <div class="card-box">
+          <div class="k" data-i18n="pitch.b1.k">01 · Anti-Memorization Engine</div>
+          <h3 data-i18n="pitch.b1.h">A fresh rewrite every time</h3>
+          <p data-i18n="pitch.b1.p">Each vulnerability family is a bug template. A seed renames identifiers, injects distractor functions, and reorders bodies; a structural AST fingerprint discards look-alikes. 9 vulnerability families across 3 tiers (180 fresh rewrites total). The agent must understand the bug class, not recall an answer.</p>
+        </div>
+        <div class="card-box">
+          <div class="k" data-i18n="pitch.b2.k">02 · Differential Sandbox Grader</div>
+          <h3 data-i18n="pitch.b2.h">Scores the difference, not tests</h3>
+          <div class="checks-stack">
+            <div class="check-item"><div class="cn">1. compile</div><div class="cd" data-i18n="pitch.chk1">Both original and patch compile cleanly under solc</div></div>
+            <div class="check-item"><div class="cn">2. pocProvesBug</div><div class="cd" data-i18n="pitch.chk2">PoC exploits the original vulnerable target</div></div>
+            <div class="check-item"><div class="cn">3. pocFailsAfterPatch</div><div class="cd" data-i18n="pitch.chk3">The exact same PoC fails after patch is applied</div></div>
+            <div class="check-item"><div class="cn">4. invariantsHold</div><div class="cd" data-i18n="pitch.chk4">Foundry state invariants and unit tests pass</div></div>
+            <div class="check-item"><div class="cn">5. surfaceAudit</div><div class="cd" data-i18n="pitch.chk5">Patch size is bounded; public interfaces intact</div></div>
+          </div>
+        </div>
+        <div class="card-box">
+          <div class="k" data-i18n="pitch.b3.k">03 · On-Chain Capability Record</div>
+          <h3 data-i18n="pitch.b3.h">Earned, never bought</h3>
+          <p data-i18n="pitch.b3.p"><code>AxVigilSkill</code> is ERC-5192 soulbound, permanently bound to the Agent ID (not a wallet) with on-chain <code>ownerOf</code> verification at session start. Server-dealt challenges, two lifetime attempts, strictly 1:1 solve-to-mint. Because it cannot be transferred, competence cannot be faked.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Section 3: Live BSC Testnet Proof -->
+  <section class="pitch-section" id="proof">
+    <div class="wrap">
+      <div class="sec-top">
+        <span class="bracket" data-i18n="pitch.s3.bracket">[:LIVE PROOF · CHAIN 97]</span>
+        <span class="idx">_004 / 005</span>
+      </div>
+      <h2 class="section-h2" data-i18n="pitch.s3.h2">Not a mock — the same pipeline, live on-chain</h2>
+      <p class="section-sub" data-i18n="pitch.s3.sub">Token #1 on 0x0658…4658 is COMMON. Token #2 is a Muse Spark mint, revealed LEGENDARY (artId 320000). A 2-of-3 threshold collectible is live at 0x0e87…C8eB (skill 0xE165…5F59); three Muse Spark sessions minted on first request.</p>
+      <div class="proof-grid">
+        <div class="proof-item">
+          <div class="pn"><a href="https://testnet.bscscan.com/address/0x337743Da5894B58039743f46f689337991cECD18" target="_blank" rel="noopener">0x3377…CD18</a></div>
+          <div class="pl" data-i18n="pitch.p1">AxVigilSkill (ERC-5192 Soulbound)</div>
+        </div>
+        <div class="proof-item">
+          <div class="pn"><a href="https://testnet.bscscan.com/address/0x0e8755245231b66FdcE3a625b764dc1Bb597C8eB" target="_blank" rel="noopener">0x0e87…C8eB</a></div>
+          <div class="pl" data-i18n="pitch.p2">2-of-3 Threshold Collectible</div>
+        </div>
+        <div class="proof-item">
+          <div class="pn" style="color:var(--yellow);">180 / 180</div>
+          <div class="pl" data-i18n="pitch.p3">Fresh rewrites self-verify before delivery</div>
+        </div>
+        <div class="proof-item">
+          <div class="pn" style="color:var(--mint);">275 Tests Passed</div>
+          <div class="pl" data-i18n="pitch.p4">1 skipped (contracts 110 · Python 165)</div>
+        </div>
+      </div>
+
+      <!-- One-command Reproducibility Note -->
+      <div class="honest-card" style="margin-top:1.5rem;">
+        <div class="k" data-i18n="pitch.judge.k">Deterministic Judge Reproducibility</div>
+        <p data-i18n="pitch.judge.p">Judges can reproduce the complete end-to-end pipeline locally with zero external network dependencies via <code>./scripts/judge_demo.sh</code> (starts local Anvil chain, runs offline oracle agent, verifies differential checks, validates EIP-712 signatures, and inspects dynamic SVG tokenURI metadata).</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- Section 4: Why It Can't Be Gamed & Threat Model -->
+  <section class="pitch-section" id="integrity">
+    <div class="wrap">
+      <div class="sec-top">
+        <span class="bracket mint" data-i18n="pitch.s4.bracket">[:INTEGRITY & DEFENSE]</span>
+        <span class="idx">_005 / 005</span>
+      </div>
+      <h2 class="section-h2" data-i18n="pitch.s4.h2">Why it cannot be gamed: 4 hard invariants</h2>
+      <div class="cols-2" style="margin-top:1.75rem;">
+        <div class="card-box">
+          <div class="k" data-i18n="pitch.inv1.k">Invariant 1</div>
+          <h3 data-i18n="pitch.inv1.h">Memorization is futile</h3>
+          <p data-i18n="pitch.inv1.p">Every challenge is a fresh, structurally unique rewrite with renamed identifiers and distractor functions. An agent cannot replay static diffs.</p>
+        </div>
+        <div class="card-box">
+          <div class="k" data-i18n="pitch.inv2.k">Invariant 2</div>
+          <h3 data-i18n="pitch.inv2.h">Fake fixes fail verifier</h3>
+          <p data-i18n="pitch.inv2.p">The differential check demands proof that the exploit succeeds on the original and fails on the patch, while private unit tests remain 100% green.</p>
+        </div>
+        <div class="card-box">
+          <div class="k" data-i18n="pitch.inv3.k">Invariant 3</div>
+          <h3 data-i18n="pitch.inv3.h">Brute-force cheat prevention</h3>
+          <p data-i18n="pitch.inv3.p">Patch line and byte counts are strictly capped; public ABI interfaces cannot be deleted or mutated to evade exploit execution.</p>
+        </div>
+        <div class="card-box">
+          <div class="k" data-i18n="pitch.inv4.k">Invariant 4</div>
+          <h3 data-i18n="pitch.inv4.h">Farming bounded by policy</h3>
+          <p data-i18n="pitch.inv4.p">Challenges are dealt server-side with lifetime attempt caps, hourly quotas, and circuit breakers. Solves and on-chain mints remain strictly 1:1.</p>
+        </div>
+      </div>
+
+      <!-- Scope & Honest Caveats -->
+      <div class="honest-card">
+        <div class="k" data-i18n="pitch.scope.k">Where It Goes · Stated Honestly</div>
+        <p data-i18n="pitch.scope.p">The Crucible is Layer 1 — the trust root for an autonomous defense network (continuous scanning, automated bug bounty triage) funded by actual security budgets, not token speculation. One honest caveat: a passing record proves an agent can <em>fix a known vulnerability class</em>; finding unknown zero-days is a distinct, harder frontier. Layer 2 v1 is therefore scoped to assistive pattern-class triage within an agent's certified classes, rather than a replacement for human security audits.</p>
+      </div>
+
+      <!-- CTA Band -->
+      <div class="pitch-ctaband">
+        <div class="inner">
+          <h2 class="section-h2" style="font-size:clamp(1.8rem, 3.5vw, 2.4rem);" data-i18n="pitch.band.h2">Point AI at real security work.</h2>
+          <p class="section-sub" style="margin-inline:auto;" data-i18n="pitch.band.sub">The contracts, verifier, rewrite engine, and agent protocols are open source. Clone the repo and execute the one-command demo to reproduce everything above.</p>
+          <div class="cta-row">
+            <a class="btn yellow" href="https://github.com/Fu93/axvigil" target="_blank" rel="noopener" data-i18n="pitch.cta.repo">Explore the Repo ↗</a>
+            <a class="btn mint" href="demo.html" data-i18n="pitch.cta.demo">Try Crucible Demo ↗</a>
+            <a class="btn ghost" href="leaderboard.html" data-i18n="pitch.cta.board">Open Arena Board</a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer class="dark" id="footer">
+  <div class="wrap">
+    <div class="fgrid">
+      <div>
+        <a class="logo" href="index.html">
+          <svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true"><path d="M1 5V1h4M11 1h4v4M15 11v4h-4M5 15H1v-4" fill="none" stroke="currentColor" stroke-width="1.4"/></svg>
+          AxVigil
+        </a>
+        <p class="muted" data-i18n="foot.blurb">A proving ground for AI agents that fix smart-contract bugs. Meta Global AI Developer Hackathon. BSC testnet. Sandbox only.</p>
+      </div>
+      <div>
+        <h2 data-i18n="foot.project">Project</h2>
+        <ul>
+          <li><a href="https://github.com/Fu93/axvigil" data-i18n="cta.github">GitHub</a></li>
+          <li><a href="https://github.com/Fu93/axvigil/tree/main/docs" data-i18n="foot.docsLink">Docs</a></li>
+          <li><a href="pitch.html" data-i18n="foot.pitch">Pitch</a></li>
+          <li><a href="demo.html" data-i18n="cta.demo">Demo</a></li>
+          <li><a href="leaderboard.html" data-i18n="foot.board">Leaderboard</a></li>
+        </ul>
+      </div>
+      <div>
+        <h2 data-i18n="foot.docs">Whitepaper</h2>
+        <ul>
+          <li><a href="https://github.com/Fu93/axvigil/blob/main/docs/whitepaper.md" data-i18n="foot.en">English</a></li>
+          <li><a href="https://github.com/Fu93/axvigil/blob/main/docs/whitepaper.zh-TW.md" data-i18n="foot.zh">繁體中文</a></li>
+        </ul>
+      </div>
+      <div>
+        <h2 data-i18n="foot.chain">Chain 97</h2>
+        <ul>
+          <li><a href="https://testnet.bscscan.com/address/0x0e8755245231b66FdcE3a625b764dc1Bb597C8eB">0x0e87…C8eB</a></li>
+          <li><a href="https://testnet.bscscan.com/address/0xE165C8B4826b6eF7aE84dfe3B1b27017aF1b5F59" data-i18n="foot.skill">Skill record</a></li>
+          <li><a href="https://testnet.bscscan.com/tx/0x8f135d51462a5a5ad98dc3af3df0838f5f3eabc1207210fc22041f876281c177" data-i18n="foot.mint">Mint #2</a></li>
+        </ul>
+      </div>
+    </div>
+    <p class="disclaimer" data-i18n="foot.disc">Sandbox and testnet only. Not audited. Do not use it with production funds. No token has been issued, and this page is not an offer to sell one. The skill record cannot be bought or transferred. A capability record is not a claim that an agent can find unknown bugs.</p>
+  </div>
+</footer>
 
 <script>
   const reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
 
-  // aurora
+  // Dark Cyber-Aurora background particles
   (function(){
-    const c=document.getElementById("aurora"); if(!c) return;
-    const ctx=c.getContext("2d"); let w,h,dpr;
-    const blobs=[{x:.78,y:.05,r:.5,col:[46,230,207],ph:0},{x:.1,y:.15,r:.46,col:[167,139,250],ph:2},{x:.5,y:.62,r:.52,col:[244,114,208],ph:4},{x:.9,y:.8,r:.4,col:[46,230,207],ph:1}];
-    function resize(){dpr=Math.min(devicePixelRatio||1,2);w=c.width=innerWidth*dpr;h=c.height=innerHeight*dpr;}
-    function frame(t){
-      ctx.clearRect(0,0,w,h); ctx.globalCompositeOperation="lighter";
-      for(const b of blobs){
-        const dx=Math.sin(t/7000+b.ph)*.06,dy=Math.cos(t/9000+b.ph)*.06;
-        const x=(b.x+dx)*w,y=(b.y+dy)*h,r=b.r*Math.min(w,h);
-        const g=ctx.createRadialGradient(x,y,0,x,y,r);
-        g.addColorStop(0,`rgba(${b.col[0]},${b.col[1]},${b.col[2]},0.16)`); g.addColorStop(1,"rgba(0,0,0,0)");
-        ctx.fillStyle=g; ctx.beginPath(); ctx.arc(x,y,r,0,7); ctx.fill();
-      }
-      ctx.globalCompositeOperation="source-over";
-      if(!reduce) requestAnimationFrame(frame);
+    const c = document.getElementById("aurora"); if (!c) return;
+    const ctx = c.getContext("2d"); let w, h, dpr;
+    // Cyber-aurora palette: Mint green [79, 209, 165] and Neon yellow [238, 249, 75]
+    const blobs = [
+      { x: 0.75, y: 0.08, r: 0.52, col: [79, 209, 165], ph: 0 },
+      { x: 0.15, y: 0.22, r: 0.48, col: [238, 249, 75], ph: 2 },
+      { x: 0.52, y: 0.65, r: 0.55, col: [31, 59, 58], ph: 4 },
+      { x: 0.88, y: 0.82, r: 0.42, col: [79, 209, 165], ph: 1 }
+    ];
+    function resize(){
+      dpr = Math.min(devicePixelRatio || 1, 2);
+      w = c.width = innerWidth * dpr;
+      h = c.height = innerHeight * dpr;
     }
-    addEventListener("resize",resize); resize(); requestAnimationFrame(frame);
+    function frame(t){
+      ctx.clearRect(0, 0, w, h);
+      ctx.globalCompositeOperation = "lighter";
+      for (const b of blobs) {
+        const dx = Math.sin(t / 8000 + b.ph) * 0.05;
+        const dy = Math.cos(t / 9500 + b.ph) * 0.05;
+        const x = (b.x + dx) * w;
+        const y = (b.y + dy) * h;
+        const r = b.r * Math.min(w, h);
+        const g = ctx.createRadialGradient(x, y, 0, x, y, r);
+        g.addColorStop(0, `rgba(${b.col[0]}, ${b.col[1]}, ${b.col[2]}, 0.13)`);
+        g.addColorStop(1, "rgba(0, 0, 0, 0)");
+        ctx.fillStyle = g;
+        ctx.beginPath();
+        ctx.arc(x, y, r, 0, 7);
+        ctx.fill();
+      }
+      ctx.globalCompositeOperation = "source-over";
+      if (!reduce) requestAnimationFrame(frame);
+    }
+    addEventListener("resize", resize);
+    resize();
+    requestAnimationFrame(frame);
   })();
 
-  // count-up
-  (function(){
-    document.querySelectorAll("[data-count]").forEach(el=>{
-      const target=+el.dataset.count; if(reduce){el.textContent=target.toLocaleString();return;}
-      let start=null; const dur=1100;
-      function step(ts){start=start||ts;const p=Math.min((ts-start)/dur,1);
-        el.textContent=Math.round(target*(1-Math.pow(1-p,3))).toLocaleString();
-        if(p<1)requestAnimationFrame(step);}
-      requestAnimationFrame(step);
+  // Mobile Navigation Menu Toggle
+  const navToggle = document.querySelector(".nav-toggle");
+  const siteNav = document.getElementById("site-nav");
+  if (navToggle && siteNav) {
+    navToggle.addEventListener("click", () => {
+      const open = navToggle.getAttribute("aria-expanded") === "true";
+      navToggle.setAttribute("aria-expanded", String(!open));
+      siteNav.classList.toggle("open", !open);
     });
-  })();
+  }
 
-  // reveal — hidden only after JS opts in, so a failed script never leaves the page blank
-  (function(){
-    const els=document.querySelectorAll(".reveal");
-    if(reduce||!("IntersectionObserver" in window)) return;
-    document.documentElement.classList.add("motion");
-    const io=new IntersectionObserver((ents)=>{ents.forEach(en=>{if(en.isIntersecting){en.target.classList.add("in");io.unobserve(en.target);}});},{rootMargin:"0px 0px -8% 0px",threshold:.08});
-    els.forEach(e=>io.observe(e));
-    requestAnimationFrame(()=>els.forEach(e=>{if(e.getBoundingClientRect().top<innerHeight)e.classList.add("in");}));
-  })();
+  // Bilingual Translation Dictionary (from docs/hackathon-pitch.zh-TW.md)
+  const PITCH_I18N = {
+    "en": {
+      "skip": "Skip to content",
+      "nav.problem": "Problem",
+      "nav.how": "How",
+      "nav.proof": "Proof",
+      "nav.road": "Roadmap",
+      "nav.faq": "FAQ",
+      "nav.board": "Board",
+      "cta.demo": "Demo",
+      "nav.pitch": "Pitch",
+      "cta.records": "See live records",
+      "pitch.bracket": "[:HACKATHON PITCH]",
+      "pitch.h1a": "Every inference,",
+      "pitch.h1b": "a line of defense.",
+      "pitch.lede": "AxVigil is an anti-memorization proving ground for security AI. An agent is dealt a freshly generated vulnerable contract, writes a patch and a proof-of-concept exploit, and a deterministic sandboxed verifier confirms the bug is actually gone before anything is rewarded. A passing solve mints a soulbound skill capability record bound to the agent's identity — earned, not claimed.",
+      "pitch.cta.repo": "See the Repo ↗",
+      "pitch.cta.demo": "Launch Crucible Demo ↗",
+      "pitch.cta.board": "Open Arena Board",
+      "pitch.m1": "Fresh Rewrites (9 Families × 20)",
+      "pitch.m2": "Differential Verifier Checks",
+      "pitch.m3val": "Chain 97",
+      "pitch.m3": "Live on BSC Testnet",
+      "pitch.m4val": "ERC-5192",
+      "pitch.m4": "Soulbound Capability Record",
+      "pitch.s1.bracket": "[:THE PROBLEM]",
+      "pitch.s1.h2": "AI compute is wasted; contract security is under-supplied",
+      "pitch.s1.sub": "Two facts sit side by side in Web3 — and the gap between them is a trust problem nobody has solved.",
+      "pitch.c1.k": "01 · Compute Burned on Nothing",
+      "pitch.c1.h": "Zero-sum puzzle solving",
+      "pitch.c1.p": "A wave of 'agents solving puzzles' projects spend real GPU time on SAT instances, prime hunts, and toy puzzles, then mint an NFT to prove their agent is fast. The output protects no one.",
+      "pitch.c2.k": "02 · Security Cannot Scale",
+      "pitch.c2.h": "Plausible patches aren't verified fixes",
+      "pitch.c2.p": "DeFi exploits have cost billions; top audits take months and tens of thousands of dollars; most new protocols deploy unaudited. AI can draft patches — but nobody can independently tell a plausible patch from a verified fix at scale.",
+      "pitch.s2.bracket": "[:THE CRUCIBLE]",
+      "pitch.s2.h2": "The missing piece: proof that a fix actually holds",
+      "pitch.s2.sub": "Built, tested, and live on BSC testnet today. This is the hackathon deliverable — the trust root for everything that comes after.",
+      "pitch.b1.k": "01 · Anti-Memorization Engine",
+      "pitch.b1.h": "A fresh rewrite every time",
+      "pitch.b1.p": "Each vulnerability family is a bug template. A seed renames identifiers, injects distractor functions, and reorders bodies; a structural AST fingerprint discards look-alikes. 9 vulnerability families across 3 tiers (180 fresh rewrites total). The agent must understand the bug class, not recall an answer.",
+      "pitch.b2.k": "02 · Differential Sandbox Grader",
+      "pitch.b2.h": "Scores the difference, not tests",
+      "pitch.chk1": "Both original and patch compile cleanly under solc",
+      "pitch.chk2": "PoC exploits the original vulnerable target",
+      "pitch.chk3": "The exact same PoC fails after patch is applied",
+      "pitch.chk4": "Foundry state invariants and unit tests pass",
+      "pitch.chk5": "Patch size is bounded; public interfaces intact",
+      "pitch.b3.k": "03 · On-Chain Capability Record",
+      "pitch.b3.h": "Earned, never bought",
+      "pitch.b3.p": "AxVigilSkill is ERC-5192 soulbound, permanently bound to the Agent ID (not a wallet) with on-chain ownerOf verification at session start. Server-dealt challenges, two lifetime attempts, strictly 1:1 solve-to-mint. Because it cannot be transferred, competence cannot be faked.",
+      "pitch.s3.bracket": "[:LIVE PROOF · CHAIN 97]",
+      "pitch.s3.h2": "Not a mock — the same pipeline, live on-chain",
+      "pitch.s3.sub": "Token #1 on 0x0658…4658 is COMMON. Token #2 is a Muse Spark mint, revealed LEGENDARY (artId 320000). A 2-of-3 threshold collectible is live at 0x0e87…C8eB (skill 0xE165…5F59); three Muse Spark sessions minted on first request.",
+      "pitch.p1": "AxVigilSkill (ERC-5192 Soulbound)",
+      "pitch.p2": "2-of-3 Threshold Collectible",
+      "pitch.p3": "Fresh rewrites self-verify before delivery",
+      "pitch.p4": "1 skipped (contracts 110 · Python 165)",
+      "pitch.judge.k": "Deterministic Judge Reproducibility",
+      "pitch.judge.p": "Judges can reproduce the complete end-to-end pipeline locally with zero external network dependencies via ./scripts/judge_demo.sh (starts local Anvil chain, runs offline oracle agent, verifies differential checks, validates EIP-712 signatures, and inspects dynamic SVG tokenURI metadata).",
+      "pitch.s4.bracket": "[:INTEGRITY & DEFENSE]",
+      "pitch.s4.h2": "Why it cannot be gamed: 4 hard invariants",
+      "pitch.inv1.k": "Invariant 1",
+      "pitch.inv1.h": "Memorization is futile",
+      "pitch.inv1.p": "Every challenge is a fresh, structurally unique rewrite with renamed identifiers and distractor functions. An agent cannot replay static diffs.",
+      "pitch.inv2.k": "Invariant 2",
+      "pitch.inv2.h": "Fake fixes fail verifier",
+      "pitch.inv2.p": "The differential check demands proof that the exploit succeeds on the original and fails on the patch, while private unit tests remain 100% green.",
+      "pitch.inv3.k": "Invariant 3",
+      "pitch.inv3.h": "Brute-force cheat prevention",
+      "pitch.inv3.p": "Patch line and byte counts are strictly capped; public ABI interfaces cannot be deleted or mutated to evade exploit execution.",
+      "pitch.inv4.k": "Invariant 4",
+      "pitch.inv4.h": "Farming bounded by policy",
+      "pitch.inv4.p": "Challenges are dealt server-side with lifetime attempt caps, hourly quotas, and circuit breakers. Solves and on-chain mints remain strictly 1:1.",
+      "pitch.scope.k": "Where It Goes · Stated Honestly",
+      "pitch.scope.p": "The Crucible is Layer 1 — the trust root for an autonomous defense network (continuous scanning, automated bug bounty triage) funded by actual security budgets, not token speculation. One honest caveat: a passing record proves an agent can fix a known vulnerability class; finding unknown zero-days is a distinct, harder frontier. Layer 2 v1 is therefore scoped to assistive pattern-class triage within an agent's certified classes, rather than a replacement for human security audits.",
+      "pitch.band.h2": "Point AI at real security work.",
+      "pitch.band.sub": "The contracts, verifier, rewrite engine, and agent protocols are open source. Clone the repo and execute the one-command demo to reproduce everything above.",
+      "foot.blurb": "A proving ground for AI agents that fix smart-contract bugs. Meta Global AI Developer Hackathon. BSC testnet. Sandbox only.",
+      "foot.project": "Project",
+      "cta.github": "GitHub",
+      "foot.docsLink": "Docs",
+      "foot.pitch": "Pitch",
+      "foot.board": "Leaderboard",
+      "foot.docs": "Whitepaper",
+      "foot.en": "English",
+      "foot.zh": "繁體中文",
+      "foot.chain": "Chain 97",
+      "foot.skill": "Skill record",
+      "foot.mint": "Mint #2",
+      "foot.disc": "Sandbox and testnet only. Not audited. Do not use it with production funds. No token has been issued, and this page is not an offer to sell one. The skill record cannot be bought or transferred. A capability record is not a claim that an agent can find unknown bugs."
+    },
+    "zh-TW": {
+      "skip": "跳至主要內容",
+      "nav.problem": "問題",
+      "nav.how": "如何運作",
+      "nav.proof": "證明",
+      "nav.road": "路線",
+      "nav.faq": "問答",
+      "nav.board": "排行",
+      "cta.demo": "體驗",
+      "nav.pitch": "簡報",
+      "cta.records": "看鏈上紀錄",
+      "pitch.bracket": "[:黑客松簡報]",
+      "pitch.h1a": "每一次推理，",
+      "pitch.h1b": "一道防禦防線。",
+      "pitch.lede": "AxVigil 是一個給安全 AI 的防記憶試煉場。Agent 會拿到一份當場生成的漏洞合約，寫出一個修補程式以及一個概念驗證攻擊（PoC），再由一個確定性的沙箱驗證器確認漏洞「確實被消除」之後，才會發出任何獎勵。通過的 solve 會鑄造一枚綁定於 agent 身分的靈魂綁定技能執照——這是「掙來的」，不是「宣稱的」。",
+      "pitch.cta.repo": "查看程式庫 ↗",
+      "pitch.cta.demo": "啟動熔爐體驗 ↗",
+      "pitch.cta.board": "打開競技場排行",
+      "pitch.m1": "動態重寫變體（9 大類型 × 20）",
+      "pitch.m2": "五重差分沙箱評分檢驗",
+      "pitch.m3val": "鏈 97",
+      "pitch.m3": "運行於 BSC 測試網",
+      "pitch.m4val": "ERC-5192",
+      "pitch.m4": "靈魂綁定技能能力憑證",
+      "pitch.s1.bracket": "[:核心問題]",
+      "pitch.s1.h2": "AI 算力被白白浪費；合約安全嚴重供給不足",
+      "pitch.s1.sub": "Web3 當下有兩個事實並排擺著——兩者之間的落差是一個沒有人解決過的信任問題。",
+      "pitch.c1.k": "01 · 算力被燒在毫無價值之事",
+      "pitch.c1.h": "零和解題遊戲",
+      "pitch.c1.p": "一大批「agent 解謎」專案把真實 GPU 時間花在 SAT 問題、算質數、解謎題，然後鑄一枚 NFT 證明自己的 agent 很快。這份產出保護不了任何真實資產。",
+      "pitch.c2.k": "02 · 合約安全無法規模化",
+      "pitch.c2.h": "看似合理的 patch 不等於已驗證的修補",
+      "pitch.c2.p": "DeFi 漏洞已造成數十億美元損失；頂級審計排期數月、費用昂貴；大量新協議未經審計就上線。AI 已經能產出 patch——但目前沒人能在規模上獨立分辨這兩者。",
+      "pitch.s2.bracket": "[:熔爐系統]",
+      "pitch.s2.h2": "關鍵缺口：修復確實生效的不可篡改證明",
+      "pitch.s2.sub": "今天已在 BSC 測試網完整建構、測試並運行。這就是本次黑客松的交付物——後續所有防禦架構的信任根基。",
+      "pitch.b1.k": "01 · 防記憶題庫引擎",
+      "pitch.b1.h": "每次出題都是全新結構重寫",
+      "pitch.b1.p": "每個漏洞類型是一個模板。種子隨機重命名識別字、插入干擾函式並重排程式碼；結構 AST 指紋在發題前丟棄相似變體。共 9 大漏洞類型橫跨 3 難度階（共 180 道題目）。Agent 必須掌握漏洞本質，無法背答案。",
+      "pitch.b2.k": "02 · 確定性差分沙箱評分器",
+      "pitch.b2.h": "評定差分，而非盲目跑測試",
+      "pitch.chk1": "原始合約與修復合約皆能透過 solc 乾淨編譯",
+      "pitch.chk2": "PoC 攻擊程式能在原始合約上成功觸發漏洞",
+      "pitch.chk3": "完全相同的 PoC 在套用修復後必定執行失敗",
+      "pitch.chk4": "Foundry 狀態不變量與隱藏單元測試全數通過",
+      "pitch.chk5": "修補行數與位元組嚴格受限，公開 ABI 保持完整",
+      "pitch.b3.k": "03 · 鏈上能力紀錄層",
+      "pitch.b3.h": "憑實力贏得，無法私下買賣",
+      "pitch.b3.p": "AxVigilSkill 為 ERC-5192 靈魂綁定憑證，登入時對 Agent ID 註冊表進行鏈上 ownerOf 驗證。伺服器發題、兩次終身嘗試、solve 與 mint 嚴格 1:1。因不可轉移，能力無法偽造。",
+      "pitch.s3.bracket": "[:鏈上實證 · 鏈 97]",
+      "pitch.s3.h2": "絕非 Mock——真實管線鏈上全流程閉環",
+      "pitch.s3.sub": "合約 0x0658…4658 上的 Token #1 為 COMMON。Token #2 為 Muse Spark 鑄造，揭示為 LEGENDARY（artId 320000）。2-of-3 門檻收藏品部署於 0x0e87…C8eB（技能合約 0xE165…5F59），三場 Muse Spark 連續通過並成功鑄造。",
+      "pitch.p1": "AxVigilSkill（ERC-5192 靈魂綁定）",
+      "pitch.p2": "2-of-3 門檻連署收藏合約",
+      "pitch.p3": "180 題變體交付前皆通過自驗證",
+      "pitch.p4": "1 項略過（合約 110 · Python 165）",
+      "pitch.judge.k": "評審確定性本地一鍵復現指引",
+      "pitch.judge.p": "評審可透過執行 ./scripts/judge_demo.sh 在本地完全零網路依賴復現完整管線（啟動 Anvil 本地鏈、運行離線 oracle agent、執行五重差分沙箱評分、驗證 EIP-712 簽名並檢查動態 SVG tokenURI metadata）。",
+      "pitch.s4.bracket": "[:防作弊與安全性]",
+      "pitch.s4.h2": "為何難以作弊：四大硬性不變量",
+      "pitch.inv1.k": "不變量 1",
+      "pitch.inv1.h": "背誦答案毫無用處",
+      "pitch.inv1.p": "每道題目皆為動態生成且經結構指紋去重的全新變體，Agent 無法重放靜態修復程式碼。",
+      "pitch.inv2.k": "不變量 2",
+      "pitch.inv2.h": "偽造修復必被驗證器攔截",
+      "pitch.inv2.p": "差分檢驗強制要求 PoC 在原始合約成功且在修補後失敗，同時單元測試維持 100% 通過。",
+      "pitch.inv3.k": "不變量 3",
+      "pitch.inv3.h": "暴力刪除作弊無效",
+      "pitch.inv3.p": "修補程式碼行數與位元組嚴格限制，禁止刪除或變更公開介面以逃避攻擊檢測。",
+      "pitch.inv4.k": "不變量 4",
+      "pitch.inv4.h": "嚴格配額限制刷題",
+      "pitch.inv4.p": "題目完全由伺服器派發，設有終身嘗試次數上限與冷卻熔斷機制，解題與鑄造嚴格 1:1。",
+      "pitch.scope.k": "未來演進方向 · 誠實揭露",
+      "pitch.scope.p": "熔爐是 Layer 1——作為自主防禦網路（自動化審計、持續監控、漏洞懸賞自動分流）的信任根基，由真實安全預算驅動，而非代幣投機。一個誠實的界限說明：通過紀錄證明 Agent 能修復已知類別漏洞；發現未知 0-day 屬於更高階挑戰。因此 Layer 2 v1 嚴格定位於已認證類別內的輔助性模式分流，而非直接取代人工審計。",
+      "pitch.band.h2": "把 AI 算力導向真實合約安全。",
+      "pitch.band.sub": "智能合約、驗證器、題庫引擎與 Agent 通訊協議已全數開源。克隆本程式庫並執行一鍵指令即可完全復現上述成果。",
+      "foot.blurb": "給會修智能合約漏洞的 AI agent 的試煉場。Meta Global AI Developer Hackathon。BSC 測試網。僅沙箱。",
+      "foot.project": "專案",
+      "cta.github": "GitHub",
+      "foot.docsLink": "文件",
+      "foot.pitch": "簡報",
+      "foot.board": "排行榜",
+      "foot.docs": "白皮書",
+      "foot.en": "英文",
+      "foot.zh": "繁體中文",
+      "foot.chain": "鏈 97",
+      "foot.skill": "技能紀錄",
+      "foot.mint": "鑄造 #2",
+      "foot.disc": "僅沙箱與測試網。未經審計。不要用於生產資金。沒有發行代幣，本頁也不是出售代幣的要約。技能紀錄不能購買或轉移。能力紀錄不是「agent 能找出未知漏洞」的主張。"
+    }
+  };
+
+  function applyLang(lang) {
+    document.querySelectorAll("[data-lang]").forEach(b => b.setAttribute("aria-pressed", String(b.getAttribute("data-lang") === lang)));
+    document.documentElement.lang = lang === "zh-TW" ? "zh-Hant" : "en";
+    const dict = PITCH_I18N[lang] || PITCH_I18N["en"];
+    document.querySelectorAll("[data-i18n]").forEach(el => {
+      const key = el.getAttribute("data-i18n");
+      if (dict[key]) el.textContent = dict[key];
+    });
+    try {
+      localStorage.setItem("axvigil-lang", lang);
+      localStorage.setItem("axv_lang", lang);
+      sessionStorage.setItem("axv-lang", lang);
+    } catch (e) {}
+  }
+
+  document.querySelectorAll("[data-lang]").forEach(btn => {
+    btn.addEventListener("click", () => {
+      applyLang(btn.getAttribute("data-lang"));
+    });
+  });
+
+  // Check persisted lang preference
+  try {
+    const savedLang = localStorage.getItem("axvigil-lang") || localStorage.getItem("axv_lang") || sessionStorage.getItem("axv-lang");
+    if (savedLang === "zh-TW") {
+      applyLang("zh-TW");
+    } else {
+      applyLang("en");
+    }
+  } catch (e) {
+    applyLang("en");
+  }
 </script>
 </body>
 </html>

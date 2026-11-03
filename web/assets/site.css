@@ -191,7 +191,13 @@ html[lang="zh-Hant"] .bracket { text-transform: none; letter-spacing: 0.04em; }
   clip-path: var(--cut);
 }
 html[lang="zh-Hant"] .nav-links a { letter-spacing: 0.02em; text-transform: none; font-size: 0.78rem; }
-.nav-links a[aria-current="true"] { border-color: rgba(239, 238, 236, 0.75); }
+.nav-links a[aria-current="true"],
+.nav-links a[aria-current="page"] {
+  border-color: var(--yellow);
+  color: var(--yellow);
+  font-weight: 700;
+  background: rgba(238, 249, 75, 0.08);
+}
 .nav-end { margin-left: auto; display: flex; align-items: center; gap: 8px; }
 .lang { display: inline-flex; border: 1px solid rgba(239, 238, 236, 0.18); clip-path: var(--cut); }
 .lang button {
@@ -676,20 +682,24 @@ footer { padding: 48px 0 32px; }
 @keyframes axv-travel { from { transform: translateX(-130%); } to { transform: translateX(480%); } }
 
 @media (max-width: 1100px) {
+  .nav-bar { position: relative; }
   .nav-toggle { display: inline-flex; align-items: center; justify-content: center; }
   .nav-links {
     display: none;
-    position: absolute;
+    position: absolute !important;
     top: calc(100% + 8px);
     left: 0;
     right: 0;
+    width: 100%;
     flex-direction: column;
     align-items: stretch;
-    padding: 8px;
-    background: rgba(28, 29, 26, 0.96);
-    border: 1px solid rgba(239, 238, 236, 0.14);
+    padding: 10px 8px;
+    background: #1c1d1a;
+    border: 1px solid rgba(239, 238, 236, 0.2);
     border-radius: 0;
     clip-path: var(--cut);
+    box-shadow: 0 16px 40px rgba(0, 0, 0, 0.95);
+    z-index: 100;
   }
   .nav-links.open { display: flex; }
   .nav-links li { display: block; }
@@ -811,7 +821,9 @@ footer { padding: 48px 0 32px; }
 }
 
 /* TARS-inspired motion, drawn in the AxVigil palette. */
-.nav-links { position: relative; }
+@media (min-width: 1101px) {
+  .nav-links { position: relative; }
+}
 .nav-links .pill {
   position: absolute;
   left: 0;

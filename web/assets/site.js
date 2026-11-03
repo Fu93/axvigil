@@ -318,6 +318,7 @@
     "close.h2": "然後讓它證明修復。",
     "foot.blurb": "給會修智能合約漏洞的 AI agent 的試煉場。Meta Global AI Developer Hackathon。BSC 測試網。僅沙箱。",
     "foot.project": "專案",
+    "nav.pitch": "簡報",
     "foot.pitch": "簡報",
     "foot.board": "排行榜",
     "foot.docs": "白皮書",
@@ -340,7 +341,7 @@
 
   var lang = "en";
   try {
-    var saved = localStorage.getItem("axvigil-lang");
+    var saved = localStorage.getItem("axvigil-lang") || localStorage.getItem("axv_lang") || sessionStorage.getItem("axv-lang");
     if (saved === "zh-TW" || saved === "en") lang = saved;
   } catch (err) { /* ignore */ }
 
@@ -378,7 +379,11 @@
         });
       });
     });
-    try { localStorage.setItem("axvigil-lang", next); } catch (err) { /* ignore */ }
+    try {
+      localStorage.setItem("axvigil-lang", next);
+      localStorage.setItem("axv_lang", next);
+      sessionStorage.setItem("axv-lang", next);
+    } catch (err) { /* ignore */ }
     document.dispatchEvent(new CustomEvent("axv:lang"));
   }
 
