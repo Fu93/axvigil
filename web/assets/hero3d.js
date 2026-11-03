@@ -61,7 +61,7 @@ const SECTION_FILES = [
   { id: "problem", url: "assets/3d/problem.glb", motion: "vault", cam: 5.5, dolly: 0.22 },
   { id: "how", url: "assets/3d/how.glb", motion: "cage", cam: 6.15, dolly: -0.12 },
   { id: "proof", url: "assets/3d/proof.glb", motion: "record", cam: 6.35, dolly: 0.08 },
-  { id: "board", url: "assets/3d/board.glb", motion: "podium", cam: 6.2, dolly: 0 },
+  { id: "board", url: "assets/3d/board_podium.glb", motion: "podium", cam: 6.2, dolly: 0 },
   { id: "roadmap", url: "assets/3d/roadmap.glb", motion: "lattice", cam: 6.9, dolly: 0.16 },
   { id: "faq", url: "assets/3d/faq.glb", motion: "plumb", cam: 5.7, dolly: -0.06 }
 ];
@@ -598,6 +598,23 @@ export function mount() {
     return { hero: weights[0] / sum, cam: cam, dolly: dolly };
   }
 
+  function addPlinthStrip(root, mats) {
+    const mat = new THREE.MeshStandardMaterial({
+      color: 0x14140c,
+      emissive: 0xeef94b,
+      emissiveIntensity: 0.85,
+      roughness: 0.4,
+      metalness: 0,
+      transparent: true,
+      opacity: 0,
+      depthWrite: false
+    });
+    const strip = new THREE.Mesh(new THREE.BoxGeometry(1.72, 0.008, 0.01), mat);
+    strip.position.set(0, -0.662, 0.216);
+    root.add(strip);
+    mats.push(mat);
+  }
+
   function tuneShowMats(root, bucket) {
     root.traverse(function (obj) {
       if (!obj.isMesh || !obj.material) return;
@@ -652,6 +669,7 @@ export function mount() {
       tuneShowMats(root, show.mats);
       show.root = root;
       show.state = "ready";
+      if (show.spec.motion === "podium") addPlinthStrip(root, show.mats);
       slot.add(root);
       if (el) el.classList.remove("still-on");
     }).catch(function () { show.state = "idle"; });
@@ -711,9 +729,8 @@ export function mount() {
         show.root.rotation.set(0.18, tr * 1.25 + tSec * 0.03, 0);
         show.root.scale.setScalar(MODEL_SCALE);
       } else if (motion === "podium") {
-        show.root.rotation.set(0, (tr - 0.5) * THREE.MathUtils.degToRad(50), 0);
-        const grow = 0.18 + 0.82 * smootherstep(clamp01(vis * 1.35));
-        show.root.scale.set(MODEL_SCALE, MODEL_SCALE * grow, MODEL_SCALE);
+        show.root.rotation.set(0, 0, 0);
+        show.root.scale.setScalar(MODEL_SCALE);
       } else if (motion === "lattice") {
         show.root.rotation.set(0.22 * Math.sin(tr * Math.PI), tr * 1.5 + tSec * 0.07, 0.08);
         show.root.scale.setScalar(MODEL_SCALE);
@@ -830,8 +847,12 @@ export function mount() {
     dust.position.y = Math.sin(tSec * 0.15) * 0.08;
 
     const hall = pose.podium;
-    camera.position.set(camPx + pose.dolly, 0.12 + camPy + hall * 0.04, pose.camZ);
-    camera.lookAt(camPx * 0.28 * (1 - hall) + pose.dolly * 0.35, camPy * 0.22 * (1 - hall) + hall * 0.05, 0);
+    const boardShow = shows[4];
+    const boardSlide = boardShow && boardShow.weight > 0.04
+      ? boardShow.weight * THREE.MathUtils.lerp(-1.15, 1.15, sectionTravel(document.getElementById("board")))
+      : 0;
+    camera.position.set(camPx + pose.dolly + boardSlide, 0.12 + camPy + hall * 0.04, pose.camZ);
+    camera.lookAt(camPx * 0.28 * (1 - hall) + pose.dolly * 0.35 + boardSlide * 0.28, camPy * 0.22 * (1 - hall) + hall * 0.02, 0);
     camera.rotation.z += roll + driftRot;
     const rule = document.getElementById("hero-rule");
     if (rule) rule.classList.toggle("is-apart", pose.heroP > 0.52);
