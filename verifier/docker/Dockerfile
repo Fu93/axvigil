@@ -15,7 +15,9 @@ RUN curl -fsSL -o /tmp/foundry.tgz \
     && forge --version
 
 # Download solc while the build still has a network, into the runtime user's home.
-RUN useradd --uid 1000 --create-home --shell /usr/sbin/nologin axvigil \
+# Ubuntu 24.04 already ships a uid-1000 user. Reuse that numeric uid for the
+# sandbox identity; the runtime still passes --user 1000:1000 and never runs as root.
+RUN useradd --uid 1000 --non-unique --create-home --shell /usr/sbin/nologin axvigil \
     && mkdir -p /tmp/warmup/src \
     && printf 'pragma solidity 0.8.28;\ncontract W { function f() external pure returns (uint256) { return 1; } }\n' > /tmp/warmup/src/W.sol \
     && printf '[profile.default]\nsrc="src"\nout="out"\nsolc_version="0.8.28"\n' > /tmp/warmup/foundry.toml \
