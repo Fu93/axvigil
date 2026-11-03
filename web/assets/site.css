@@ -850,6 +850,11 @@ main .wrap::before {
   -webkit-mask-image: radial-gradient(ellipse 72% 68% at 34% 46%, #000 0%, rgba(0, 0, 0, 0.82) 38%, rgba(0, 0, 0, 0.34) 60%, transparent 76%);
   mask-image: radial-gradient(ellipse 72% 68% at 34% 46%, #000 0%, rgba(0, 0, 0, 0.82) 38%, rgba(0, 0, 0, 0.34) 60%, transparent 76%);
 }
+.light .wrap::before,
+.light.wrap::before {
+  display: none !important;
+  content: none !important;
+}
 #faq { padding-bottom: 8px; }
 .close { padding-top: 28px; padding-bottom: 36px; }
 
