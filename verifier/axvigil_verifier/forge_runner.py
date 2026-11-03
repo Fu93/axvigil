@@ -184,7 +184,10 @@ def _run_in_docker(workdir: Path, match_path: str, fuzz_seed: int, timeout_s: in
     stdout = proc.stdout or ""
     tests_map = _parse_forge_json(stdout)
     if tests_map is None:
-        return RunResult(compiled=False, timed_out=False, raw=(proc.stderr or "") + stdout)
+        raw = (proc.stderr or "") + stdout
+        if not raw.strip():
+            raw = f"docker sandbox exited with status {proc.returncode} without output"
+        return RunResult(compiled=False, timed_out=False, raw=raw)
     return RunResult(compiled=True, timed_out=False, tests=tests_map, raw=stdout)
 
 
@@ -305,11 +308,17 @@ def solc_setup_hint(raw: str) -> str | None:
 
 def first_compiler_error(raw: str) -> str | None:
     """First forge compiler error line, with filesystem paths removed."""
+    fallback: str | None = None
     for line in (raw or "").splitlines():
         text = line.strip()
         if re.match(r"(?:error|fatal)\b", text, re.IGNORECASE):
             text = re.sub(r"(?:[A-Za-z]:)?(?:/|\\)[^\s:]+", "<path>", text)
             return text[:200]
+        if fallback is None and re.search(r"(?:error|failed|denied|permission)", text, re.IGNORECASE):
+            fallback = text
+    if fallback:
+        fallback = re.sub(r"(?:[A-Za-z]:)?(?:/|\\)[^\s:]+", "<path>", fallback)
+        return fallback[:200]
     return None
 
 
