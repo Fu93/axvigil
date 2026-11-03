@@ -18,6 +18,6 @@ CHALLENGE="${1:-${ROOT}/challenges/reentrancy-vault}"
 MAX_ITERS="${2:-2}"
 
 echo "[2/3] Executing AxVigil Meta Model API Solver against: ${CHALLENGE} (max_iters: ${MAX_ITERS})..."
-python3 -u -m axvigil_agent solve --challenge "${CHALLENGE}" --max-iters "${MAX_ITERS}"
+python3 -u -m axvigil_agent solve --challenge "${CHALLENGE}" --max-iters "${MAX_ITERS}" "${@:3}"
 
 echo "[3/3] Meta Model API solve execution complete."
