@@ -304,10 +304,10 @@ def solc_setup_hint(raw: str) -> str | None:
 
 
 def first_compiler_error(raw: str) -> str | None:
-    """First forge Error line, with filesystem paths removed."""
+    """First forge compiler error line, with filesystem paths removed."""
     for line in (raw or "").splitlines():
         text = line.strip()
-        if text.startswith("Error"):
+        if re.match(r"(?:error|fatal)\b", text, re.IGNORECASE):
             text = re.sub(r"(?:[A-Za-z]:)?(?:/|\\)[^\s:]+", "<path>", text)
             return text[:200]
     return None
