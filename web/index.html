@@ -15,7 +15,7 @@
 <link rel="preload" href="assets/3d/halves_meshopt.glb" as="fetch" crossorigin>
 <link rel="preload" href="assets/3d/shards_meshopt.glb" as="fetch" crossorigin>
 <link rel="preload" href="assets/3d/node_meshopt.glb" as="fetch" crossorigin>
-<link rel="stylesheet" href="assets/site.css">
+<link rel="stylesheet" href="assets/site.css?v=3">
 <script>
 (function () {
   var reduce = false, seen = false, mid = false;
@@ -499,7 +499,7 @@
 <script type="module">
 (function () {
   function boot() {
-    import("./assets/hero3d.min.js").then(function (mod) { mod.mount(); }).catch(function (err) {
+    import("./assets/hero3d.min.js?v=3").then(function (mod) { mod.mount(); }).catch(function (err) {
       console.error(err);
       document.documentElement.classList.add("intro-go");
     });
@@ -508,7 +508,7 @@
   else window.addEventListener("load", boot, { once: true });
 })();
 </script>
-<script src="assets/site.js" defer></script>
-<script src="assets/motion.js" defer></script>
+<script src="assets/site.js?v=3" defer></script>
+<script src="assets/motion.js?v=3" defer></script>
 </body>
 </html>

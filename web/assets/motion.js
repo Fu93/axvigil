@@ -71,7 +71,7 @@
   syncSteps();
 
   var pointer = { x: window.innerWidth / 2, y: window.innerHeight / 2, inside: false };
-  var cursorOn = fine && !reduce && !narrow;
+  var cursorOn = false;
   var cursor;
   var dot;
   var ring;
@@ -90,7 +90,7 @@
   }
 
   var magnets = [];
-  if (fine && !reduce) {
+  if (false) {
     magnets = Array.prototype.map.call(document.querySelectorAll("a.btn, .nav-links a"), function (el) {
       return { el: el, x: 0, y: 0 };
     });
@@ -175,7 +175,7 @@
     wake();
   });
 
-  if (!reduce && fine) {
+  if (false) {
     document.querySelectorAll(".card").forEach(function (card) {
       card.addEventListener("pointermove", function (event) {
         var rect = card.getBoundingClientRect();
