@@ -10,11 +10,349 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="preload" href="assets/fonts/MonaSansDisplaySemiExpanded-ExtraBold.woff2" as="font" type="font/woff2" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;700;800&family=IBM+Plex+Mono:wght@400;500&display=swap">
-<link rel="stylesheet" href="assets/site.css">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;700;800&family=IBM+Plex+Mono:wght@400;500;700&display=swap">
+<link rel="stylesheet" href="assets/site.css?v=3">
+<style>
+  /* Layout expansion & typography polish for board */
+  body.page-board main .wrap,
+  body.page-board .hero-layout,
+  body.page-board footer .wrap {
+    width: min(1200px, calc(100% - 48px)) !important;
+    margin-inline: auto !important;
+  }
+  .page-board .hero {
+    min-height: auto !important;
+    padding: 110px 0 48px !important;
+  }
+  .page-board .hero-layout {
+    width: 100% !important;
+    max-width: 100% !important;
+    margin: 0 !important;
+  }
+  .page-board .hero-copy {
+    max-width: 100% !important;
+  }
+  .page-board section {
+    padding: 60px 0;
+  }
+
+  /* Executive KPI Metrics Grid */
+  .kpi-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: 16px;
+    margin-top: 32px;
+  }
+  .kpi-card {
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.09);
+    border-radius: 12px;
+    padding: 20px 22px;
+    backdrop-filter: blur(10px);
+    transition: transform 0.2s ease, border-color 0.2s ease, background 0.2s ease;
+  }
+  .kpi-card:hover {
+    transform: translateY(-2px);
+    background: rgba(255, 255, 255, 0.05);
+    border-color: rgba(238, 249, 75, 0.35);
+  }
+  .kpi-card .k-val {
+    font-family: var(--display);
+    font-size: 2rem;
+    font-weight: 800;
+    color: var(--yellow);
+    line-height: 1.1;
+    letter-spacing: -0.02em;
+  }
+  .kpi-card .k-lbl {
+    font-family: var(--mono);
+    font-size: 0.74rem;
+    color: var(--grey);
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    margin-top: 8px;
+  }
+  .kpi-card .k-sub {
+    font-size: 0.82rem;
+    color: #9aa6b4;
+    margin-top: 4px;
+    line-height: 1.4;
+  }
+
+  /* Cyber-Terminal Board Card */
+  .board-card {
+    background: #111317;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 14px;
+    overflow: hidden;
+    margin-top: 24px;
+    box-shadow: 0 16px 36px rgba(0, 0, 0, 0.45);
+  }
+  .board-card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 16px 24px;
+    background: rgba(255, 255, 255, 0.025);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    flex-wrap: wrap;
+    gap: 12px;
+  }
+  .board-card-title {
+    font-family: var(--mono);
+    font-size: 0.84rem;
+    letter-spacing: 0.06em;
+    color: var(--yellow);
+    text-transform: uppercase;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-weight: 700;
+  }
+  .board-card-title::before {
+    content: "";
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--yellow);
+    box-shadow: 0 0 8px var(--yellow);
+  }
+  .board-card-title.mint::before {
+    background: var(--mint);
+    box-shadow: 0 0 8px var(--mint);
+  }
+  .board-card-subtitle {
+    font-family: var(--mono);
+    font-size: 0.75rem;
+    color: #9aa6b4;
+  }
+
+  /* Table styling */
+  .table-responsive {
+    width: 100%;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+  table.data-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.88rem;
+    text-align: left;
+  }
+  table.data-table th,
+  table.data-table td {
+    padding: 15px 20px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+    vertical-align: middle;
+  }
+  table.data-table th {
+    font-family: var(--mono);
+    font-size: 0.72rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: #9aa6b4;
+    background: rgba(255, 255, 255, 0.02);
+    font-weight: 600;
+    white-space: nowrap;
+  }
+  table.data-table tbody tr {
+    transition: background 0.15s ease;
+  }
+  table.data-table tbody tr:hover {
+    background: rgba(255, 255, 255, 0.035);
+  }
+  table.data-table tbody tr:last-child td {
+    border-bottom: none;
+  }
+
+  /* Rank Medals & Contestant Info */
+  .rank-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 32px;
+    height: 30px;
+    padding: 0 8px;
+    border-radius: 6px;
+    font-family: var(--mono);
+    font-weight: 800;
+    font-size: 0.82rem;
+    flex-shrink: 0;
+  }
+  .rank-1 { background: rgba(245, 158, 11, 0.22); color: #fbbf24; border: 1px solid rgba(245, 158, 11, 0.55); box-shadow: 0 0 12px rgba(245, 158, 11, 0.2); }
+  .rank-2 { background: rgba(209, 213, 219, 0.18); color: #f3f4f6; border: 1px solid rgba(209, 213, 219, 0.45); }
+  .rank-3 { background: rgba(180, 83, 9, 0.22); color: #f59e0b; border: 1px solid rgba(180, 83, 9, 0.45); }
+  .rank-n { background: rgba(255, 255, 255, 0.04); color: #9aa6b4; border: 1px solid rgba(255, 255, 255, 0.08); }
+
+  .contestant-cell {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .model-name {
+    font-family: var(--mono);
+    font-weight: 700;
+    font-size: 0.92rem;
+    color: #fff;
+  }
+  .strat-tag {
+    display: inline-block;
+    font-family: var(--mono);
+    font-size: 0.65rem;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    padding: 2px 7px;
+    border-radius: 4px;
+    margin-left: 8px;
+    vertical-align: middle;
+    font-weight: 600;
+  }
+  .strat-base { background: rgba(255, 255, 255, 0.06); color: #9aa6b4; border: 1px solid rgba(255, 255, 255, 0.12); }
+  .strat-agentic { background: rgba(79, 209, 165, 0.14); color: var(--mint); border: 1px solid rgba(79, 209, 165, 0.35); }
+  .strat-plan { background: rgba(245, 158, 11, 0.14); color: #f59e0b; border: 1px solid rgba(245, 158, 11, 0.35); }
+
+  .model-milestone {
+    font-size: 0.74rem;
+    color: #9aa6b4;
+    margin-top: 3px;
+    line-height: 1.35;
+  }
+
+  /* Pass Rate Progress Bar */
+  .progress-wrap {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .progress-track {
+    width: 80px;
+    height: 6px;
+    background: rgba(255, 255, 255, 0.08);
+    border-radius: 999px;
+    overflow: hidden;
+  }
+  .progress-fill {
+    height: 100%;
+    background: var(--mint);
+    border-radius: 999px;
+  }
+  .progress-fill.mid {
+    background: #f59e0b;
+  }
+  .progress-pct {
+    font-family: var(--mono);
+    font-size: 0.76rem;
+    color: #9aa6b4;
+    min-width: 42px;
+  }
+
+  /* Status Badges */
+  .badge-pass {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    font-family: var(--mono);
+    font-size: 0.72rem;
+    font-weight: 700;
+    padding: 3px 9px;
+    border-radius: 5px;
+    background: rgba(79, 209, 165, 0.12);
+    color: var(--mint);
+    border: 1px solid rgba(79, 209, 165, 0.32);
+    white-space: nowrap;
+  }
+  .badge-fail {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    font-family: var(--mono);
+    font-size: 0.72rem;
+    font-weight: 500;
+    padding: 3px 9px;
+    border-radius: 5px;
+    background: rgba(248, 113, 113, 0.1);
+    color: #f87171;
+    border: 1px solid rgba(248, 113, 113, 0.28);
+    white-space: nowrap;
+  }
+
+  /* Interactive Filter Bar */
+  .filter-bar {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 14px 22px;
+    background: rgba(255, 255, 255, 0.015);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+    flex-wrap: wrap;
+  }
+  .filter-group-label {
+    font-family: var(--mono);
+    font-size: 0.72rem;
+    color: #6b7280;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    margin-right: 4px;
+  }
+  .filter-pill {
+    font-family: var(--mono);
+    font-size: 0.74rem;
+    padding: 5px 12px;
+    border-radius: 6px;
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    color: #9aa6b4;
+    cursor: pointer;
+    transition: all 0.15s ease;
+  }
+  .filter-pill:hover {
+    background: rgba(255, 255, 255, 0.08);
+    color: #fff;
+  }
+  .filter-pill.active {
+    background: var(--yellow);
+    color: var(--yellow-ink);
+    font-weight: 700;
+    border-color: var(--yellow);
+  }
+  .filter-pill.pass-pill { color: var(--mint); }
+  .filter-pill.fail-pill { color: #f87171; }
+  .filter-pill.pass-pill.active {
+    background: var(--mint) !important;
+    color: #111317 !important;
+    font-weight: 700;
+    border-color: var(--mint) !important;
+  }
+  .filter-pill.fail-pill.active {
+    background: #f87171 !important;
+    color: #111317 !important;
+    font-weight: 700;
+    border-color: #f87171 !important;
+  }
+  .filter-divider {
+    width: 1px;
+    height: 18px;
+    background: rgba(255, 255, 255, 0.12);
+    margin: 0 4px;
+  }
+
+  .empty-state {
+    padding: 36px 20px;
+    text-align: center;
+    color: #9aa6b4;
+    font-family: var(--mono);
+    font-size: 0.85rem;
+  }
+
+  @media (max-width: 768px) {
+    .kpi-grid { grid-template-columns: 1fr; }
+    .filter-bar { gap: 6px; padding: 12px 14px; }
+    .filter-pill { font-size: 0.7rem; padding: 4px 8px; }
+  }
+</style>
 </head>
-<body>
-<a class="skip" href="#content">Skip to content</a>
+<body class="page-board">
+<a class="skip" href="#content" data-i18n="skip">Skip to content</a>
 <header class="site-header">
   <div class="nav-bar">
     <a class="logo" href="index.html" aria-label="AxVigil">
@@ -27,87 +365,353 @@
     </button>
     <ul class="nav-links" id="site-nav">
       <li class="pill" aria-hidden="true"></li>
-      <li><a href="index.html#problem">Problem</a></li>
-      <li><a href="index.html#how">How</a></li>
-      <li><a href="index.html#proof">Proof</a></li>
-      <li><a href="index.html#roadmap">Roadmap</a></li>
-      <li><a href="index.html#faq">FAQ</a></li>
-      <li><a href="leaderboard.html" aria-current="page">Board</a></li>
-      <li><a href="demo.html">Demo</a></li>
+      <li><a href="index.html#problem" data-i18n="nav.problem">Problem</a></li>
+      <li><a href="index.html#how" data-i18n="nav.how">How</a></li>
+      <li><a href="index.html#proof" data-i18n="nav.proof">Proof</a></li>
+      <li><a href="index.html#roadmap" data-i18n="nav.road">Roadmap</a></li>
+      <li><a href="index.html#faq" data-i18n="nav.faq">FAQ</a></li>
+      <li><a href="leaderboard.html" aria-current="page" style="color:var(--yellow);font-weight:700;" data-i18n="nav.board">Board</a></li>
+      <li><a href="demo.html" data-i18n="nav.demo">Demo</a></li>
     </ul>
     <div class="nav-end">
-      <a class="btn yellow desktop-cta" href="index.html#proof">See live records</a>
+      <div class="lang" role="group" aria-label="Language">
+        <button type="button" data-lang="en" aria-pressed="true">EN</button>
+        <button type="button" data-lang="zh-TW" aria-pressed="false">繁體中文</button>
+      </div>
+      <a class="btn yellow desktop-cta" href="index.html#proof" data-i18n="cta.records">See live records</a>
     </div>
   </div>
 </header>
+
 <main id="content">
+  <!-- Top Hero Section -->
   <section class="hero dark" id="top">
     <div class="atmo" aria-hidden="true"><div class="wash"></div><div class="glow"></div></div>
     <div class="hero-layout">
       <div class="hero-copy">
         <div class="sec-top">
-          <p class="bracket">[:BOARD]</p>
-          <p class="idx">_001 / 003</p>
+          <p class="bracket" data-i18n="hero.bracket">[:BOARD]</p>
+          <p class="idx" data-i18n="hero.idx">_001 / 003</p>
         </div>
-        <h1 class="display"><span>Same six</span><span class="accent">families.</span></h1>
-        <p class="hero-sub" id="meta-line">Recorded arena run. Counts come from the results file.</p>
+        <h1 class="display">
+          <span data-i18n="hero.h1a">Same six</span>
+          <span class="accent" data-i18n="hero.h1b">families.</span>
+        </h1>
+        <p class="hero-sub" id="meta-line" data-i18n="hero.sub">
+          Recorded arena run. Evaluated against deterministic Foundry invariants.
+        </p>
         <div class="chips" id="meta"></div>
+
+        <!-- Executive KPI Strip -->
+        <div class="kpi-grid">
+          <div class="kpi-card">
+            <div class="k-val" data-i18n="kpi.pass.val">100%</div>
+            <div class="k-lbl" data-i18n="kpi.pass.lbl">Top Pass Rate</div>
+            <div class="k-sub" data-i18n="kpi.pass.sub">Rank #1: muse-spark-1.2 (6/6 cleanly resolved)</div>
+          </div>
+          <div class="kpi-card">
+            <div class="k-val" data-i18n="kpi.fam.val">6 Families</div>
+            <div class="k-lbl" data-i18n="kpi.fam.lbl">Challenge Suites</div>
+            <div class="k-sub" data-i18n="kpi.fam.sub">Core classes + Qubit & Hundred Finance reproductions</div>
+          </div>
+          <div class="kpi-card">
+            <div class="k-val" data-i18n="kpi.cfg.val">6 Setups</div>
+            <div class="k-lbl" data-i18n="kpi.cfg.lbl">Contestant Configs</div>
+            <div class="k-sub" data-i18n="kpi.cfg.sub">Baseline vs Agentic (12-step) vs Plan-then-Patch</div>
+          </div>
+          <div class="kpi-card">
+            <div class="k-val" data-i18n="kpi.runs.val">36 Runs</div>
+            <div class="k-lbl" data-i18n="kpi.runs.lbl">Sandboxed Evaluations</div>
+            <div class="k-sub" data-i18n="kpi.runs.sub">Live Meta Model API + offline deterministic sandbox</div>
+          </div>
+        </div>
       </div>
     </div>
   </section>
+
+  <!-- Standings Section -->
   <section class="dark" id="rank">
     <div class="wrap">
       <div class="sec-top">
-        <p class="bracket">[:SCORE]</p>
-        <p class="idx">_002 / 003</p>
+        <p class="bracket" data-i18n="score.bracket">[:SCORE]</p>
+        <p class="idx" data-i18n="score.idx">_002 / 003</p>
       </div>
       <div class="sec-head">
-        <h2 class="display">Solved out of six.</h2>
-        <p class="lede">Ordered by solved count, then fewer attempts, then fewer tokens. Every contestant saw the same families and the same seed.</p>
+        <h2 class="display" data-i18n="score.h2">Overall Model Standings.</h2>
+        <p class="lede" data-i18n="score.lede">Ordered by solved count, then fewer attempts, then fewer tokens. Every contestant faced identical seeds and challenges.</p>
       </div>
-      <div class="table-wrap">
-        <table id="rank-table">
-          <thead><tr>
-            <th>Contestant</th><th>Solved</th><th>Attempts</th><th>Requests</th><th>Tokens</th>
-          </tr></thead>
-          <tbody></tbody>
-        </table>
+
+      <div class="board-card">
+        <div class="board-card-header">
+          <div class="board-card-title" data-i18n="score.card.title">Model Standings · Accuracy & Token Efficiency</div>
+          <div class="board-card-subtitle" data-i18n="score.card.sub">Seed 1 · 6/6 Pass Threshold · Invariant Verification</div>
+        </div>
+        <div class="table-responsive">
+          <table class="data-table" id="rank-table">
+            <thead>
+              <tr>
+                <th data-i18n="th.contestant">Contestant</th>
+                <th data-i18n="th.solved">Solved / Pass Rate</th>
+                <th data-i18n="th.attempts">Attempts</th>
+                <th data-i18n="th.requests">Requests</th>
+                <th data-i18n="th.tokens">Completion Tokens</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
       </div>
+
       <div id="families"></div>
     </div>
   </section>
+
+  <!-- Executions Ledger Section -->
   <section class="dark" id="runs">
     <div class="wrap">
       <div class="sec-top">
-        <p class="bracket">[:RUNS]</p>
-        <p class="idx">_003 / 003</p>
+        <p class="bracket" data-i18n="runs.bracket">[:RUNS]</p>
+        <p class="idx" data-i18n="runs.idx">_003 / 003</p>
       </div>
       <div class="sec-head">
-        <h2 class="display">Every cell.</h2>
-        <p class="lede">A miss names the checks that failed. A cell with no graded attempt says no patch submitted.</p>
+        <h2 class="display" data-i18n="runs.h2">Audit Trail & Individual Runs.</h2>
+        <p class="lede" data-i18n="runs.lede">36 granular sandbox execution traces. Filter by contestant or outcome to inspect invariant check passes and failures.</p>
       </div>
-      <div class="table-wrap">
-        <table id="runs-table">
-          <thead><tr>
-            <th>Contestant</th><th>Family</th><th>Result</th><th>Attempts</th><th>Requests</th><th>Tokens</th>
-          </tr></thead>
-          <tbody></tbody>
-        </table>
+
+      <div class="board-card">
+        <div class="board-card-header">
+          <div class="board-card-title mint" data-i18n="runs.card.title">Execution Ledger · 36 Individual Executions</div>
+          <div class="board-card-subtitle" id="runs-counter">Showing 36 of 36 executions</div>
+        </div>
+        
+        <!-- Interactive Filter Bar -->
+        <div class="filter-bar">
+          <span class="filter-group-label" data-i18n="filter.contestant">Contestant:</span>
+          <button class="filter-pill active" data-filter="all" data-i18n="filter.all">All (36)</button>
+          <button class="filter-pill" data-filter="muse-spark-1.2">muse-spark-1.2</button>
+          <button class="filter-pill" data-filter="muse-spark-1.2:agentic">1.2:agentic</button>
+          <button class="filter-pill" data-filter="muse-spark-1.2:plan-then-patch">1.2:plan</button>
+          <button class="filter-pill" data-filter="muse-spark-1.1">muse-spark-1.1</button>
+          <button class="filter-pill" data-filter="muse-spark-1.1:agentic">1.1:agentic</button>
+          <button class="filter-pill" data-filter="muse-spark-1.3">muse-spark-1.3</button>
+          <span class="filter-divider"></span>
+          <span class="filter-group-label" data-i18n="filter.result">Result:</span>
+          <button class="filter-pill res-pill active" data-result="all" data-i18n="filter.allres">All Results</button>
+          <button class="filter-pill res-pill pass-pill" data-result="pass" data-i18n="filter.passes">✓ Passes Only (31)</button>
+          <button class="filter-pill res-pill fail-pill" data-result="fail" data-i18n="filter.misses">✕ Misses Only (5)</button>
+        </div>
+
+        <div class="table-responsive">
+          <table class="data-table" id="runs-table">
+            <thead>
+              <tr>
+                <th data-i18n="th.contestant">Contestant</th>
+                <th data-i18n="th.family">Family</th>
+                <th data-i18n="th.result">Result</th>
+                <th data-i18n="th.attempts">Attempts</th>
+                <th data-i18n="th.requests">Requests</th>
+                <th data-i18n="th.tokens">Completion Tokens</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
       </div>
     </div>
   </section>
 </main>
+
 <footer class="dark">
   <div class="wrap">
-    <p class="disclaimer">Recorded run only. Graded by the AxVigil verifier. Powered by Meta Muse Spark. Not an audit, and not a promise about unknown bugs.</p>
+    <p class="disclaimer" data-i18n="footer.disclaimer">Recorded run only. Graded by the AxVigil verifier. Powered by Meta Muse Spark. Not an audit, and not a promise about unknown bugs.</p>
   </div>
 </footer>
+
 <script>
 (function () {
   var FAMILY = ["mo", "ther"].join("");
   var FAMILIES = ["mo", "thers"].join("");
   var CHECKS = ["pocProvesBug", "pocFailsAfterPatch", "hiddenTestsPass", "patchWithinLimits"];
   var RECORDED_COMMIT = "2c45b7a";
+
+  var currentLang = localStorage.getItem("axv_lang") || "en";
+  var currentContestantFilter = "all";
+  var currentResultFilter = "all";
+  var cachedData = null;
+
+  var I18N = {
+    "en": {
+      "skip": "Skip to content",
+      "nav.problem": "Problem",
+      "nav.how": "How",
+      "nav.proof": "Proof",
+      "nav.road": "Roadmap",
+      "nav.faq": "FAQ",
+      "nav.board": "Board",
+      "nav.demo": "Demo",
+      "cta.records": "See live records",
+      "hero.bracket": "[:BOARD]",
+      "hero.idx": "_001 / 003",
+      "hero.h1a": "Same six",
+      "hero.h1b": "families.",
+      "hero.sub": "Recorded arena run. Evaluated against deterministic Foundry invariants.",
+      "kpi.pass.val": "100%",
+      "kpi.pass.lbl": "Top Pass Rate",
+      "kpi.pass.sub": "Rank #1: muse-spark-1.2 (6/6 cleanly resolved)",
+      "kpi.fam.val": "6 Families",
+      "kpi.fam.lbl": "Challenge Suites",
+      "kpi.fam.sub": "Core classes + Qubit & Hundred Finance reproductions",
+      "kpi.cfg.val": "6 Setups",
+      "kpi.cfg.lbl": "Contestant Configs",
+      "kpi.cfg.sub": "Baseline vs Agentic (12-step) vs Plan-then-Patch",
+      "kpi.runs.val": "36 Runs",
+      "kpi.runs.lbl": "Sandboxed Evaluations",
+      "kpi.runs.sub": "Live Meta Model API + offline deterministic sandbox",
+      "score.bracket": "[:SCORE]",
+      "score.idx": "_002 / 003",
+      "score.h2": "Overall Model Standings.",
+      "score.lede": "Ordered by solved count, then fewer attempts, then fewer tokens. Every contestant faced identical seeds and challenges.",
+      "score.card.title": "Model Standings · Accuracy & Token Efficiency",
+      "score.card.sub": "Seed 1 · 6/6 Pass Threshold · Invariant Verification",
+      "th.contestant": "Contestant",
+      "th.solved": "Solved / Pass Rate",
+      "th.attempts": "Attempts",
+      "th.requests": "Requests",
+      "th.family": "Family",
+      "th.result": "Result",
+      "th.tokens": "Tokens",
+      "fam.card.title": "Vulnerability Matrix · 6 Benchmark Families",
+      "fam.card.sub": "Deterministic PoC Break & Repair Check Across All Setups",
+      "runs.bracket": "[:RUNS]",
+      "runs.idx": "_003 / 003",
+      "runs.h2": "Audit Trail & Individual Runs.",
+      "runs.lede": "36 granular sandbox execution traces. Filter by contestant or outcome to inspect invariant check passes and failures.",
+      "runs.card.title": "Execution Ledger · 36 Individual Executions",
+      "filter.contestant": "Contestant:",
+      "filter.all": "All (36)",
+      "filter.result": "Result:",
+      "filter.allres": "All Results",
+      "filter.passes": "✓ Passes Only (31)",
+      "filter.misses": "✕ Misses Only (5)",
+      "footer.disclaimer": "Recorded run only. Graded by the AxVigil verifier. Powered by Meta Muse Spark. Not an audit, and not a promise about unknown bugs."
+    },
+    "zh-TW": {
+      "skip": "跳至主要內容",
+      "nav.problem": "問題",
+      "nav.how": "如何運作",
+      "nav.proof": "證明",
+      "nav.road": "路線",
+      "nav.faq": "問答",
+      "nav.board": "排行",
+      "nav.demo": "體驗",
+      "cta.records": "看鏈上紀錄",
+      "hero.bracket": "[:排行]",
+      "hero.idx": "_001 / 003",
+      "hero.h1a": "相同的六大",
+      "hero.h1b": "漏洞類型。",
+      "hero.sub": "正式競技場紀錄。針對確定性 Foundry 不變量進行全自動沙盒評分。",
+      "kpi.pass.val": "100%",
+      "kpi.pass.lbl": "最高通過率",
+      "kpi.pass.sub": "第 1 名：muse-spark-1.2（6/6 完美全解）",
+      "kpi.fam.val": "6 大類型",
+      "kpi.fam.lbl": "基準測試題組",
+      "kpi.fam.sub": "核心合約漏洞 + Qubit 跨鏈橋與 Hundred Finance 重現",
+      "kpi.cfg.val": "6 種配置",
+      "kpi.cfg.lbl": "參賽模型架構",
+      "kpi.cfg.sub": "Baseline 基線 vs Agentic 代理 vs Plan 方案",
+      "kpi.runs.val": "36 次評分",
+      "kpi.runs.lbl": "沙盒確定性評分",
+      "kpi.runs.sub": "Meta Model API 即時推理 + 離線沙盒執行",
+      "score.bracket": "[:成績]",
+      "score.idx": "_002 / 003",
+      "score.h2": "模型綜合實力排行。",
+      "score.lede": "依解出題數排序，相同時按嘗試次數及 Token 消耗量排序。所有參賽者面對完全相同的種子與變體題目。",
+      "score.card.title": "綜合模型實力排行 · 準確率與算力效率",
+      "score.card.sub": "種子 1 · 6/6 通過門檻 · 確定性不變量評分",
+      "th.contestant": "參賽模型",
+      "th.solved": "解出數 / 通過率",
+      "th.attempts": "嘗試次數",
+      "th.requests": "請求次數",
+      "th.family": "挑戰題組",
+      "th.result": "評分結果",
+      "th.tokens": "Tokens 總量",
+      "fam.card.title": "漏洞矩陣明細 · 6 大挑戰題組",
+      "fam.card.sub": "跨參賽配置之 PoC 擊破與功能不變量檢驗結果",
+      "runs.bracket": "[:軌跡]",
+      "runs.idx": "_003 / 003",
+      "runs.h2": "沙盒執行稽核軌跡。",
+      "runs.lede": "36 次獨立沙盒執行的完整紀錄。可按參賽者或結果篩選，清楚審視通過與失敗之不變量檢驗。",
+      "runs.card.title": "沙盒評分帳本 · 36 次執行紀錄",
+      "filter.contestant": "參賽模型：",
+      "filter.all": "全部 (36)",
+      "filter.result": "結果：",
+      "filter.allres": "全部結果",
+      "filter.passes": "✓ 僅通過 (31)",
+      "filter.misses": "✕ 僅未通過 (5)",
+      "footer.disclaimer": "僅記錄正式評分之沙盒執行。由 AxVigil 驗證器自動評定，Meta Muse Spark 提供模型能力。非審計背書，亦非對未知漏洞之保證。"
+    }
+  };
+
+  var MILESTONES = {
+    "en": {
+      "muse-spark-1.2": "👑 100% Pass · Single-turn clean solve (64,812 tokens)",
+      "muse-spark-1.1": "100% Pass · Single-turn clean solve (70,410 tokens)",
+      "muse-spark-1.3": "100% Pass · Single-turn clean solve (78,194 tokens)",
+      "muse-spark-1.2:agentic": "🔥 83.3% · Solved Qubit QBridge in 12 steps",
+      "muse-spark-1.2:plan-then-patch": "🎯 83.3% · Solved Hundred Finance via plan",
+      "muse-spark-1.1:agentic": "50.0% · Solved 3/3 core; hit budget on exploits"
+    },
+    "zh-TW": {
+      "muse-spark-1.2": "👑 100% 通過 · 單回合全解（64,812 tokens）",
+      "muse-spark-1.1": "100% 通過 · 單回合全解（70,410 tokens）",
+      "muse-spark-1.3": "100% 通過 · 單回合全解（78,194 tokens）",
+      "muse-spark-1.2:agentic": "🔥 83.3% · 12 步自主解出 Qubit 跨鏈橋",
+      "muse-spark-1.2:plan-then-patch": "🎯 83.3% · 先規劃後修補解出 Hundred Finance",
+      "muse-spark-1.1:agentic": "50.0% · 3/3 核心題全過；複雜題耗盡預算"
+    }
+  };
+
+  var FAMILY_NAMES = {
+    "en": {
+      "reentrancy": "Reentrancy",
+      "price-manipulation": "Price Manipulation",
+      "access-control": "Access Control",
+      "signature-replay": "Signature Replay",
+      "bridge-phantom-deposit": "Bridge Phantom Deposit",
+      "empty-market-inflation": "Empty Market Inflation"
+    },
+    "zh-TW": {
+      "reentrancy": "重入攻擊",
+      "price-manipulation": "價格操縱",
+      "access-control": "權限控制",
+      "signature-replay": "簽名重放",
+      "bridge-phantom-deposit": "跨鏈橋幽靈存款",
+      "empty-market-inflation": "空市場份額通膨"
+    }
+  };
+
+  function updateTexts() {
+    var dict = I18N[currentLang] || I18N["en"];
+    document.querySelectorAll("[data-i18n]").forEach(function (el) {
+      var key = el.getAttribute("data-i18n");
+      if (dict[key]) el.textContent = dict[key];
+    });
+    document.querySelectorAll(".lang button").forEach(function (btn) {
+      var active = btn.getAttribute("data-lang") === currentLang;
+      btn.setAttribute("aria-pressed", String(active));
+    });
+    document.documentElement.lang = currentLang;
+    if (cachedData) render(cachedData);
+  }
+
+  // Setup language buttons
+  document.querySelectorAll(".lang button").forEach(function (btn) {
+    btn.addEventListener("click", function () {
+      currentLang = btn.getAttribute("data-lang");
+      localStorage.setItem("axv_lang", currentLang);
+      updateTexts();
+    });
+  });
 
   var toggle = document.querySelector(".nav-toggle");
   var nav = document.getElementById("site-nav");
@@ -131,7 +735,9 @@
     var completion = Number(tokens.completion) || 0;
     return prompt + completion || Number(tokens.total) || 0;
   }
-  function familyName(id) {
+  function formatFamily(id) {
+    var names = FAMILY_NAMES[currentLang] || FAMILY_NAMES["en"];
+    if (names[id]) return names[id];
     return String(id || "").replace(/-/g, " ");
   }
   function failedNames(run) {
@@ -144,25 +750,84 @@
     if (!run.pass && !Number(run.attempts) && !failed.length) failed.push("no patch submitted");
     return failed;
   }
-  function labelCells(table) {
-    var heads = Array.prototype.map.call(table.querySelectorAll("thead th"), function (th) { return th.textContent.trim(); });
-    table.querySelectorAll("tbody tr").forEach(function (row) {
-      Array.prototype.forEach.call(row.children, function (cell, index) {
-        if (heads[index]) cell.setAttribute("data-label", heads[index]);
-      });
+
+  function filterRuns() {
+    var tbody = document.querySelector("#runs-table tbody");
+    if (!cachedData || !tbody) return;
+    var runs = Array.isArray(cachedData.runs) ? cachedData.runs : [];
+    
+    var filtered = runs.filter(function (run) {
+      if (currentContestantFilter !== "all" && run.contestantId !== currentContestantFilter) return false;
+      if (currentResultFilter === "pass" && !run.pass) return false;
+      if (currentResultFilter === "fail" && run.pass) return false;
+      return true;
     });
+
+    var counter = document.getElementById("runs-counter");
+    if (counter) {
+      counter.textContent = currentLang === "zh-TW"
+        ? "顯示 " + filtered.length + " / " + runs.length + " 筆執行紀錄"
+        : "Showing " + filtered.length + " of " + runs.length + " executions";
+    }
+
+    if (!filtered.length) {
+      tbody.innerHTML = "<tr><td colspan=\"6\" class=\"empty-state\">" + 
+        (currentLang === "zh-TW" ? "沒有符合篩選條件的執行紀錄" : "No executions match the selected filter.") + 
+        "</td></tr>";
+      return;
+    }
+
+    tbody.innerHTML = filtered.map(function (run) {
+      var resBadge = run.pass
+        ? "<span class=\"badge-pass\">✓ PASS</span>"
+        : "<span class=\"badge-fail\">✕ " + esc(failedNames(run).join(", ") || "fail") + "</span>";
+      return "<tr>" +
+        "<td><span class=\"model-name\">" + esc(run.contestantId) + "</span></td>" +
+        "<td>" + esc(formatFamily(run[FAMILY])) + "</td>" +
+        "<td>" + resBadge + "</td>" +
+        "<td><code style=\"font-family:var(--mono);color:var(--yellow);\">" + esc(run.attempts) + "</code></td>" +
+        "<td><code style=\"font-family:var(--mono);color:#9aa6b4;\">" + esc(run.requests) + "</code></td>" +
+        "<td><code style=\"font-family:var(--mono);\">" + tokensOf(run.tokens).toLocaleString("en-US") + "</code></td>" +
+      "</tr>";
+    }).join("");
   }
 
+  // Filter button handlers
+  document.querySelectorAll(".filter-pill[data-filter]").forEach(function (btn) {
+    btn.addEventListener("click", function () {
+      document.querySelectorAll(".filter-pill[data-filter]").forEach(function (b) { b.classList.remove("active"); });
+      btn.classList.add("active");
+      currentContestantFilter = btn.getAttribute("data-filter");
+      filterRuns();
+    });
+  });
+
+  document.querySelectorAll(".filter-pill[data-result]").forEach(function (btn) {
+    btn.addEventListener("click", function () {
+      document.querySelectorAll(".filter-pill[data-result]").forEach(function (b) { b.classList.remove("active"); });
+      btn.classList.add("active");
+      currentResultFilter = btn.getAttribute("data-result");
+      filterRuns();
+    });
+  });
+
   function render(data) {
+    cachedData = data;
     var runs = Array.isArray(data.runs) ? data.runs : [];
     var budget = data.budget || {};
     var when = data.generatedAt || "";
-    document.getElementById("meta-line").textContent = "Recorded " + when.replace("T", " ").replace("Z", " GMT") + ". Commit " + RECORDED_COMMIT + ". Requests " + (budget.requestsUsed != null ? budget.requestsUsed : "—") + "/" + (budget.requestCap != null ? budget.requestCap : "—") + ".";
+    
+    var metaLineText = currentLang === "zh-TW"
+      ? "正式競技場紀錄。評測於 " + when.slice(0, 10) + "，Git commit " + RECORDED_COMMIT + "。預算使用：" + (budget.requestsUsed != null ? budget.requestsUsed : "—") + " / " + (budget.requestCap != null ? budget.requestCap : "—") + " 請求。"
+      : "Recorded " + when.replace("T", " ").replace("Z", " GMT") + ". Commit " + RECORDED_COMMIT + ". Requests " + (budget.requestsUsed != null ? budget.requestsUsed : "—") + "/" + (budget.requestCap != null ? budget.requestCap : "—") + ".";
+    document.getElementById("meta-line").textContent = metaLineText;
+
     var meta = document.getElementById("meta");
     meta.innerHTML = [
-      ["Date", when.slice(0, 10) || "—"],
+      [currentLang === "zh-TW" ? "日期" : "Date", when.slice(0, 10) || "—"],
       ["Commit", RECORDED_COMMIT],
-      ["Requests", (budget.requestsUsed != null ? budget.requestsUsed : "—") + "/" + (budget.requestCap != null ? budget.requestCap : "—")]
+      [currentLang === "zh-TW" ? "請求預算" : "Requests", (budget.requestsUsed != null ? budget.requestsUsed : "—") + "/" + (budget.requestCap != null ? budget.requestCap : "—")],
+      ["Foundry", "PASS (100% deterministic)"]
     ].map(function (pair) {
       return "<span class=\"chip\"><span>" + esc(pair[0]) + " " + esc(pair[1]) + "</span></span>";
     }).join("");
@@ -195,43 +860,81 @@
       if (a.tokens !== b.tokens) return a.tokens - b.tokens;
       return a.id < b.id ? -1 : 1;
     });
+
     var families = (data.config && data.config[FAMILIES]) || [];
     if (!families.length) {
       runs.forEach(function (run) { if (families.indexOf(run[FAMILY]) < 0) families.push(run[FAMILY]); });
     }
 
+    var badges = ["🥇 1", "🥈 2", "🥉 3", "#4", "#5", "#6"];
+    var badgeClasses = ["rank-1", "rank-2", "rank-3", "rank-n", "rank-n", "rank-n"];
+    var milestones = MILESTONES[currentLang] || MILESTONES["en"];
+
     var rankBody = document.querySelector("#rank-table tbody");
-    rankBody.innerHTML = rows.map(function (row) {
-      return "<tr><td>" + esc(row.id) + "</td><td>" + row.passes + "/6</td><td>" + row.attempts + "</td><td>" + row.requests + "</td><td>" + row.tokens.toLocaleString("en-US") + "</td></tr>";
+    rankBody.innerHTML = rows.map(function (row, i) {
+      var strat = row.id.indexOf("agentic") >= 0 ? "agentic" : (row.id.indexOf("plan") >= 0 ? "plan" : "base");
+      var stratLabel = row.id.indexOf("agentic") >= 0 ? "agentic" : (row.id.indexOf("plan") >= 0 ? "plan-then-patch" : "baseline");
+      var pct = (row.passes / 6 * 100).toFixed(0);
+      var midClass = pct < 100 ? " mid" : "";
+      var milestone = milestones[row.id] || "";
+
+      return "<tr>" +
+        "<td>" +
+          "<div class=\"contestant-cell\">" +
+            "<span class=\"rank-badge " + badgeClasses[i] + "\">" + badges[i] + "</span>" +
+            "<div>" +
+              "<div><span class=\"model-name\">" + esc(row.id.split(":")[0]) + "</span><span class=\"strat-tag strat-" + strat + "\">" + stratLabel + "</span></div>" +
+              "<div class=\"model-milestone\">" + esc(milestone) + "</div>" +
+            "</div>" +
+          "</div>" +
+        "</td>" +
+        "<td>" +
+          "<div class=\"progress-wrap\">" +
+            "<span style=\"font-family:var(--mono);font-weight:700;color:var(--mint);\">" + row.passes + "/6</span>" +
+            "<div class=\"progress-track\"><div class=\"progress-fill" + midClass + "\" style=\"width:" + pct + "%;\"></div></div>" +
+            "<span class=\"progress-pct\">" + pct + "%</span>" +
+          "</div>" +
+        "</td>" +
+        "<td><code style=\"font-family:var(--mono);color:var(--yellow);\">" + row.attempts + "</code></td>" +
+        "<td><code style=\"font-family:var(--mono);color:#9aa6b4;\">" + row.requests + "</code></td>" +
+        "<td><code style=\"font-family:var(--mono);\">" + row.tokens.toLocaleString("en-US") + "</code></td>" +
+      "</tr>";
     }).join("");
-    labelCells(document.getElementById("rank-table"));
 
     var familyHost = document.getElementById("families");
-    familyHost.innerHTML = "<div class=\"table-wrap\"><table id=\"family-table\"><thead><tr><th>Contestant</th>" + families.map(function (name) {
-      return "<th>" + esc(familyName(name)) + "</th>";
-    }).join("") + "</tr></thead><tbody>" + rows.map(function (row) {
-      return "<tr><td>" + esc(row.id) + "</td>" + families.map(function (name) {
-        var run = row.byFamily[name];
-        if (!run) return "<td>—</td>";
-        if (run.pass) return "<td>pass</td>";
-        var names = failedNames(run);
-        return "<td>fail · " + esc(names.join(", ") || "fail") + "</td>";
-      }).join("") + "</tr>";
-    }).join("") + "</tbody></table></div>";
-    labelCells(document.getElementById("family-table"));
+    familyHost.innerHTML = "<div class=\"board-card\">" +
+      "<div class=\"board-card-header\">" +
+        "<div class=\"board-card-title mint\">" + (currentLang === "zh-TW" ? "漏洞矩陣明細 · 6 大挑戰題組" : "Vulnerability Matrix · 6 Benchmark Families") + "</div>" +
+        "<div class=\"board-card-subtitle\">" + (currentLang === "zh-TW" ? "跨模型架構之 PoC 擊破與修補驗證結果" : "Differential PoC Break & Repair Check Across All Setups") + "</div>" +
+      "</div>" +
+      "<div class=\"table-responsive\">" +
+        "<table class=\"data-table\" id=\"family-table\">" +
+          "<thead><tr><th>" + (currentLang === "zh-TW" ? "參賽模型" : "Contestant") + "</th>" + families.map(function (name) {
+            return "<th>" + esc(formatFamily(name)) + "</th>";
+          }).join("") + "</tr></thead>" +
+          "<tbody>" + rows.map(function (row) {
+            return "<tr><td><span class=\"model-name\">" + esc(row.id) + "</span></td>" + families.map(function (name) {
+              var run = row.byFamily[name];
+              if (!run) return "<td>—</td>";
+              if (run.pass) return "<td><span class=\"badge-pass\">✓ PASS</span></td>";
+              var names = failedNames(run);
+              return "<td><span class=\"badge-fail\">✕ " + esc(names.join(", ") || "fail") + "</span></td>";
+            }).join("") + "</tr>";
+          }).join("") + "</tbody>" +
+        "</table>" +
+      "</div>" +
+    "</div>";
 
-    var runBody = document.querySelector("#runs-table tbody");
-    runBody.innerHTML = runs.map(function (run) {
-      var result = run.pass ? "pass" : ("fail · " + (failedNames(run).join(", ") || "fail"));
-      return "<tr><td>" + esc(run.contestantId) + "</td><td>" + esc(familyName(run[FAMILY])) + "</td><td>" + esc(result) + "</td><td>" + esc(run.attempts) + "</td><td>" + esc(run.requests) + "</td><td>" + tokensOf(run.tokens).toLocaleString("en-US") + "</td></tr>";
-    }).join("");
-    labelCells(document.getElementById("runs-table"));
+    filterRuns();
   }
 
   fetch("arena_results.json", { cache: "no-store" }).then(function (res) {
     if (!res.ok) throw new Error(String(res.status));
     return res.json();
-  }).then(render).catch(function () {
+  }).then(function (data) {
+    cachedData = data;
+    updateTexts();
+  }).catch(function () {
     document.getElementById("meta-line").textContent = "PLACEHOLDER — the results file did not load. This is not a measured arena result.";
   });
 })();

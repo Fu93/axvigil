@@ -829,15 +829,19 @@ footer { padding: 48px 0 32px; }
 .nav-links a { position: relative; z-index: 1; }
 .nav-links li:has(+ li[hidden])::after { display: none; }
 .hero-layout, .stats, .orb, main .wrap, footer .wrap { position: relative; z-index: 3; }
-main .wrap,
-.hero .stats {
+body.has-stage main .wrap,
+body.has-stage .hero .stats,
+body:has(#stage) main .wrap,
+body:has(#stage) .hero .stats {
   width: min(700px, 52vw);
   margin-left: max(40px, 4vw);
   margin-right: auto;
 }
 .model-band { display: none; }
-.hero-copy::before,
-main .wrap::before {
+body.has-stage .hero-copy::before,
+body.has-stage main .wrap::before,
+body:has(#stage) .hero-copy::before,
+body:has(#stage) main .wrap::before {
   content: "";
   position: absolute;
   z-index: -1;
