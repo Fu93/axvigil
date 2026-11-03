@@ -38,7 +38,7 @@ export const HERO3D = {
     iridescence: 0
   },
   edges: { thresholdDeg: 25, hdrBoost: 2.2, opacity: 0.9, sweep: 0.18, width: 1.25 },
-  bloom: { strength: 0.62, radius: 0.36, threshold: 0.88, halfRes: false },
+  bloom: { strength: 0.42, radius: 0.32, threshold: 0.96, halfRes: false },
   nodes: {
     radii: [1.75, 2.0, 2.3],
     inclDeg: [12, -20, 34],
@@ -87,6 +87,7 @@ export function mount() {
   const hero = document.getElementById("top");
   if (!host || !stage || !hero) return;
 
+  const lumTest = /(?:\?|&)lum=1(?:&|$)/.test(location.search);
   const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
   const fine = window.matchMedia("(hover: hover) and (pointer: fine)").matches;
   let mobile = window.matchMedia("(max-width: 767px)").matches;
@@ -113,7 +114,8 @@ export function mount() {
       alpha: true,
       antialias: true,
       powerPreference: "high-performance",
-      stencil: false
+      stencil: false,
+      preserveDrawingBuffer: lumTest
     });
   } catch (err) {
     document.documentElement.classList.remove("hold-hero");
@@ -170,18 +172,18 @@ export function mount() {
   rim.position.set(4.8, 1.6, -5.2);
   scene.add(rim);
   /* Section meshes are near-black metal. These lights stay on layer 2 so the hero crystal is unchanged. */
-  const sectionAmb = new THREE.AmbientLight(0xc5cbc4, 0.42);
+  const sectionAmb = new THREE.AmbientLight(0xc5cbc4, 0.32);
   sectionAmb.layers.set(2);
   scene.add(sectionAmb);
-  const sectionKey = new THREE.DirectionalLight(0xfff6ea, 1.55);
+  const sectionKey = new THREE.DirectionalLight(0xfff6ea, 1.05);
   sectionKey.position.set(-2.6, 4.4, 5.2);
   sectionKey.layers.set(2);
   scene.add(sectionKey);
-  const sectionFill = new THREE.DirectionalLight(0xd5deea, 1.15);
+  const sectionFill = new THREE.DirectionalLight(0xd5deea, 0.8);
   sectionFill.position.set(4.2, 1.4, 3.2);
   sectionFill.layers.set(2);
   scene.add(sectionFill);
-  const sectionRim = new THREE.DirectionalLight(0xf4f1e6, 2.35);
+  const sectionRim = new THREE.DirectionalLight(0xf4f1e6, 1.35);
   sectionRim.position.set(-5.2, 2.8, -3.6);
   sectionRim.layers.set(2);
   scene.add(sectionRim);
@@ -397,6 +399,12 @@ export function mount() {
   };
   let slotPosed = false;
   const slotPose = { x: 0, y: 0, scale: 1 };
+  let heldScale = 0;
+  let heldCam = 0;
+  let heldSlot = 0;
+  let bloomLevel = HERO3D.bloom.strength;
+  let exposureLevel = 1;
+  let stageFade = 1;
   let storyS = 0;
   const tiltS = { x: 0, vx: 0, y: 0, vy: 0 };
   const drag = { x: 0, v: 0, on: false, lastX: 0, lastT: 0 };
@@ -409,6 +417,7 @@ export function mount() {
   let introT = playIntro ? 0 : 20;
   let meshReady = !playIntro;
   let meshReadyAt = playIntro ? 0 : performance.now();
+  let heroResident = false;
   let envIn = reduced ? 0.4 : 0;
   let clock = performance.now();
   const pointer = new THREE.Vector2(0, 0);
@@ -489,6 +498,7 @@ export function mount() {
     host.classList.add("is-live");
     document.documentElement.classList.add("ax-3d");
     meshReady = true;
+    heroResident = true;
     meshReadyAt = performance.now();
     chrome.loaded();
     resize();
@@ -595,6 +605,7 @@ export function mount() {
     let cam = mix.cam;
     if (!(cam > 4.5)) cam = 6.8;
     cam = THREE.MathUtils.lerp(cam, 7.15, smootherstep(clamp01(book)));
+    cam = THREE.MathUtils.clamp(cam, 5.5, 8.4);
     return { mix: mix, closeW: closeW, book: book, cam: cam };
   }
 
@@ -727,8 +738,8 @@ export function mount() {
 
   function tuneShowMats(root, bucket, motion) {
     const look = {
-      vault: { env: 1.35, metal: 0.42, rough: 0.82, glow: 0x3a3e36 },
-      cage: { env: 1.25, metal: 0.38, rough: 0.74, glow: 0x32362e },
+      vault: { env: 0.95, metal: 0.3, rough: 1.05, glow: 0x302e2a },
+      cage: { env: 0.88, metal: 0.28, rough: 1.02, glow: 0x2c2a26 },
       record: { env: 1.3, metal: 0.36, rough: 0.7, glow: 0x343830 },
       podium: { env: 1.15, metal: 0.46, rough: 0.86, glow: 0x2c302a },
       lattice: { env: 1.25, metal: 0.4, rough: 0.76, glow: 0x32362f },
@@ -748,7 +759,9 @@ export function mount() {
           mat.emissive.set(look.glow);
           mat.emissiveIntensity = 1;
           mat.emissiveMap = null;
+          mat.userData.baseEmit = 1;
         }
+        mat.userData.baseEnv = look.env;
         mat.transparent = true;
         mat.opacity = 0;
         mat.depthWrite = true;
@@ -797,6 +810,7 @@ export function mount() {
       tuneShowMats(root, show.mats, spec.motion);
       show.root = root;
       show.state = "ready";
+      root.visible = false;
       if (spec.motion === "podium") addPlinthStrip(root, show.mats);
       slot.add(root);
     }).catch(function () {
@@ -805,7 +819,7 @@ export function mount() {
   }
 
   function streamShows() {
-    if (!meshReady) return;
+    if (!heroResident) return;
     let best = 0;
     let bestW = -1;
     shows.forEach(function (show, i) {
@@ -829,6 +843,9 @@ export function mount() {
       return s;
     });
     if (sum < 0.001) sum = 1;
+    if (lumTest) {
+      host.dataset.models = shows.filter(function (show) { return show.root && show.spec; }).map(function (show) { return show.spec.id; }).join(",");
+    }
     const stepEl = document.querySelector("#how .step.is-on");
     let step = 0;
     document.querySelectorAll("#how .step").forEach(function (el, n) { if (el === stepEl) step = n; });
@@ -838,11 +855,16 @@ export function mount() {
       show.weight = THREE.MathUtils.damp(show.weight, sharp[i] / sum, 4.2, dt);
       if (!show.root || !show.spec) return;
       const vis = show.weight * (1 - Math.min(1, (pose.book || 0) * 1.7));
-      const alpha = vis > 0.86 ? 1 : vis;
+      const alpha = vis <= 0.02 ? 0 : Math.min(1, (vis - 0.02) / 0.72);
       show.root.visible = alpha > 0.02;
+      const hot = mobile && (show.spec.motion === "vault" || show.spec.motion === "cage") ? 0.58 : 1;
       show.mats.forEach(function (mat) {
         mat.opacity = alpha;
         mat.depthWrite = alpha > 0.35;
+        if (mat.userData.baseEnv) {
+          mat.envMapIntensity = mat.userData.baseEnv * hot;
+          mat.emissiveIntensity = (mat.userData.baseEmit || 1) * hot;
+        }
       });
       const tr = show.travel;
       const motion = show.spec.motion;
@@ -948,6 +970,12 @@ export function mount() {
         pose.scale = goal.scale;
       }
     }
+    pose.camZ = THREE.MathUtils.clamp(pose.camZ || 6.8, 5.5, 8.4);
+    pose.scale = THREE.MathUtils.clamp(pose.scale || 1, 0.16, 1.55);
+    if (heldScale) pose.scale = THREE.MathUtils.clamp(pose.scale, heldScale - 0.045, heldScale + 0.045);
+    if (heldCam) pose.camZ = THREE.MathUtils.clamp(pose.camZ, heldCam - 0.12, heldCam + 0.12);
+    heldScale = pose.scale;
+    heldCam = pose.camZ;
 
     const edgeEase = playIntro ? expoOut(clamp01(introT / HERO3D.intro.edgesS)) : 1;
     const bodyEase = playIntro ? expoOut(clamp01((introT - HERO3D.intro.bodyDelayS) / 0.8)) : 1;
@@ -987,13 +1015,20 @@ export function mount() {
     const boardSlide = boardShow && boardShow.weight > 0.04
       ? boardShow.weight * THREE.MathUtils.lerp(-0.42, 0.42, sectionTravel(document.getElementById("board")))
       : 0;
-    const lockCam = mobile || bookK > 0.4;
-    const camX = lockCam ? 0 : camPx + pose.dolly + boardSlide;
-    const camY = lockCam ? 0.08 : 0.12 + camPy + hall * 0.04;
-    camera.position.set(camX, camY, Math.max(4.8, pose.camZ));
+    const sectionGain = mobile ? 0.62 : 1;
+    sectionAmb.intensity = 0.32 * sectionGain;
+    sectionKey.intensity = 1.05 * sectionGain;
+    sectionFill.intensity = 0.8 * sectionGain;
+    sectionRim.intensity = 1.35 * sectionGain;
+    const lock = mobile ? 1 : smootherstep(clamp01((bookK - 0.12) / 0.5));
+    const freeX = camPx + pose.dolly + boardSlide;
+    const freeY = 0.12 + camPy + hall * 0.04;
+    const camX = freeX * (1 - lock);
+    const camY = freeY * (1 - lock) + 0.08 * lock;
+    camera.position.set(camX, camY, pose.camZ);
     camera.lookAt(
-      lockCam ? 0 : camX * 0.28 * (1 - hall),
-      lockCam ? 0 : camPy * 0.22 * (1 - hall) + hall * 0.02,
+      freeX * 0.28 * (1 - hall) * (1 - lock),
+      (camPy * 0.22 * (1 - hall) + hall * 0.02) * (1 - lock),
       0
     );
     camera.rotation.z += roll + driftRot;
@@ -1013,6 +1048,9 @@ export function mount() {
       slotPose.y = THREE.MathUtils.damp(slotPose.y, slotG.y, lambda, follow);
       slotPose.scale = THREE.MathUtils.damp(slotPose.scale, slotG.scale, lambda, follow);
     }
+    slotPose.scale = THREE.MathUtils.clamp(slotPose.scale, 0.2, 1.55);
+    if (heldSlot) slotPose.scale = THREE.MathUtils.clamp(slotPose.scale, heldSlot - 0.045, heldSlot + 0.045);
+    heldSlot = slotPose.scale;
     slot.position.set(slotPose.x, slotPose.y, 0);
     slot.scale.setScalar(slotPose.scale);
     scrollV = THREE.MathUtils.damp(scrollV, (window.scrollY - lastScroll) / Math.max(dt, 0.016), 3, dt);
@@ -1039,8 +1077,9 @@ export function mount() {
     hiddenLines.forEach(function (line) { line.visible = hiddenMat.opacity > 0.04; });
 
     if (inner) {
-      inner.visible = pose.split > 0.04;
-      innerMat.opacity = Math.min(1, pose.split * 1.25);
+      const heroHere = shows[0].raw > 0.55 && bookK < 0.12;
+      inner.visible = heroHere && pose.split > 0.12;
+      innerMat.opacity = heroHere ? Math.min(1, pose.split * 1.25) : 0;
       const coreScale = MODEL_SCALE * (0.72 + pose.split * 0.28);
       inner.scale.setScalar(coreScale);
       inner.rotation.y = idle * 0.6;
@@ -1050,7 +1089,7 @@ export function mount() {
     nodeMat.opacity = nodeEase * hallFade * (mobile ? 0 : 1);
     nodeEdgeMat.opacity = nodeEase * hallFade * (mobile ? 0 : 1);
     ringMat.opacity = mobile ? 0 : HERO3D.nodes.ringOpacity * nodeEase * (0.35 + pose.orbit * 0.65) * hallFade * (1 - bookK);
-    const glowAmt = mobile ? 0 : 0.55 * hallFade * (1 - Math.min(1, bookK * 1.8));
+    const glowAmt = !mobile && shows[0].raw > 0.7 && bookK < 0.06 ? 0.4 * hallFade : 0;
     backlight.material.opacity = glowAmt;
     backlight.visible = glowAmt > 0.03;
     rig.visible = hallFade > 0.04;
@@ -1114,7 +1153,8 @@ export function mount() {
     const footerTop = footerEl ? footerEl.getBoundingClientRect().top : 99999;
     const closeBottom = tail ? tail.getBoundingClientRect().bottom : 0;
     const parked = closeBottom < window.innerHeight * 0.12 && footerTop < window.innerHeight * 0.42;
-    stage.style.opacity = pastStory || parked ? "0" : "1";
+    stageFade = THREE.MathUtils.damp(stageFade, pastStory || parked ? 0 : 1, 3.5, dt);
+    stage.style.opacity = stageFade.toFixed(3);
     if (pastStory) {
       setActive(false);
       return;
@@ -1122,9 +1162,15 @@ export function mount() {
 
     if (bloomOn) {
       renderer.toneMapping = THREE.NoToneMapping;
-      const crossing = pose.podium > 0.12 && pose.podium < 0.88;
-      grade.strength(HERO3D.bloom.strength * (crossing ? 0.28 : 1));
-      renderer.toneMappingExposure = crossing ? 0.82 : 1;
+      const crossing = pose.podium > 0.2 && pose.podium < 0.8;
+      const bloomTarget = HERO3D.bloom.strength * (crossing ? 0.72 : 1);
+      const exposureTarget = crossing ? 0.94 : 1;
+      bloomLevel = THREE.MathUtils.damp(bloomLevel, bloomTarget, 2.2, dt);
+      exposureLevel = THREE.MathUtils.damp(exposureLevel, exposureTarget, 2.2, dt);
+      bloomLevel = THREE.MathUtils.clamp(bloomLevel, 0.12, HERO3D.bloom.strength);
+      exposureLevel = THREE.MathUtils.clamp(exposureLevel, 0.9, 1);
+      grade.strength(bloomLevel);
+      renderer.toneMappingExposure = exposureLevel;
       try {
         grade.time(Math.floor(now / 41.67));
         grade.render();

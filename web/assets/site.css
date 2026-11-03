@@ -280,8 +280,8 @@ html[lang="zh-Hant"] .btn { text-transform: none; letter-spacing: 0.04em; font-s
     linear-gradient(var(--stroke), var(--stroke)),
     linear-gradient(var(--stroke), var(--stroke)),
     linear-gradient(var(--stroke), var(--stroke)),
-    linear-gradient(to top right, transparent calc(50% - 0.75px), var(--stroke) calc(50% - 0.75px) calc(50% + 0.75px), transparent calc(50% + 0.75px)),
-    linear-gradient(to top right, transparent calc(50% - 0.75px), var(--stroke) calc(50% - 0.75px) calc(50% + 0.75px), transparent calc(50% + 0.75px));
+    linear-gradient(to bottom right, transparent calc(50% - 0.75px), var(--stroke) calc(50% - 0.75px) calc(50% + 0.75px), transparent calc(50% + 0.75px)),
+    linear-gradient(to bottom right, transparent calc(50% - 0.75px), var(--stroke) calc(50% - 0.75px) calc(50% + 0.75px), transparent calc(50% + 0.75px));
   background-size:
     calc(100% - var(--chamfer)) 1px,
     calc(100% - var(--chamfer)) 1px,
