@@ -279,4 +279,4 @@ This is a hackathon prototype for a BSC testnet/whitehat sandbox. It is not audi
 
 ## License
 
-MIT
+This project is MIT-licensed. See [LICENSE](LICENSE).
