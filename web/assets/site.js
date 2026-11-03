@@ -58,7 +58,7 @@
     "stat.records": "已鑄造紀錄",
     "stat.recordsS": "三次門檻鑄造，加一次較早的簽名重放",
     "stat.families": "漏洞類型",
-    "stat.familiesS": "每個類型二十道新變體",
+    "stat.familiesS": "每個類型二十道新變體（共 180 題）",
     "stat.graded": "已評分的修復",
     "stat.gradedS": "這次公開寫下的通過",
     "stat.tests": "測試",
@@ -76,7 +76,7 @@
     "how.s2t": "Muse Spark 修復",
     "how.s2d": "muse-spark-1.1 經 Meta Model API，在沙盒裡提出修補與概念驗證。它是第一個在這裡留下公開紀錄的模型。",
     "how.s3t": "確定性評分",
-    "how.s3d": "四項檢查：概念驗證必須打穿原合約、修補後必須失敗、隱藏功能測試仍通過、改動停在上限內。",
+    "how.s3d": "五項檢查：雙邊編譯通過、概念驗證必須打穿原合約、修補後必須失敗、狀態不變量與隱藏測試仍通過、改動停在上限內。",
     "how.s4t": "連署與紀錄",
     "how.s4d": "三位許可制驗證者裡的兩位簽名。一次鑄造寫入收藏，以及一枚鎖定的、跟著 Agent ID 的技能紀錄。",
     "proof.kicker": "03  證明",
@@ -185,7 +185,7 @@
     "how.s2t": "Meta agent",
     "how.s2d": "muse-spark-1.1 經 Meta Model API 提出修補與概念驗證。失敗會以評分回饋送回。",
     "how.s3t": "驗證器",
-    "how.s3d": "沙箱裡的四項確定性檢查。結果是一份正規 JSON，以及一枚提交雜湊。",
+    "how.s3d": "沙箱裡的五項確定性檢查。結果是一份正規 JSON，以及一枚提交雜湊。",
     "how.s4t": "驗證者",
     "how.s4d": "另一份收藏合約檢查 2-of-3 驗證者簽章。三次 Muse Spark 場次在那裡鑄造。較早的收藏合約仍是單一簽章者，而且那把金鑰已經從擁有者輪換出去。",
     "how.s5t": "憑證",
@@ -465,19 +465,33 @@
   });
 
   var live = document.getElementById("copied");
+  var copyTimer = null;
   document.querySelectorAll(".copy").forEach(function (button) {
     button.addEventListener("click", function () {
       var value = String(get(button.getAttribute("data-copy")) || "");
-      var done = lang === "zh-TW" ? "已複製。" : "Copied.";
+      var done = lang === "zh-TW" ? "已複製到剪貼簿。" : "Copied to clipboard.";
       var fail = lang === "zh-TW" ? "無法複製。" : "Could not copy.";
       if (navigator.clipboard && navigator.clipboard.writeText) {
         navigator.clipboard.writeText(value).then(function () {
-          if (live) live.textContent = done;
+          if (live) {
+            live.textContent = "✓ " + done;
+            live.classList.add("toast-active");
+            clearTimeout(copyTimer);
+            copyTimer = setTimeout(function () { live.classList.remove("toast-active"); }, 2200);
+          }
         }).catch(function () {
-          if (live) live.textContent = fail;
+          if (live) {
+            live.textContent = "✕ " + fail;
+            live.classList.add("toast-active");
+            clearTimeout(copyTimer);
+            copyTimer = setTimeout(function () { live.classList.remove("toast-active"); }, 2200);
+          }
         });
       } else if (live) {
-        live.textContent = fail;
+        live.textContent = "✕ " + fail;
+        live.classList.add("toast-active");
+        clearTimeout(copyTimer);
+        copyTimer = setTimeout(function () { live.classList.remove("toast-active"); }, 2200);
       }
     });
   });

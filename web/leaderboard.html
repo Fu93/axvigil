@@ -561,6 +561,7 @@
     <p class="disclaimer" data-i18n="footer.disclaimer">Recorded run only. Graded by the AxVigil verifier. Powered by Meta Muse Spark. Not an audit, and not a promise about unknown bugs.</p>
   </div>
 </footer>
+<p id="copied" aria-live="polite"></p>
 
 <script>
 (function () {
@@ -569,7 +570,8 @@
   var CHECKS = ["pocProvesBug", "pocFailsAfterPatch", "hiddenTestsPass", "patchWithinLimits"];
   var RECORDED_COMMIT = "2c45b7a";
 
-  var currentLang = localStorage.getItem("axvigil-lang") || localStorage.getItem("axv_lang") || sessionStorage.getItem("axv-lang") || "en";
+  var rawLang = localStorage.getItem("axvigil-lang") || localStorage.getItem("axv_lang") || sessionStorage.getItem("axv-lang") || "en";
+  var currentLang = (rawLang === "zh-Hant" || rawLang === "zh-TW") ? "zh-TW" : "en";
   var currentContestantFilter = "all";
   var currentResultFilter = "all";
   var cachedData = null;
@@ -761,7 +763,7 @@
       var active = btn.getAttribute("data-lang") === currentLang;
       btn.setAttribute("aria-pressed", String(active));
     });
-    document.documentElement.lang = currentLang;
+    document.documentElement.lang = (currentLang === "zh-TW" || currentLang === "zh-Hant") ? "zh-Hant" : "en";
     if (cachedData) render(cachedData);
   }
 
@@ -787,6 +789,30 @@
       nav.classList.toggle("open", !open);
     });
   }
+
+  // Copy button handler
+  var copyTimer = null;
+  document.querySelectorAll("[data-copy-val]").forEach(function (btn) {
+    btn.addEventListener("click", function (e) {
+      e.preventDefault();
+      var val = btn.getAttribute("data-copy-val");
+      var live = document.getElementById("copied");
+      var done = currentLang === "zh-TW" ? "已複製到剪貼簿。" : "Copied to clipboard.";
+      function showCopied() {
+        if (live) {
+          live.textContent = "✓ " + done;
+          live.classList.add("toast-active");
+          clearTimeout(copyTimer);
+          copyTimer = setTimeout(function () { live.classList.remove("toast-active"); }, 2200);
+        }
+      }
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(val).then(showCopied).catch(showCopied);
+      } else {
+        showCopied();
+      }
+    });
+  });
 
   function esc(value) {
     return String(value == null ? "" : value).replace(/[&<>"]/g, function (ch) {
@@ -843,16 +869,36 @@
     }
 
     tbody.innerHTML = filtered.map(function (run) {
+      var failList = failedNames(run);
+      var failDesc = failList.map(function (f) {
+        if (f === "pocProvesBug") return currentLang === "zh-TW" ? "PoC 未能在原合約觸發漏洞" : "PoC failed to exploit unpatched contract";
+        if (f === "pocFailsAfterPatch") return currentLang === "zh-TW" ? "修復後 PoC 仍然可被攻擊" : "PoC still exploited contract after patch";
+        if (f === "hiddenTestsPass") return currentLang === "zh-TW" ? "破壞隱藏功能測試" : "Regression/hidden unit tests failed";
+        if (f === "patchWithinLimits") return currentLang === "zh-TW" ? "修補超出行數或大小上限" : "Patch size exceeded bounds";
+        return f;
+      }).join("; ");
+
       var resBadge = run.pass
-        ? "<span class=\"badge-pass\">✓ PASS</span>"
-        : "<span class=\"badge-fail\">✕ " + esc(failedNames(run).join(", ") || "fail") + "</span>";
+        ? "<span class=\"badge-pass\" title=\"" + (currentLang === "zh-TW" ? "所有 5 重確定性檢查皆通過" : "All 5 differential checks satisfied") + "\">✓ PASS</span>"
+        : "<span class=\"badge-fail\" title=\"" + esc(failDesc || (currentLang === "zh-TW" ? "檢查未通過" : "Check failed")) + "\">✕ " + esc(failList.join(", ") || "fail") + "</span>";
+
+      var pTokens = (run.tokens && run.tokens.prompt != null) ? run.tokens.prompt.toLocaleString("en-US") : "0";
+      var cTokens = (run.tokens && run.tokens.completion != null) ? run.tokens.completion.toLocaleString("en-US") : "0";
+      var latSec = (run.latencyMs != null) ? (run.latencyMs / 1000).toFixed(1) + "s" : "—";
+      var tokenTooltip = (currentLang === "zh-TW")
+        ? "提示詞: " + pTokens + " · 補全: " + cTokens + " · 延遲: " + latSec
+        : "Prompt: " + pTokens + " · Completion: " + cTokens + " · Latency: " + latSec;
+      var attemptTooltip = (currentLang === "zh-TW")
+        ? "嘗試: " + run.attempts + " 次 · 修補改動: " + (run.patchDiffLines || 0) + " 行"
+        : "Attempts: " + run.attempts + " · Diff lines: " + (run.patchDiffLines || 0);
+
       return "<tr>" +
         "<td><span class=\"model-name\">" + esc(run.contestantId) + "</span></td>" +
-        "<td>" + esc(formatFamily(run[FAMILY])) + "</td>" +
+        "<td><span style=\"font-family:var(--sans);font-weight:600;\">" + esc(formatFamily(run[FAMILY])) + "</span></td>" +
         "<td>" + resBadge + "</td>" +
-        "<td><code style=\"font-family:var(--mono);color:var(--yellow);\">" + esc(run.attempts) + "</code></td>" +
-        "<td><code style=\"font-family:var(--mono);color:#9aa6b4;\">" + esc(run.requests) + "</code></td>" +
-        "<td><code style=\"font-family:var(--mono);\">" + tokensOf(run.tokens).toLocaleString("en-US") + "</code></td>" +
+        "<td><code style=\"font-family:var(--mono);color:var(--yellow);\" title=\"" + esc(attemptTooltip) + "\">" + esc(run.attempts) + "</code></td>" +
+        "<td><code style=\"font-family:var(--mono);color:#9aa6b4;\" title=\"" + (currentLang === "zh-TW" ? "API 請求次數" : "API requests") + "\">" + esc(run.requests) + "</code></td>" +
+        "<td><code style=\"font-family:var(--mono);cursor:help;\" title=\"" + esc(tokenTooltip) + "\">" + tokensOf(run.tokens).toLocaleString("en-US") + "</code></td>" +
       "</tr>";
     }).join("");
   }

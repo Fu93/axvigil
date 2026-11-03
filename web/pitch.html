@@ -451,11 +451,11 @@
       <p class="section-sub" data-i18n="pitch.s3.sub">Token #1 on 0x0658…4658 is COMMON. Token #2 is a Muse Spark mint, revealed LEGENDARY (artId 320000). A 2-of-3 threshold collectible is live at 0x0e87…C8eB (skill 0xE165…5F59); three Muse Spark sessions minted on first request.</p>
       <div class="proof-grid">
         <div class="proof-item">
-          <div class="pn"><a href="https://testnet.bscscan.com/address/0x337743Da5894B58039743f46f689337991cECD18" target="_blank" rel="noopener">0x3377…CD18</a></div>
+          <div class="pn"><a href="https://testnet.bscscan.com/address/0x337743Da5894B58039743f46f689337991cECD18" target="_blank" rel="noopener">0x3377…CD18</a> <button class="copy-chip" data-copy-val="0x337743Da5894B58039743f46f689337991cECD18" title="Copy address">⧉ copy</button></div>
           <div class="pl" data-i18n="pitch.p1">AxVigilSkill (ERC-5192 Soulbound)</div>
         </div>
         <div class="proof-item">
-          <div class="pn"><a href="https://testnet.bscscan.com/address/0x0e8755245231b66FdcE3a625b764dc1Bb597C8eB" target="_blank" rel="noopener">0x0e87…C8eB</a></div>
+          <div class="pn"><a href="https://testnet.bscscan.com/address/0x0e8755245231b66FdcE3a625b764dc1Bb597C8eB" target="_blank" rel="noopener">0x0e87…C8eB</a> <button class="copy-chip" data-copy-val="0x0e8755245231b66FdcE3a625b764dc1Bb597C8eB" title="Copy address">⧉ copy</button></div>
           <div class="pl" data-i18n="pitch.p2">2-of-3 Threshold Collectible</div>
         </div>
         <div class="proof-item">
@@ -471,7 +471,7 @@
       <!-- One-command Reproducibility Note -->
       <div class="honest-card" style="margin-top:1.5rem;">
         <div class="k" data-i18n="pitch.judge.k">Deterministic Judge Reproducibility</div>
-        <p data-i18n="pitch.judge.p">Judges can reproduce the complete end-to-end pipeline locally with zero external network dependencies via <code>./scripts/judge_demo.sh</code> (starts local Anvil chain, runs offline oracle agent, verifies differential checks, validates EIP-712 signatures, and inspects dynamic SVG tokenURI metadata).</p>
+        <p data-i18n="pitch.judge.p">Judges can reproduce the complete end-to-end pipeline locally with zero external network dependencies via <code>./scripts/judge_demo.sh</code> <button class="copy-chip" data-copy-val="./scripts/judge_demo.sh" title="Copy command">⧉ copy</button> (starts local Anvil chain, runs offline oracle agent, verifies differential checks, validates EIP-712 signatures, and inspects dynamic SVG tokenURI metadata).</p>
       </div>
     </div>
   </section>
@@ -568,6 +568,7 @@
     <p class="disclaimer" data-i18n="foot.disc">Sandbox and testnet only. Not audited. Do not use it with production funds. No token has been issued, and this page is not an offer to sell one. The skill record cannot be bought or transferred. A capability record is not a claim that an agent can find unknown bugs.</p>
   </div>
 </footer>
+<p id="copied" aria-live="polite"></p>
 
 <script>
   const reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
@@ -822,6 +823,30 @@
       sessionStorage.setItem("axv-lang", lang);
     } catch (e) {}
   }
+
+  // Copy button listeners
+  var copyTimer = null;
+  document.querySelectorAll("[data-copy-val]").forEach(btn => {
+    btn.addEventListener("click", e => {
+      e.preventDefault();
+      const val = btn.getAttribute("data-copy-val");
+      const live = document.getElementById("copied");
+      const done = document.documentElement.lang === "zh-Hant" ? "已複製到剪貼簿。" : "Copied to clipboard.";
+      function showCopied() {
+        if (live) {
+          live.textContent = "✓ " + done;
+          live.classList.add("toast-active");
+          clearTimeout(copyTimer);
+          copyTimer = setTimeout(() => live.classList.remove("toast-active"), 2200);
+        }
+      }
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(val).then(showCopied).catch(showCopied);
+      } else {
+        showCopied();
+      }
+    });
+  });
 
   document.querySelectorAll("[data-lang]").forEach(btn => {
     btn.addEventListener("click", () => {

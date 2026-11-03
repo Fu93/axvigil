@@ -68,10 +68,10 @@
 <script type="application/json" id="axvigil-facts">
 {
   "stats": {
-    "families": 6,
+    "families": 9,
     "variantsEach": 20,
-    "challenges": 120,
-    "checks": 4,
+    "challenges": 180,
+    "checks": 5,
     "recordsMinted": 4,
     "fixesGraded": 6,
     "tests": { "total": 275, "contracts": 110, "python": 165, "dockerSkipped": 1 },
@@ -210,9 +210,9 @@
         <div class="s" data-i18n="stat.recordsS">3 threshold + 1 earlier</div>
       </div>
       <div class="stat">
-        <div class="n" data-fact="stats.families" data-count="6">6</div>
+        <div class="n" data-fact="stats.families" data-count="9">9</div>
         <div class="l" data-i18n="stat.families">Vulnerability families</div>
-        <div class="s" data-i18n="stat.familiesS">20 fresh rewrites each</div>
+        <div class="s" data-i18n="stat.familiesS">20 fresh rewrites each (180 total)</div>
       </div>
       <div class="stat">
         <div class="n" data-fact="stats.fixesGraded" data-count="6">6</div>
@@ -273,7 +273,7 @@
         <li class="card step">
           <span class="num">03</span>
           <h3 data-i18n="how.s3t">Deterministic grading</h3>
-          <p data-i18n="how.s3d">Four checks. The proof of concept must exploit the original, fail after the patch, leave the hidden tests passing, and stay inside the size cap.</p>
+          <p data-i18n="how.s3d">Five checks. Both original and patch compile cleanly, the proof of concept must exploit the original, fail after the patch, leave state invariants passing, and stay inside the size cap.</p>
         </li>
         <li class="card step">
           <span class="num">04</span>

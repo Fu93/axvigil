@@ -645,13 +645,13 @@
             </div>
             <dl class="kv-list">
               <dt>Collectible</dt>
-              <dd><a href="https://testnet.bscscan.com/address/0x0e8755245231b66FdcE3a625b764dc1Bb597C8eB" target="_blank" rel="noopener">0x0e87…C8eB</a></dd>
+              <dd><a href="https://testnet.bscscan.com/address/0x0e8755245231b66FdcE3a625b764dc1Bb597C8eB" target="_blank" rel="noopener">0x0e87…C8eB</a> <button class="copy-chip" data-copy-val="0x0e8755245231b66FdcE3a625b764dc1Bb597C8eB" title="Copy full address">⧉ copy</button></dd>
               <dt>Soulbound Skill</dt>
-              <dd><a href="https://testnet.bscscan.com/address/0xE165C8B4826b6eF7aE84dfe3B1b27017aF1b5F59" target="_blank" rel="noopener">0xE165…5F59</a></dd>
+              <dd><a href="https://testnet.bscscan.com/address/0xE165C8B4826b6eF7aE84dfe3B1b27017aF1b5F59" target="_blank" rel="noopener">0xE165…5F59</a> <button class="copy-chip" data-copy-val="0xE165C8B4826b6eF7aE84dfe3B1b27017aF1b5F59" title="Copy full address">⧉ copy</button></dd>
               <dt>Agent Registry</dt>
-              <dd><a href="https://testnet.bscscan.com/address/0x7Aa441477f0246353bdAe504cF0F9B3027D6d45e" target="_blank" rel="noopener">0x7Aa4…d45e</a></dd>
+              <dd><a href="https://testnet.bscscan.com/address/0x7Aa441477f0246353bdAe504cF0F9B3027D6d45e" target="_blank" rel="noopener">0x7Aa4…d45e</a> <button class="copy-chip" data-copy-val="0x7Aa441477f0246353bdAe504cF0F9B3027D6d45e" title="Copy full address">⧉ copy</button></dd>
               <dt>Pre-PR#8 Skill</dt>
-              <dd><a href="https://testnet.bscscan.com/address/0x337743Da5894B58039743f46f689337991cECD18" target="_blank" rel="noopener">0x3377…CD18</a></dd>
+              <dd><a href="https://testnet.bscscan.com/address/0x337743Da5894B58039743f46f689337991cECD18" target="_blank" rel="noopener">0x3377…CD18</a> <button class="copy-chip" data-copy-val="0x337743Da5894B58039743f46f689337991cECD18" title="Copy full address">⧉ copy</button></dd>
             </dl>
           </div>
 
@@ -662,13 +662,13 @@
             </div>
             <dl class="kv-list">
               <dt>Mint #1 (Token 1)</dt>
-              <dd><a href="https://testnet.bscscan.com/tx/0x2381283bef977534ff5eaa234c6bdf7160a6a80a84aec4238d2063ceb7b826ea" target="_blank" rel="noopener">0x2381…26ea</a></dd>
+              <dd><a href="https://testnet.bscscan.com/tx/0x2381283bef977534ff5eaa234c6bdf7160a6a80a84aec4238d2063ceb7b826ea" target="_blank" rel="noopener">0x2381…26ea</a> <button class="copy-chip" data-copy-val="0x2381283bef977534ff5eaa234c6bdf7160a6a80a84aec4238d2063ceb7b826ea" title="Copy tx hash">⧉ copy</button></dd>
               <dt>Mint #2 (Legendary)</dt>
-              <dd><a href="https://testnet.bscscan.com/tx/0x8f135d51462a5a5ad98dc3af3df0838f5f3eabc1207210fc22041f876281c177" target="_blank" rel="noopener">0x8f13…c177</a></dd>
+              <dd><a href="https://testnet.bscscan.com/tx/0x8f135d51462a5a5ad98dc3af3df0838f5f3eabc1207210fc22041f876281c177" target="_blank" rel="noopener">0x8f13…c177</a> <button class="copy-chip" data-copy-val="0x8f135d51462a5a5ad98dc3af3df0838f5f3eabc1207210fc22041f876281c177" title="Copy tx hash">⧉ copy</button></dd>
               <dt>Reveal Tx</dt>
-              <dd><a href="https://testnet.bscscan.com/tx/0x8db5db92734979ee36dbc916e76b67c7f3f24ad9d570027f0ddbdc4f69be294b" target="_blank" rel="noopener">0x8db5…294b</a></dd>
+              <dd><a href="https://testnet.bscscan.com/tx/0x8db5db92734979ee36dbc916e76b67c7f3f24ad9d570027f0ddbdc4f69be294b" target="_blank" rel="noopener">0x8db5…294b</a> <button class="copy-chip" data-copy-val="0x8db5db92734979ee36dbc916e76b67c7f3f24ad9d570027f0ddbdc4f69be294b" title="Copy tx hash">⧉ copy</button></dd>
               <dt>Submission Hash</dt>
-              <dd style="color:var(--mint);">0x8083…64df (re-verifiable via CID)</dd>
+              <dd style="color:var(--mint);">0x8083…64df (re-verifiable via CID) <button class="copy-chip" data-copy-val="0x8083a216ec2aa45c71a39626e5fc5f27cfcb746ea5ef0d277d3aa33827d064df" title="Copy submission hash">⧉ copy</button></dd>
             </dl>
           </div>
         </div>
@@ -716,6 +716,7 @@
     <p class="disclaimer" data-i18n="foot.disc">Sandbox and testnet only. Not audited. Do not use it with production funds. No token has been issued, and this page is not an offer to sell one. The skill record cannot be bought or transferred. A capability record is not a claim that an agent can find unknown bugs.</p>
   </div>
 </footer>
+<p id="copied" aria-live="polite"></p>
 
 <script>
   // --- 1. Differential Grader Data & Logic ---
@@ -928,6 +929,30 @@
   } catch (e) {
     applyLang("en");
   }
+
+  // Copy button listeners
+  var copyTimer = null;
+  document.querySelectorAll("[data-copy-val]").forEach(btn => {
+    btn.addEventListener("click", e => {
+      e.preventDefault();
+      const val = btn.getAttribute("data-copy-val");
+      const live = document.getElementById("copied");
+      const done = document.documentElement.lang === "zh-Hant" ? "已複製到剪貼簿。" : "Copied to clipboard.";
+      function showCopied() {
+        if (live) {
+          live.textContent = "✓ " + done;
+          live.classList.add("toast-active");
+          clearTimeout(copyTimer);
+          copyTimer = setTimeout(() => live.classList.remove("toast-active"), 2200);
+        }
+      }
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(val).then(showCopied).catch(showCopied);
+      } else {
+        showCopied();
+      }
+    });
+  });
 
   // Initial renders
   switchIter(0);
