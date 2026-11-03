@@ -135,6 +135,7 @@
     "nav.board": "排行",
     "nav.lang": "語言",
     "cta.demo": "試用 Demo",
+    "cta.interactiveDemo": "啟動互動熔爐 Demo ↗",
     "cta.paper": "閱讀白皮書",
     "cta.github": "GitHub",
     "hero.note": "Hero strings live in axvigil-facts heroCopy, not here.",
