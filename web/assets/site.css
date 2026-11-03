@@ -269,9 +269,34 @@ html[lang="zh-Hant"] .btn { text-transform: none; letter-spacing: 0.04em; font-s
   .card, .tilt, .stage { transition: transform 0.18s ease-out, box-shadow 0.28s ease, border-color 0.28s ease; }
 }
 .btn.ghost {
-  background: transparent;
+  --chamfer: 8px;
+  --stroke: rgba(239, 238, 236, 0.72);
   color: inherit;
-  border-color: rgba(255, 255, 255, 0.18);
+  border: 0;
+  clip-path: none;
+  background-color: transparent;
+  background-image:
+    linear-gradient(var(--stroke), var(--stroke)),
+    linear-gradient(var(--stroke), var(--stroke)),
+    linear-gradient(var(--stroke), var(--stroke)),
+    linear-gradient(var(--stroke), var(--stroke)),
+    linear-gradient(to top right, transparent calc(50% - 0.75px), var(--stroke) calc(50% - 0.75px) calc(50% + 0.75px), transparent calc(50% + 0.75px)),
+    linear-gradient(to top right, transparent calc(50% - 0.75px), var(--stroke) calc(50% - 0.75px) calc(50% + 0.75px), transparent calc(50% + 0.75px));
+  background-size:
+    calc(100% - var(--chamfer)) 1px,
+    calc(100% - var(--chamfer)) 1px,
+    1px calc(100% - var(--chamfer)),
+    1px calc(100% - var(--chamfer)),
+    var(--chamfer) var(--chamfer),
+    var(--chamfer) var(--chamfer);
+  background-position:
+    var(--chamfer) 0,
+    0 100%,
+    0 var(--chamfer),
+    100% 0,
+    0 0,
+    100% 100%;
+  background-repeat: no-repeat;
 }
 .text-link {
   font-family: var(--mono);
@@ -810,17 +835,20 @@ main .wrap,
   margin-left: max(40px, 4vw);
   margin-right: auto;
 }
+.model-band { display: none; }
 .hero-copy::before,
 main .wrap::before {
   content: "";
   position: absolute;
   z-index: -1;
-  left: -32px;
-  right: -72px;
-  top: -16px;
-  bottom: -16px;
+  left: -10vw;
+  right: -18vw;
+  top: -14vh;
+  bottom: -14vh;
   pointer-events: none;
-  background: linear-gradient(90deg, rgba(28, 29, 26, 0.94) 0%, rgba(28, 29, 26, 0.78) 68%, rgba(28, 29, 26, 0) 100%);
+  background: #1c1d1a;
+  -webkit-mask-image: radial-gradient(ellipse 72% 68% at 34% 46%, #000 0%, rgba(0, 0, 0, 0.82) 38%, rgba(0, 0, 0, 0.34) 60%, transparent 76%);
+  mask-image: radial-gradient(ellipse 72% 68% at 34% 46%, #000 0%, rgba(0, 0, 0, 0.82) 38%, rgba(0, 0, 0, 0.34) 60%, transparent 76%);
 }
 #faq { padding-bottom: 8px; }
 .close { padding-top: 28px; padding-bottom: 36px; }
@@ -1005,9 +1033,9 @@ td a { border-bottom: 1px solid currentColor; text-decoration: none; }
     top: auto;
     right: auto;
     bottom: auto;
-    width: min(240px, 70vw);
-    height: 280px;
-    margin: 8px 0 0;
+    width: 100%;
+    height: min(42vh, 340px);
+    margin: 20px 0 0;
   }
   .stats { order: 3; }
   #crystal-hud { display: none; }
@@ -1098,11 +1126,12 @@ html.motion .close h2.reveal.in {
   position: fixed;
   inset: 0;
   z-index: 60;
-  display: grid;
+  display: none;
   place-items: center;
   background: #1c1d1a;
   color: #efeeec;
 }
+html.show-loader #ax-loader { display: grid; }
 #ax-loader[hidden] { display: none !important; }
 #ax-loader .frame {
   position: relative;
@@ -1139,6 +1168,7 @@ html.motion .close h2.reveal.in {
 }
 #ax-loader .bar i { display: block; height: 100%; width: 0; background: var(--yellow); }
 .ax-skip {
+  display: none;
   position: fixed;
   z-index: 70;
   right: 22px;
@@ -1153,6 +1183,7 @@ html.motion .close h2.reveal.in {
   padding: 8px 12px;
   cursor: pointer;
 }
+html.show-loader .ax-skip { display: block; }
 .ax-skip[hidden] { display: none !important; }
 .hero-rule {
   display: flex;
@@ -1179,6 +1210,7 @@ html.motion .close h2.reveal.in {
 .hero-rule.is-apart i:last-child { transform: scaleX(1.8); transform-origin: right center; }
 .hero-rule span, .hero-rule i { transition: transform 0.6s cubic-bezier(0.65, 0, 0.35, 1), opacity 0.6s cubic-bezier(0.65, 0, 0.35, 1); }
 .ax-status {
+  display: none;
   position: fixed;
   z-index: 61;
   left: 22px;
@@ -1189,6 +1221,8 @@ html.motion .close h2.reveal.in {
   letter-spacing: 0.12em;
   color: #efeeec;
 }
+html.show-loader .ax-status { display: block; }
+.ax-status[hidden] { display: none !important; }
 .ax-status.is-out, #ax-loader.is-out {
   opacity: 0;
   pointer-events: none;
@@ -1300,4 +1334,12 @@ body.has-ax-cursor .ax-cursor { visibility: visible; }
   }
   .hero-copy::before,
   main .wrap::before { display: none; }
+  .model-band {
+    display: block;
+    height: min(40vh, 320px);
+    margin: 0 0 18px;
+    pointer-events: none;
+  }
+  #close .model-band { height: min(30vh, 240px); margin-bottom: 8px; }
+  .hero { justify-content: flex-start; }
 }

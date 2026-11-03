@@ -147,6 +147,7 @@ export function mount() {
   const camera = new THREE.PerspectiveCamera(HERO3D.camera.fov, 1, 0.08, 40);
   camera.position.set(0, 0.08, HERO3D.camera.z);
   camera.layers.enable(1);
+  camera.layers.enable(2);
 
   const pmrem = new THREE.PMREMGenerator(renderer);
   const studio = buildStudio();
@@ -168,6 +169,22 @@ export function mount() {
   const rim = new THREE.DirectionalLight(0xeef3ff, 0.7);
   rim.position.set(4.8, 1.6, -5.2);
   scene.add(rim);
+  /* Section meshes are near-black metal. These lights stay on layer 2 so the hero crystal is unchanged. */
+  const sectionAmb = new THREE.AmbientLight(0xc5cbc4, 0.42);
+  sectionAmb.layers.set(2);
+  scene.add(sectionAmb);
+  const sectionKey = new THREE.DirectionalLight(0xfff6ea, 1.55);
+  sectionKey.position.set(-2.6, 4.4, 5.2);
+  sectionKey.layers.set(2);
+  scene.add(sectionKey);
+  const sectionFill = new THREE.DirectionalLight(0xd5deea, 1.15);
+  sectionFill.position.set(4.2, 1.4, 3.2);
+  sectionFill.layers.set(2);
+  scene.add(sectionFill);
+  const sectionRim = new THREE.DirectionalLight(0xf4f1e6, 2.35);
+  sectionRim.position.set(-5.2, 2.8, -3.6);
+  sectionRim.layers.set(2);
+  scene.add(sectionRim);
 
   const slot = new THREE.Group();
   scene.add(slot);
@@ -378,6 +395,8 @@ export function mount() {
     hidden: 0, orbit: 1, camZ: HERO3D.camera.z, spin: 0, rotZ: 0, light: 0, proof: 0, heroP: 0,
     side: 0, lift: 0, fog: 0, podium: 0, dolly: 0, book: 0
   };
+  let slotPosed = false;
+  const slotPose = { x: 0, y: 0, scale: 1 };
   let storyS = 0;
   const tiltS = { x: 0, vx: 0, y: 0, vy: 0 };
   const drag = { x: 0, v: 0, on: false, lastX: 0, lastT: 0 };
@@ -523,48 +542,129 @@ export function mount() {
     hud.root.hidden = mobile || reduced;
   }
 
-  function desired() {
-    const heroP = THREE.MathUtils.clamp(-hero.getBoundingClientRect().top / Math.max(hero.offsetHeight, 1), 0, 1);
-    const flight = sampleFlight(storyS);
-    const mix = sectionMix();
-    const camZ = mix.cam;
-    const halfH = Math.tan(THREE.MathUtils.degToRad(camera.fov) / 2) * camZ;
+  function projectAt(sx, sy, camZ, px, minScale, maxScale) {
+    const halfH = Math.tan(THREE.MathUtils.degToRad(camera.fov) / 2) * Math.max(camZ, 4.8);
     const halfW = halfH * camera.aspect;
-    const closeW = anchorWeight(document.getElementById("close"));
-    const away = (1 - mix.hero) * (1 - closeW);
-    const book = closeW * (1 - mix.hero);
-    const laneX = window.innerWidth * (mobile ? 0.5 : 0.8);
-    const laneW = window.innerWidth * (mobile ? 0.42 : 0.28);
-    const sx = laneX;
-    const sy = window.innerHeight * (mobile ? 0.16 : 0.46);
-    const px = mobile
-      ? Math.min(window.innerHeight * 0.2, laneW)
-      : Math.min(window.innerHeight * 0.56, laneW * 1.35) * (book > 0.35 ? 0.42 : 1);
     const ndcX = (sx / Math.max(1, window.innerWidth)) * 2 - 1;
     const ndcY = -((sy / Math.max(1, window.innerHeight)) * 2 - 1);
     const pxPerUnit = window.innerHeight / (2 * halfH);
     return {
       x: ndcX * halfW,
       y: ndcY * halfH,
-      scale: THREE.MathUtils.clamp(px / (HERO3D.crystal.height * pxPerUnit), 0.45, 1.85),
-      split: flight.split,
+      scale: THREE.MathUtils.clamp(px / (HERO3D.crystal.height * pxPerUnit), minScale, maxScale)
+    };
+  }
+
+  function bandScreen(id) {
+    if (!mobile) return null;
+    const el = id === "top"
+      ? document.getElementById("hero-core")
+      : document.querySelector('.model-band[data-band="' + id + '"]');
+    if (!el) return null;
+    const r = el.getBoundingClientRect();
+    if (r.width < 8 || r.height < 8) return null;
+    return {
+      sx: r.left + r.width * 0.5,
+      sy: r.top + r.height * 0.48,
+      px: Math.min(r.width * 0.86, r.height * 0.82)
+    };
+  }
+
+  function bookendScreen() {
+    const closeEl = document.getElementById("close");
+    const r = closeEl ? closeEl.getBoundingClientRect() : null;
+    const gutter = Math.max(40, window.innerWidth * 0.04);
+    const col = Math.min(700, window.innerWidth * 0.52);
+    const copyRight = gutter + col;
+    const sx = THREE.MathUtils.clamp(
+      copyRight + (window.innerWidth - copyRight) * 0.58,
+      window.innerWidth * 0.74,
+      window.innerWidth * 0.9
+    );
+    let sy = r ? r.top + Math.min(r.height, window.innerHeight * 0.7) * 0.42 : window.innerHeight * 0.4;
+    const footer = document.getElementById("footer");
+    if (footer) sy = Math.min(sy, footer.getBoundingClientRect().top - 48);
+    const room = Math.max(120, (window.innerWidth - copyRight) * 0.7);
+    return { sx: sx, sy: sy, px: Math.min(210, window.innerHeight * 0.26, room) };
+  }
+
+  function viewCam() {
+    const mix = sectionMix();
+    const closeW = anchorWeight(document.getElementById("close"));
+    const book = closeW * (1 - mix.hero);
+    let cam = mix.cam;
+    if (!(cam > 4.5)) cam = 6.8;
+    cam = THREE.MathUtils.lerp(cam, 7.15, smootherstep(clamp01(book)));
+    return { mix: mix, closeW: closeW, book: book, cam: cam };
+  }
+
+  function activeShowId() {
+    let best = 1;
+    let bestW = -1;
+    for (let i = 1; i < shows.length; i += 1) {
+      if (shows[i].raw > bestW) {
+        bestW = shows[i].raw;
+        best = i;
+      }
+    }
+    return shows[best] && shows[best].spec ? shows[best].spec.id : "problem";
+  }
+
+  function desired() {
+    const heroP = THREE.MathUtils.clamp(-hero.getBoundingClientRect().top / Math.max(hero.offsetHeight, 1), 0, 1);
+    const flight = sampleFlight(storyS);
+    const view = viewCam();
+    const camZ = view.cam;
+    const book = view.book;
+    const away = (1 - view.mix.hero) * (1 - view.closeW);
+    const heroBand = bandScreen("top");
+    const lane = projectAt(
+      heroBand ? heroBand.sx : window.innerWidth * 0.8,
+      heroBand ? heroBand.sy : window.innerHeight * 0.46,
+      camZ,
+      heroBand ? heroBand.px : Math.min(window.innerHeight * 0.56, window.innerWidth * 0.28 * 1.35),
+      0.45,
+      1.85
+    );
+    const endScreen = bandScreen("close") || bookendScreen();
+    const end = projectAt(endScreen.sx, endScreen.sy, camZ, endScreen.px, 0.16, 0.62);
+    const k = mobile ? (book > 0.42 ? 1 : 0) : smootherstep(clamp01((book - 0.12) / 0.5));
+    return {
+      x: lane.x + (end.x - lane.x) * k,
+      y: lane.y + (end.y - lane.y) * k,
+      scale: lane.scale + (end.scale - lane.scale) * k,
+      split: flight.split * (1 - k),
       body: flight.body,
-      edge: flight.edge,
-      hidden: flight.hidden,
-      orbit: flight.orbit,
+      edge: flight.edge * (1 - k),
+      hidden: flight.hidden * (1 - k),
+      orbit: flight.orbit * (1 - k),
       camZ: camZ,
-      spin: flight.spin + heroP * 0.35,
-      rotZ: flight.side * 0.05,
+      spin: flight.spin * (1 - k * 0.85) + heroP * 0.35 * (1 - k),
+      rotZ: flight.side * 0.05 * (1 - k),
       light: 0,
-      proof: flight.proof,
+      proof: flight.proof * (1 - k),
       heroP: heroP,
-      side: flight.side,
-      lift: flight.lift,
-      fog: flight.fog,
+      side: flight.side * (1 - k),
+      lift: flight.lift * (1 - k),
+      fog: flight.fog * (1 - k),
       podium: away,
       book: book,
-      dolly: mix.dolly
+      dolly: view.mix.dolly * (1 - k)
     };
+  }
+
+  function slotDesired(camZ) {
+    const band = bandScreen(activeShowId());
+    if (band) return projectAt(band.sx, band.sy, camZ, band.px, 0.32, 1.65);
+    const laneW = window.innerWidth * 0.28;
+    return projectAt(
+      window.innerWidth * 0.8,
+      window.innerHeight * 0.46,
+      camZ,
+      Math.min(window.innerHeight * 0.56, laneW * 1.35),
+      0.45,
+      1.85
+    );
   }
 
   function anchorWeight(el) {
@@ -593,7 +693,7 @@ export function mount() {
       sum += w;
       return w;
     });
-    if (sum < 0.001) sum = 1;
+    if (sum < 0.001) return { hero: 0, cam: 6.8, dolly: 0 };
     let cam = 0;
     let dolly = 0;
     weights.forEach(function (w, i) {
@@ -626,20 +726,29 @@ export function mount() {
   }
 
   function tuneShowMats(root, bucket, motion) {
+    const look = {
+      vault: { env: 1.35, metal: 0.42, rough: 0.82, glow: 0x3a3e36 },
+      cage: { env: 1.25, metal: 0.38, rough: 0.74, glow: 0x32362e },
+      record: { env: 1.3, metal: 0.36, rough: 0.7, glow: 0x343830 },
+      podium: { env: 1.15, metal: 0.46, rough: 0.86, glow: 0x2c302a },
+      lattice: { env: 1.25, metal: 0.4, rough: 0.76, glow: 0x32362f },
+      plumb: { env: 1.4, metal: 0.36, rough: 0.66, glow: 0x363a32 }
+    }[motion] || { env: 1.7, metal: 0.45, rough: 0.66, glow: 0x363a32 };
     root.traverse(function (obj) {
       if (!obj.isMesh || !obj.material) return;
+      obj.layers.enable(2);
       const list = Array.isArray(obj.material) ? obj.material : [obj.material];
       list.forEach(function (mat) {
         mat.envMap = scene.environment;
-        mat.envMapIntensity = 2.2;
-        if (mat.roughness !== undefined) {
-          if (motion === "vault") mat.roughness = Math.max(mat.roughness, 0.5);
-          else if (motion === "podium") mat.roughness = Math.max(mat.roughness, 0.58);
-          else if (motion === "record") mat.roughness = 0.34;
-          else mat.roughness = Math.min(Math.max(mat.roughness, 0.22), 0.42);
+        mat.envMapIntensity = look.env;
+        mat.fog = false;
+        if (mat.metalness !== undefined) mat.metalness = look.metal;
+        if (mat.roughness !== undefined) mat.roughness = look.rough;
+        if (mat.emissive) {
+          mat.emissive.set(look.glow);
+          mat.emissiveIntensity = 1;
+          mat.emissiveMap = null;
         }
-        if (motion === "record") mat.envMapIntensity = 2.8;
-        if (mat.metalness !== undefined) mat.metalness = Math.max(mat.metalness, 0.2);
         mat.transparent = true;
         mat.opacity = 0;
         mat.depthWrite = true;
@@ -670,26 +779,33 @@ export function mount() {
     if (el && mobile) el.classList.add("still-on");
   }
 
+  let sectionChain = Promise.resolve();
   function loadShow(show) {
     if (!show.spec || show.state !== "idle") return;
     show.state = "loading";
-    const el = document.getElementById(show.spec.id);
-    loadOne(show.spec.url).then(function (gltf) {
-      if (show.state === "dead") {
-        releaseShow(show);
+    const spec = show.spec;
+    sectionChain = sectionChain.then(function () {
+      if (show.state === "dead") return null;
+      return loadOne(spec.url);
+    }).then(function (gltf) {
+      if (!gltf || show.state === "dead") {
+        if (show.state === "dead") releaseShow(show);
         return;
       }
       const root = gltf.scene;
       root.scale.setScalar(MODEL_SCALE);
-      tuneShowMats(root, show.mats, show.spec.motion);
+      tuneShowMats(root, show.mats, spec.motion);
       show.root = root;
       show.state = "ready";
-      if (show.spec.motion === "podium") addPlinthStrip(root, show.mats);
+      if (spec.motion === "podium") addPlinthStrip(root, show.mats);
       slot.add(root);
-    }).catch(function () { show.state = "idle"; });
+    }).catch(function () {
+      if (show.state !== "dead") show.state = "idle";
+    });
   }
 
   function streamShows() {
+    if (!meshReady) return;
     let best = 0;
     let bestW = -1;
     shows.forEach(function (show, i) {
@@ -721,10 +837,12 @@ export function mount() {
       show.travel = sectionTravel(el);
       show.weight = THREE.MathUtils.damp(show.weight, sharp[i] / sum, 4.2, dt);
       if (!show.root || !show.spec) return;
-      const vis = mobile ? show.weight * 0.25 : show.weight;
-      show.root.visible = vis > 0.02;
+      const vis = show.weight * (1 - Math.min(1, (pose.book || 0) * 1.7));
+      const alpha = vis > 0.86 ? 1 : vis;
+      show.root.visible = alpha > 0.02;
       show.mats.forEach(function (mat) {
-        mat.opacity = vis;
+        mat.opacity = alpha;
+        mat.depthWrite = alpha > 0.35;
       });
       const tr = show.travel;
       const motion = show.spec.motion;
@@ -824,6 +942,11 @@ export function mount() {
       pose.dolly = THREE.MathUtils.damp(pose.dolly, goal.dolly || 0, 2.2, follow);
       pose.book = THREE.MathUtils.damp(pose.book || 0, goal.book || 0, 3.2, follow);
       pose.heroP = goal.heroP;
+      if (mobile) {
+        pose.x = goal.x;
+        pose.y = goal.y;
+        pose.scale = goal.scale;
+      }
     }
 
     const edgeEase = playIntro ? expoOut(clamp01(introT / HERO3D.intro.edgesS)) : 1;
@@ -859,20 +982,39 @@ export function mount() {
     dust.position.y = Math.sin(tSec * 0.15) * 0.08;
 
     const hall = pose.podium;
+    const bookK = Math.min(1, pose.book || 0);
     const boardShow = shows[4];
     const boardSlide = boardShow && boardShow.weight > 0.04
       ? boardShow.weight * THREE.MathUtils.lerp(-0.42, 0.42, sectionTravel(document.getElementById("board")))
       : 0;
-    camera.position.set(camPx + pose.dolly + boardSlide, 0.12 + camPy + hall * 0.04, pose.camZ);
-    camera.lookAt(camPx * 0.28 * (1 - hall) + pose.dolly * 0.35 + boardSlide * 0.28, camPy * 0.22 * (1 - hall) + hall * 0.02, 0);
+    const lockCam = mobile || bookK > 0.4;
+    const camX = lockCam ? 0 : camPx + pose.dolly + boardSlide;
+    const camY = lockCam ? 0.08 : 0.12 + camPy + hall * 0.04;
+    camera.position.set(camX, camY, Math.max(4.8, pose.camZ));
+    camera.lookAt(
+      lockCam ? 0 : camX * 0.28 * (1 - hall),
+      lockCam ? 0 : camPy * 0.22 * (1 - hall) + hall * 0.02,
+      0
+    );
     camera.rotation.z += roll + driftRot;
     const rule = document.getElementById("hero-rule");
-    if (rule) rule.classList.toggle("is-apart", pose.heroP > 0.52);
+    if (rule) rule.classList.toggle("is-apart", pose.heroP > 0.52 && bookK < 0.2);
 
-    rig.position.set(pose.x, pose.y + bob, 0);
+    rig.position.set(pose.x, pose.y + bob * (1 - bookK), 0);
     rig.scale.setScalar(pose.scale * introScale);
-    slot.position.copy(rig.position);
-    slot.scale.copy(rig.scale);
+    const slotG = slotDesired(Math.max(4.8, pose.camZ));
+    if (mobile || !slotPosed) {
+      slotPose.x = slotG.x;
+      slotPose.y = slotG.y;
+      slotPose.scale = slotG.scale;
+      slotPosed = true;
+    } else {
+      slotPose.x = THREE.MathUtils.damp(slotPose.x, slotG.x, lambda, follow);
+      slotPose.y = THREE.MathUtils.damp(slotPose.y, slotG.y, lambda, follow);
+      slotPose.scale = THREE.MathUtils.damp(slotPose.scale, slotG.scale, lambda, follow);
+    }
+    slot.position.set(slotPose.x, slotPose.y, 0);
+    slot.scale.setScalar(slotPose.scale);
     scrollV = THREE.MathUtils.damp(scrollV, (window.scrollY - lastScroll) / Math.max(dt, 0.016), 3, dt);
     lastScroll = window.scrollY;
     updateShows(dt, tSec);
@@ -884,12 +1026,13 @@ export function mount() {
     topGroup.position.y = pose.split * 0.35;
     botGroup.position.y = -pose.split * 0.35;
     const hallFade = 1 - smootherstep(clamp01(pose.podium / 0.7));
-    const dim = mobile ? 0.25 : 1;
-    const bodyOpacity = pose.body * (playIntro ? bodyEase : 1) * hallFade * dim;
+    const bodyOpacity = pose.body * (playIntro ? bodyEase : 1) * Math.max(hallFade, bookK);
     bodyMat.opacity = bodyOpacity;
     bodyMat.depthWrite = bodyOpacity > 0.9;
     bodyMat.envMapIntensity = HERO3D.material.envMapIntensity;
-    solidMat.opacity = pose.edge * edgeEase * 0.9 * hallFade;
+    bodyMat.emissive.setHex(0x3a3428);
+    bodyMat.emissiveIntensity = bookK * 1.15;
+    solidMat.opacity = pose.edge * edgeEase * hallFade * 0.9 + bookK * 0.28;
     glintMat.opacity = pose.edge * edgeEase * 0.32 * hallFade;
     glintMat.dashOffset = -((reduced ? 0 : now * 0.001) * HERO3D.edges.sweep);
     hiddenMat.opacity = pose.hidden * edgeEase * hallFade;
@@ -904,12 +1047,15 @@ export function mount() {
     }
 
     orbits.scale.setScalar(0.6 + 0.4 * nodeEase);
-    nodeMat.opacity = nodeEase * hallFade;
-    nodeEdgeMat.opacity = nodeEase * hallFade;
-    ringMat.opacity = HERO3D.nodes.ringOpacity * nodeEase * (0.35 + pose.orbit * 0.65) * hallFade;
-    backlight.material.opacity = 0.55 * hallFade;
+    nodeMat.opacity = nodeEase * hallFade * (mobile ? 0 : 1);
+    nodeEdgeMat.opacity = nodeEase * hallFade * (mobile ? 0 : 1);
+    ringMat.opacity = mobile ? 0 : HERO3D.nodes.ringOpacity * nodeEase * (0.35 + pose.orbit * 0.65) * hallFade * (1 - bookK);
+    const glowAmt = mobile ? 0 : 0.55 * hallFade * (1 - Math.min(1, bookK * 1.8));
+    backlight.material.opacity = glowAmt;
+    backlight.visible = glowAmt > 0.03;
     rig.visible = hallFade > 0.04;
-    orbits.visible = hallFade > 0.04;
+    orbits.visible = !mobile && hallFade > 0.04 && bookK < 0.2;
+    if (floor) floor.visible = !mobile && bookK < 0.28;
 
     let hoverIndex = -1;
     if (fine && !mobile && !drag.on) {
@@ -946,7 +1092,7 @@ export function mount() {
       const ax = (a.x * 0.5 + 0.5) * window.innerWidth;
       const bx = (b.x * 0.5 + 0.5) * window.innerWidth;
       const calm = ax > gate && bx > gate && a.z < 1 && b.z < 1 ? 1 : 0;
-      line.material.opacity = envIn * nodeEase * 0.4 * calm * hallFade * (1 - Math.min(1, (pose.book || 0) * 3));
+      line.material.opacity = mobile ? 0 : envIn * nodeEase * 0.4 * calm * hallFade * (1 - Math.min(1, bookK * 3));
     });
 
     if (shardPieces.length) {
@@ -964,7 +1110,11 @@ export function mount() {
 
     const tail = document.getElementById("close") || document.getElementById("faq");
     const pastStory = tail && tail.getBoundingClientRect().bottom < 48;
-    stage.style.opacity = pastStory ? "0" : "1";
+    const footerEl = document.getElementById("footer");
+    const footerTop = footerEl ? footerEl.getBoundingClientRect().top : 99999;
+    const closeBottom = tail ? tail.getBoundingClientRect().bottom : 0;
+    const parked = closeBottom < window.innerHeight * 0.12 && footerTop < window.innerHeight * 0.42;
+    stage.style.opacity = pastStory || parked ? "0" : "1";
     if (pastStory) {
       setActive(false);
       return;
@@ -1008,23 +1158,20 @@ export function mount() {
   }
 
   function snapHero() {
-    const camZ = HERO3D.camera.z;
-    const halfH = Math.tan(THREE.MathUtils.degToRad(camera.fov) / 2) * camZ;
-    const halfW = halfH * camera.aspect;
-    const sx = window.innerWidth * (mobile ? 0.5 : 0.63);
-    const sy = window.innerHeight * (mobile ? 0.4 : 0.48);
-    const ndcX = (sx / Math.max(1, window.innerWidth)) * 2 - 1;
-    const ndcY = -((sy / Math.max(1, window.innerHeight)) * 2 - 1);
-    const pxPerUnit = window.innerHeight / (2 * halfH);
+    const camZ = 7.2;
+    const band = bandScreen("top");
+    const at = band
+      ? projectAt(band.sx, band.sy, camZ, band.px, 0.4, 1.6)
+      : projectAt(window.innerWidth * 0.63, window.innerHeight * 0.48, camZ, window.innerHeight * 0.86, 0.45, 1.85);
     return {
-      x: ndcX * halfW,
-      y: ndcY * halfH,
-      scale: THREE.MathUtils.clamp((window.innerHeight * (mobile ? 0.62 : 0.86)) / (HERO3D.crystal.height * pxPerUnit), 0.45, 1.85),
+      x: at.x,
+      y: at.y,
+      scale: at.scale,
       split: 0,
       body: 1,
       edge: 0,
       hidden: 0,
-      orbit: 1,
+      orbit: mobile ? 0 : 1,
       camZ: camZ,
       spin: 0.2,
       rotZ: 0,
@@ -1057,7 +1204,21 @@ export function mount() {
 
   function placePins(nodeEase, hoverIndex) {
     if (hud.root.hidden) return;
-    const show = (nodeEase > 0.72 ? Math.min(1, (nodeEase - 0.72) / 0.28) : 0) * (1 - pose.podium) * (1 - Math.min(1, (pose.book || 0) * 2));
+    const hr = hero.getBoundingClientRect();
+    const vh = window.innerHeight || 1;
+    const inHero = hr.top < vh * 0.42 && hr.bottom > vh * 0.72;
+    const show = inHero
+      ? (nodeEase > 0.72 ? Math.min(1, (nodeEase - 0.72) / 0.28) : 0) * (1 - Math.min(1, pose.podium * 1.4)) * (1 - Math.min(1, (pose.book || 0) * 4))
+      : 0;
+    hud.root.style.visibility = show > 0.04 ? "visible" : "hidden";
+    if (show <= 0.04) {
+      hud.apex.style.opacity = "0";
+      hud.girdle.style.opacity = "0";
+      hud.node.hidden = true;
+      hud.lineA.setAttribute("stroke-opacity", "0");
+      hud.lineB.setAttribute("stroke-opacity", "0");
+      return;
+    }
     projectPin(hud.apex, apexMark, -78, -36, show * faceAmount(apexMark, new THREE.Vector3(0, 1, 0)));
     projectPin(hud.girdle, girdleMark, 22, 18, show * faceAmount(girdleMark, new THREE.Vector3(1, 0, 0)));
     hud.leaders.setAttribute("viewBox", "0 0 " + window.innerWidth + " " + window.innerHeight);
@@ -1266,25 +1427,39 @@ function buildHud() {
 }
 
 function buildChrome(playIntro) {
-  const loader = document.createElement("div");
-  loader.id = "ax-loader";
+  const markup = "<div class=\"frame\"><div class=\"ax-mark\" aria-hidden=\"true\"><i class=\"ring ring-a\"></i><i class=\"ring ring-b\"></i><span class=\"orbit o1\"><i></i></span><span class=\"orbit o2\"><i></i></span><span class=\"orbit o3\"><i></i></span></div><p class=\"pct\">[ 000% SYNCING ]</p><div class=\"bar\"><i></i></div></div>";
+  let loader = document.getElementById("ax-loader");
+  if (!loader) {
+    loader = document.createElement("div");
+    loader.id = "ax-loader";
+    loader.innerHTML = markup;
+    document.body.appendChild(loader);
+  } else if (!loader.querySelector(".pct")) {
+    loader.innerHTML = markup;
+  }
+  let status = document.getElementById("ax-status");
+  if (!status) {
+    status = document.createElement("p");
+    status.id = "ax-status";
+    status.className = "ax-status";
+    status.textContent = "[ SEEDING SANDBOX ]";
+    document.body.appendChild(status);
+  }
+  let skip = document.querySelector(".ax-skip");
+  if (!skip) {
+    skip = document.createElement("button");
+    skip.type = "button";
+    skip.className = "ax-skip";
+    skip.textContent = "[ SKIP ]";
+    document.body.appendChild(skip);
+  }
+  if (playIntro) document.documentElement.classList.add("show-loader");
+  else document.documentElement.classList.remove("show-loader");
   loader.hidden = !playIntro;
-  loader.innerHTML = "<div class=\"frame\"><div class=\"ax-mark\" aria-hidden=\"true\"><i class=\"ring ring-a\"></i><i class=\"ring ring-b\"></i><span class=\"orbit o1\"><i></i></span><span class=\"orbit o2\"><i></i></span><span class=\"orbit o3\"><i></i></span></div><p class=\"pct\">[ 000% SYNCING ]</p><div class=\"bar\"><i></i></div></div>";
-  const status = document.createElement("p");
-  status.id = "ax-status";
-  status.className = "ax-status";
-  status.textContent = "[ SEEDING SANDBOX ]";
   status.hidden = !playIntro;
-  const skip = document.createElement("button");
-  skip.type = "button";
-  skip.className = "ax-skip";
-  skip.textContent = "[ SKIP ]";
   skip.hidden = !playIntro;
   skip.tabIndex = playIntro ? 0 : -1;
   document.documentElement.classList.remove("hold-hero");
-  document.body.appendChild(loader);
-  document.body.appendChild(status);
-  document.body.appendChild(skip);
   let skipFn = function () {};
   let settled = false;
   skip.addEventListener("click", function () { skipFn(); });
@@ -1305,6 +1480,17 @@ function buildChrome(playIntro) {
     if (bar) bar.style.width = clamped + "%";
     status.textContent = line;
   }
+  function hideSkip() {
+    skip.hidden = true;
+    skip.classList.add("is-out");
+    skip.tabIndex = -1;
+  }
+  function hideShell() {
+    loader.hidden = true;
+    status.hidden = true;
+    hideSkip();
+    document.documentElement.classList.remove("show-loader");
+  }
   function loaded() {
     if (settled) return;
     settled = true;
@@ -1312,13 +1498,11 @@ function buildChrome(playIntro) {
     write(100, "online");
     window.setTimeout(function () { write(100, "scroll"); }, 900);
     window.setTimeout(function () {
+      hideSkip();
       loader.classList.add("is-out");
       status.classList.add("is-out");
     }, 1600);
-    window.setTimeout(function () {
-      loader.hidden = true;
-      status.hidden = true;
-    }, 2100);
+    window.setTimeout(hideShell, 2100);
   }
   return {
     onSkip: function (fn) { skipFn = fn; },
@@ -1327,13 +1511,9 @@ function buildChrome(playIntro) {
     hideLoader: function () {
       settled = true;
       window.clearTimeout(failSafe);
-      loader.hidden = true;
-      status.hidden = true;
+      hideShell();
     },
-    hideSkip: function () {
-      skip.hidden = true;
-      skip.tabIndex = -1;
-    }
+    hideSkip: hideSkip
   };
 }
 
@@ -1605,7 +1785,7 @@ function makeComposer(renderer, scene, camera) {
       "  vec3 col = aces(vec3(cr, cg, cb));",
       "  col = clamp(col * 1.03 - 0.012, 0.0, 1.0);",
       "  float vig = smoothstep(1.12, 0.32, r);",
-      "  col *= mix(0.74, 1.0, vig);",
+      "  col *= mix(0.86, 1.0, vig);",
       "  float n = hash(vUv * vec2(1440.0, 900.0) + uTime);",
       "  col += (n - 0.5) * 0.012;",
       "  gl_FragColor = vec4(col, 1.0);",

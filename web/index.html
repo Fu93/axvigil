@@ -26,6 +26,7 @@
   } catch (err) { /* ignore */ }
   if (!reduce && !seen && !mid && !(location.hash && location.hash.length > 1)) {
     document.documentElement.classList.add("hold-hero");
+    document.documentElement.classList.add("show-loader");
   }
 })();
 </script>
@@ -39,6 +40,15 @@
 </script>
 </head>
 <body>
+<div id="ax-loader" role="status" aria-live="polite">
+  <div class="frame">
+    <div class="ax-mark" aria-hidden="true"><i class="ring ring-a"></i><i class="ring ring-b"></i><span class="orbit o1"><i></i></span><span class="orbit o2"><i></i></span><span class="orbit o3"><i></i></span></div>
+    <p class="pct">[ 000% SYNCING ]</p>
+    <div class="bar"><i></i></div>
+  </div>
+</div>
+<p id="ax-status" class="ax-status">[ SEEDING SANDBOX ]</p>
+<button type="button" class="ax-skip" id="ax-skip">[ SKIP ]</button>
 <div id="stage" aria-hidden="true">
   <div class="glow" id="hero-glow"></div>
   <div class="stage-vignette"></div>
@@ -163,7 +173,7 @@
     <div class="atmo" aria-hidden="true">
       <div class="wash"></div>
     </div>
-    <div class="hero-core" id="hero-core">
+    <div class="hero-core" id="hero-core" data-band="top">
       <picture class="hero-poster">
         <source media="(max-width: 767px)" srcset="assets/3d/poster_mobile_1080x1350.png">
         <img src="assets/3d/render_transparent_1024.png" alt="" width="1024" height="1024">
@@ -218,6 +228,7 @@
   <section class="dark band" id="problem">
     <img class="sec-still" src="assets/3d/previews/problem_preview.png" alt="" width="960" height="540">
     <div class="wrap">
+      <div class="model-band" data-band="problem" aria-hidden="true"></div>
       <div class="sec-top">
         <p class="bracket" data-i18n="sec.problem">[:PROBLEM]</p>
         <p class="idx">_002 / 007</p>
@@ -237,6 +248,7 @@
   <section class="dark band" id="how">
     <img class="sec-still" src="assets/3d/previews/how_preview.png" alt="" width="960" height="540">
     <div class="wrap">
+      <div class="model-band" data-band="how" aria-hidden="true"></div>
       <div class="sec-top">
         <p class="bracket" data-i18n="sec.how">[:HOW]</p>
         <p class="idx">_003 / 007</p>
@@ -272,6 +284,7 @@
   <section class="dark band" id="proof">
     <img class="sec-still" src="assets/3d/previews/proof_preview.png" alt="" width="960" height="540">
     <div class="wrap">
+      <div class="model-band" data-band="proof" aria-hidden="true"></div>
       <div class="sec-top">
         <p class="bracket" data-i18n="sec.proof">[:PROOF]</p>
         <p class="idx">_004 / 007</p>
@@ -330,6 +343,7 @@
   <section class="dark band" id="board">
     <img class="sec-still" src="assets/3d/previews/board_preview.png" alt="" width="960" height="540">
     <div class="wrap">
+      <div class="model-band" data-band="board" aria-hidden="true"></div>
       <div class="sec-top">
         <p class="bracket" data-i18n="sec.board">[:BOARD]</p>
         <p class="idx">_005 / 007</p>
@@ -352,6 +366,7 @@
   <section class="dark band" id="roadmap">
     <img class="sec-still" src="assets/3d/previews/roadmap_preview.png" alt="" width="960" height="540">
     <div class="wrap">
+      <div class="model-band" data-band="roadmap" aria-hidden="true"></div>
       <div class="sec-top">
         <p class="bracket" data-i18n="sec.road">[:ROADMAP]</p>
         <p class="idx">_006 / 007</p>
@@ -400,6 +415,7 @@
   <section class="dark" id="faq">
     <img class="sec-still" src="assets/3d/previews/faq_preview.png" alt="" width="960" height="540">
     <div class="wrap">
+      <div class="model-band" data-band="faq" aria-hidden="true"></div>
       <div class="sec-top">
         <p class="bracket" data-i18n="sec.faq">[:FAQ]</p>
         <p class="idx">_007 / 007</p>
@@ -430,6 +446,7 @@
 
   <section class="dark close" id="close">
     <div class="wrap">
+      <div class="model-band" data-band="close" aria-hidden="true"></div>
       <h2 class="display" data-i18n="close.h">The records are on testnet. Recompute them.</h2>
       <div class="hero-actions">
         <a class="btn yellow" href="#proof" data-i18n="cta.records">See live records</a>
