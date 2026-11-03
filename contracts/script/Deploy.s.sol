@@ -19,6 +19,8 @@ import {IAxVigilSkill} from "../src/interfaces/IAxVigilSkill.sol";
 ///   HOURLY_CAP       default 50
 ///   BASE_URI         art metadata base, tokenURI = BASE_URI + artId
 ///   UNREVEALED_URI   URI shown before reveal
+///   PROVENANCE_HASH  keccak256 commitment for the complete art/metadata set
+///   FREEZE_METADATA  set to 1 to irreversibly lock both metadata URIs after deployment
 ///   SEED_HASH        keccak256(abi.encodePacked(bytes32 seed)) to open batch 1 (only if OWNER == deployer)
 ///
 ///   forge script script/Deploy.s.sol --rpc-url bsc_testnet --broadcast
@@ -36,6 +38,8 @@ contract Deploy is Script {
         uint256 hourlyCap = vm.envOr("HOURLY_CAP", uint256(50));
         string memory baseURI = vm.envOr("BASE_URI", string(""));
         string memory unrevealedURI = vm.envOr("UNREVEALED_URI", string(""));
+        bytes32 provenanceHash = vm.envOr("PROVENANCE_HASH", bytes32(0));
+        bool freezeMetadata = vm.envOr("FREEZE_METADATA", false);
         bytes32 seedHash = vm.envOr("SEED_HASH", bytes32(0));
 
         uint256[5] memory tiers = [uint256(5444), 1555, 622, 152, 4]; // 7,777
@@ -55,6 +59,8 @@ contract Deploy is Script {
         skill.grantRole(skill.MINTER_ROLE(), address(nft));
 
         if (bytes(baseURI).length > 0 || bytes(unrevealedURI).length > 0) nft.setBaseURI(baseURI, unrevealedURI);
+        if (provenanceHash != bytes32(0)) nft.setProvenanceHash(provenanceHash);
+        if (freezeMetadata) nft.freezeMetadata();
         if (seedHash != bytes32(0)) nft.commitSeed(seedHash);
 
         if (owner != deployer) {

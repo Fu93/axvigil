@@ -159,6 +159,11 @@ def docker_run_command(inputs: Path, match_path: str, fuzz_seed: int) -> list[st
         "--tmpfs", "/work:rw,exec,size=256m",
         "--tmpfs", "/tmp:rw,size=64m",
         "-v", f"{inputs}:/inputs:ro",
+        # The generated foundry.toml uses absolute remappings to the vendored
+        # libraries. Mount those exact host paths read-only so Docker mode does
+        # not silently fall back to an unresolvable host-only path.
+        "-v", f"{DEFAULT_FORGE_STD}:{DEFAULT_FORGE_STD}:ro",
+        "-v", f"{DEFAULT_OZ}:{DEFAULT_OZ}:ro",
         "-e", "FOUNDRY_OFFLINE=true",
         image,
         "--match-path", match_path,

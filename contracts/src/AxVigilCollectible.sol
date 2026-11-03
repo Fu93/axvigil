@@ -181,6 +181,8 @@ contract AxVigilCollectible is ERC721, Ownable2Step, Pausable, EIP712 {
     string public unrevealedURI;
     /// @notice Provenance commitment for the pre-generated art + metadata set. Settable once.
     bytes32 public provenanceHash;
+    /// @notice Once frozen, metadata URIs cannot be changed by the owner.
+    bool public metadataFrozen;
 
     // ---------------------------------------------------------------------
     // Events / errors
@@ -207,6 +209,7 @@ contract AxVigilCollectible is ERC721, Ownable2Step, Pausable, EIP712 {
     event HourlyCapUpdated(uint256 cap);
     event BaseURIUpdated(string baseURI, string unrevealedURI);
     event ProvenanceHashSet(bytes32 provenanceHash);
+    event MetadataFrozenForever(bytes32 provenanceHash, string baseURI, string unrevealedURI);
     event ChallengeBookSet(address indexed challengeBook);
 
     error Expired();
@@ -223,6 +226,8 @@ contract AxVigilCollectible is ERC721, Ownable2Step, Pausable, EIP712 {
     error BadSeed();
     error AlreadyRevealed();
     error ProvenanceAlreadySet();
+    error MetadataFrozen();
+    error ProvenanceRequired();
     error ZeroAddress();
     error InsufficientSignatures(uint256 got, uint256 required);
     error DuplicateSigner(address signer);
@@ -659,6 +664,7 @@ contract AxVigilCollectible is ERC721, Ownable2Step, Pausable, EIP712 {
     }
 
     function setBaseURI(string calldata base, string calldata unrevealed) external onlyOwner {
+        if (metadataFrozen) revert MetadataFrozen();
         baseURI = base;
         unrevealedURI = unrevealed;
         emit BaseURIUpdated(base, unrevealed);
@@ -670,6 +676,17 @@ contract AxVigilCollectible is ERC721, Ownable2Step, Pausable, EIP712 {
         if (h == bytes32(0)) revert InvalidParams();
         provenanceHash = h;
         emit ProvenanceHashSet(h);
+    }
+
+    /// @notice Permanently lock both metadata URIs after committing the art set.
+    /// @dev This is intentionally irreversible. A production deployment should freeze
+    ///      before the first mint so every token has an immutable metadata root.
+    function freezeMetadata() external onlyOwner {
+        if (metadataFrozen) revert MetadataFrozen();
+        if (provenanceHash == bytes32(0)) revert ProvenanceRequired();
+        if (bytes(baseURI).length == 0 || bytes(unrevealedURI).length == 0) revert InvalidParams();
+        metadataFrozen = true;
+        emit MetadataFrozenForever(provenanceHash, baseURI, unrevealedURI);
     }
 
     // ---------------------------------------------------------------------

@@ -158,7 +158,7 @@ Agent ID owner submits mint
 | Agent | automated solve loop with an offline oracle so judges can reproduce runs |
 | Contracts | EIP-712 authorization; `mintedPerAgent` ceiling of 2; hourly cap; pausable; `setSigner` (owner rotates the signer; the signer key only authorizes mints); fixed supply |
 | Deployment | BSC testnet (chain 97): Skill `0x3377…CD18`, Collectible `0x0658…4658`, registry `0x7Aa4…d45e` (`MockAgentID`, open mint, not a production Agent ID) |
-| Tests | Foundry unit / fuzz / rarity-distribution / invariant / verify→mint integration; Python backend and verifier suites; 274 tests passed, 1 skipped (contracts 109 · Python 165; one Docker image check skipped until the sandbox image is built) |
+| Tests | Foundry unit / fuzz / rarity-distribution / invariant / verify→mint integration; Python backend and verifier suites; 275 tests passed, 1 skipped (contracts 110 · Python 165; the Docker image is built and graded in sandbox CI) |
 
 ### 4.4 Live proof (Muse Spark mint)
 
@@ -208,7 +208,7 @@ What a pass means: one sandboxed grader, on one machine, accepted one patch agai
 | Contract owner | `setSigner`, `commitSeed`, `revealSeed`, pause, set URI | forge a `MintAuth` once the signer has been rotated to a different key |
 | Anyone | recompute `submissionHash` from an evidence bundle and re-run `scripts/verify_evidence.py` | recover a batch seed before `revealSeed` |
 
-The sandbox that graded the live BSC runs, including the three threshold mints, was the resource-limited offline subprocess: `ffi` off, `FOUNDRY_OFFLINE`, a wall-clock timeout, and POSIX `rlimit` on CPU, address space, file size, and process count. Docker was not installed on that machine and was not used. `AXVIGIL_SANDBOX=docker` is implemented (`verifier/docker/Dockerfile`, image `axvigil-sandbox:1.8.7`: `--network none`, read-only root, uid 1000, CPU/memory/pid limits, tmpfs workdir) and is the mode you opt into. Unset or `subprocess` is the runner that actually graded. Neither mode is a TEE or a zkVM. The Docker image check in CI is skipped until the image is built.
+The sandbox that graded the live BSC runs, including the three threshold mints, was the resource-limited offline subprocess: `ffi` off, `FOUNDRY_OFFLINE`, a wall-clock timeout, and POSIX `rlimit` on CPU, address space, file size, and process count. Docker was not installed on that historical machine and was not used. `AXVIGIL_SANDBOX=docker` is implemented (`verifier/docker/Dockerfile`, image `axvigil-sandbox:1.8.7`: `--network none`, read-only root, uid 1000, CPU/memory/pid limits, tmpfs workdir) and is now built and exercised by `.github/workflows/sandbox.yml`. Unset or `subprocess` remains the compatibility runner; Docker is the recommended mode for new untrusted grades. Neither mode is a TEE or a zkVM.
 
 Known false-pass gap: **none known** on the two real-incident vulnerability families after the negative controls (an `address(0)`-only bridge patch, and `require(shares > 0)` on the vault, both fail). That is not a proof that no other false-pass exists.
 

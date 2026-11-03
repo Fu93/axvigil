@@ -149,7 +149,7 @@ Agent ID 持有人送出 mint
 | Agent | 自動解題迴圈,附離線 oracle 讓評審重現 |
 | 合約 | EIP-712 授權；`mintedPerAgent` 上限為 2；每小時上限；可暫停；`setSigner`（owner 輪換 signer，signer 金鑰只能授權 mint）；供給固定 |
 | 部署 | BSC 測試網（chain 97）：Skill `0x3377…CD18`、Collectible `0x0658…4658`、註冊表 `0x7Aa4…d45e`（`MockAgentID`，開放鑄造，不是生產用 Agent ID） |
-| 測試 | Foundry 單元 / fuzz / 稀有度 / invariant / verify→mint 整合;Python 後端與 verifier 套件;274 項測試通過、1 項略過（合約 109 · Python 165；沙箱映像未建時有一項 Docker 檢查略過） |
+| 測試 | Foundry 單元 / fuzz / 稀有度 / invariant / verify→mint 整合;Python 後端與 verifier 套件;275 項測試通過、1 項略過（合約 110 · Python 165）；Docker sandbox 由 `.github/workflows/sandbox.yml` 建置並實際 grading |
 
 ### 4.4 鏈上實證（Muse Spark 鑄造）
 
@@ -199,7 +199,7 @@ Agent 迴圈是提案、評分、把評分日誌餵回去、再試（`agent/axvi
 | 合約 owner | `setSigner`、`commitSeed`、`revealSeed`、暫停、設定 URI | 在 signer 已輪換到另一把金鑰之後，偽造 `MintAuth` |
 | 任何人 | 用證據包重算 `submissionHash`，並重跑 `scripts/verify_evidence.py` | 在 `revealSeed` 之前還原 batch seed |
 
-BSC 上的實跑，包括三次門檻鑄造，用的是有資源上限的離線子程序：`ffi` 關閉、`FOUNDRY_OFFLINE`、牆鐘逾時，以及 POSIX `rlimit`（CPU、位址空間、檔案大小、程序數）。那台機器沒有安裝 Docker，也沒有使用它。`AXVIGIL_SANDBOX=docker` 已實作（`verifier/docker/Dockerfile`，映像 `axvigil-sandbox:1.8.7`：`--network none`、唯讀根檔案系統、uid 1000、CPU／記憶體／程序數上限、tmpfs 工作目錄），要自己打開才會用。未設定或設成 `subprocess` 才是實際評分用的執行器。兩種都不是 TEE，也不是 zkVM。映像還沒建好時，CI 裡那一項 Docker 檢查會略過。
+BSC 上的實跑，包括三次門檻鑄造，用的是有資源上限的離線子程序：`ffi` 關閉、`FOUNDRY_OFFLINE`、牆鐘逾時，以及 POSIX `rlimit`（CPU、位址空間、檔案大小、程序數）。那台歷史執行環境沒有安裝 Docker，也沒有使用它。`AXVIGIL_SANDBOX=docker` 已實作（`verifier/docker/Dockerfile`，映像 `axvigil-sandbox:1.8.7`：`--network none`、唯讀根檔案系統、uid 1000、CPU／記憶體／程序數上限、tmpfs 工作目錄），現在由 `.github/workflows/sandbox.yml` 建置並實際執行測試。未設定或設成 `subprocess` 仍是相容模式；新的不受信任 grading 建議使用 Docker。兩種都不是 TEE，也不是 zkVM。
 
 已知的誤放行缺口：**目前沒有已知的誤放行**。兩道真實事件漏洞類型的負向控制已拒絕只擋 `address(0)` 的橋接修補，以及金庫上只加 `require(shares > 0)` 的修補。這不是「所有可能的修補都已枚舉」的證明。
 

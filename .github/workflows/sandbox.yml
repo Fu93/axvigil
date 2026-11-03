@@ -1,0 +1,44 @@
+name: Sandbox
+
+on:
+  push:
+    branches: [main, "**"]
+    paths:
+      - "verifier/**"
+      - "contracts/lib/**"
+      - ".github/workflows/sandbox.yml"
+  pull_request:
+    paths:
+      - "verifier/**"
+      - "contracts/lib/**"
+      - ".github/workflows/sandbox.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  docker-grade:
+    name: Build and exercise Docker verifier sandbox
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+      - name: Build pinned sandbox image
+        run: docker build --tag axvigil-sandbox:1.8.7 verifier/docker
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install verifier test dependency
+        run: python -m pip install pytest
+      - name: Verify Docker command hardening
+        run: PYTHONPATH=verifier python -m pytest verifier/tests/test_docker_sandbox.py -q
+      - name: Grade sample inside Docker sandbox
+        env:
+          AXVIGIL_SANDBOX: docker
+          AXVIGIL_DOCKER_IMAGE: axvigil-sandbox:1.8.7
+        run: |
+          PYTHONPATH=verifier python -m axvigil_verifier grade \
+            --challenge challenges/reentrancy-001 \
+            --patch challenges/reentrancy-001/submissions/sample.patch \
+            --poc challenges/reentrancy-001/submissions/sample_poc.t.sol

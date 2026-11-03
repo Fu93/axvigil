@@ -150,11 +150,21 @@ A local dry run without any RPC works:
 PRIVATE_KEY=<any test key> SIGNER=0x...dEaD forge script script/Deploy.s.sol --chain-id 97
 ```
 
+## Metadata lock
+
+The owner may set `baseURI` and `unrevealedURI` during deployment, commit the complete art set with
+`setProvenanceHash`, and then call `freezeMetadata()`. The freeze is irreversible: it requires a
+non-zero provenance hash and both URIs to be configured, then prevents any later URI change. For a
+new deployment, set `PROVENANCE_HASH` and `FREEZE_METADATA=1` when running `Deploy.s.sol`. The
+existing BSC testnet deployment predates this lock and cannot be upgraded; deploy a new instance
+before treating the lock as a production requirement.
+
 ## Known limitations
 
 - Randomness: see the caveat above.
-- The owner can change `baseURI` and the hourly cap. Neither can change supply or tiers.
-  There is no `freezeMetadata`, so `provenanceHash` is the integrity anchor.
+- The owner can change the hourly cap. Neither the cap nor metadata settings can change supply or
+  tiers. A new deployment can permanently freeze metadata after setting `provenanceHash`; the
+  existing testnet deployment was created before this guard and remains mutable.
 - Skill ERC-721 compatibility is partial. `balanceOf` reverts, and `Transfer` events only
   reflect the owner when a record was created or revoked, because later Agent ID transfers
   happen in the registry. Indexers should read `ownerOf`.

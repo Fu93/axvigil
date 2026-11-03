@@ -357,6 +357,22 @@ contract AxVigilCollectibleTest is AxVigilBase {
         vm.stopPrank();
     }
 
+    function test_metadataCanBeFrozenOnlyAfterProvenanceAndCannotChange() public {
+        vm.startPrank(owner);
+        vm.expectRevert(AxVigilCollectible.ProvenanceRequired.selector);
+        nft.freezeMetadata();
+
+        nft.setProvenanceHash(keccak256("art-set"));
+        nft.freezeMetadata();
+        assertTrue(nft.metadataFrozen());
+
+        vm.expectRevert(AxVigilCollectible.MetadataFrozen.selector);
+        nft.setBaseURI("ipfs://replacement/", "ipfs://replacement-unrevealed");
+        vm.expectRevert(AxVigilCollectible.MetadataFrozen.selector);
+        nft.freezeMetadata();
+        vm.stopPrank();
+    }
+
     function test_revert_commitOnlyOwner() public {
         vm.prank(alice);
         vm.expectRevert(abi.encodeWithSelector(Ownable.OwnableUnauthorizedAccount.selector, alice));

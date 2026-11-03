@@ -143,3 +143,23 @@ python3 scripts/verify_evidence.py "$EVIDENCE_DIR/<submissionHash>/manifest.json
 ```
 
 The three threshold Muse Spark mints are `museSparkThresholdMint` (tokens #1–#3 on `0x0e87…C8eB`). Their `tokenURI` is still `ipfs://unrevealed.json`. The earlier signature-replay mint is `museSparkMint` (token #2 on `0x0658…4658`, revealed LEGENDARY). The reference-solution smoke test remains `smokeTest` (token #1).
+
+## New deployment safety requirements
+
+For a new deployment, provide the complete art-set commitment and immutable metadata roots:
+
+```bash
+export BASE_URI=ipfs://<art-root>/
+export UNREVEALED_URI=ipfs://<unrevealed-metadata>
+export PROVENANCE_HASH=0x<keccak256-of-the-complete-art-set>
+export FREEZE_METADATA=1
+forge script script/Deploy.s.sol --rpc-url bsc_testnet --broadcast
+```
+
+`FREEZE_METADATA=1` calls the irreversible `freezeMetadata()` guard after setting the provenance
+hash. The existing BSC testnet contracts predate this guard and are intentionally documented as
+mutable demo deployments; do not use them as a production-candidate deployment.
+
+For untrusted agent-written Solidity, set `AXVIGIL_SANDBOX=docker` and build the pinned image from
+`verifier/docker` before grading. Docker mode is built and exercised in CI; subprocess mode remains
+available for the historical testnet demo only.

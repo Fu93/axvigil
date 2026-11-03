@@ -57,7 +57,7 @@
 <!--
   FACTS: edit this block when numbers change. site.js copies [data-fact] from it.
   Source: main @ 891774b (PR #12) and deployments/bsc-testnet-97.json.
-  Tests 180 (contracts 75, Python 105). One Docker image check stays skipped.
+  Tests 275 (contracts 110, Python 165). One local Docker test is skipped when Docker is unavailable; sandbox CI builds and grades the image.
   recordsMinted 4 = three Muse Spark tokens on the 2-of-3 collectible
   plus the earlier signature-replay token on the first collectible.
   The reference smoke mint (token #1, COMMON) is not included.
@@ -74,7 +74,7 @@
     "checks": 4,
     "recordsMinted": 4,
     "fixesGraded": 6,
-    "tests": { "total": 274, "contracts": 109, "python": 165, "dockerSkipped": 1 },
+    "tests": { "total": 275, "contracts": 110, "python": 165, "dockerSkipped": 1 },
     "thresholdMints": 3,
     "lifetimeAttempts": 2,
     "maxSupply": 7777,
@@ -218,9 +218,9 @@
         <div class="s" data-i18n="stat.gradedS">public passes, this release</div>
       </div>
       <div class="stat">
-        <div class="n" data-fact="stats.tests.total" data-count="274">274</div>
+        <div class="n" data-fact="stats.tests.total" data-count="275">275</div>
         <div class="l" data-i18n="stat.tests">Tests</div>
-        <div class="s" data-fact="stats.tests.detail">contracts 109 · Python 165 passed, 1 skipped</div>
+        <div class="s" data-fact="stats.tests.detail">contracts 110 · Python 165 passed, 1 skipped</div>
       </div>
       <div class="chip on" data-i18n="stat.testnet">Testnet</div>
     </div>
