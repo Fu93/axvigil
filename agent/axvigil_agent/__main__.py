@@ -192,6 +192,7 @@ def main(argv: list[str] | None = None) -> int:
     s = sub.add_parser("solve")
     s.add_argument("--challenge", required=True)
     s.add_argument("--seed", type=int, default=0)
+    s.add_argument("--model", default=None, help="Meta model name (defaults to META_MODEL or muse-spark-1.1)")
     s.add_argument("--max-iters", type=int, default=4, dest="max_iters")
     s.add_argument("--timeout", type=int, default=120)
     s.add_argument("--oracle", action="store_true", help="offline dry-run with the reference solution")
@@ -253,7 +254,7 @@ def main(argv: list[str] | None = None) -> int:
         client = _oracle_client(challenge_dir)
     else:
         try:
-            client = MetaModelClient()
+            client = MetaModelClient(model=args.model)
         except RuntimeError as exc:
             print(str(exc), file=sys.stderr)
             return 2
