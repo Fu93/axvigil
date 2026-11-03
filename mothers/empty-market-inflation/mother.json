@@ -1,6 +1,7 @@
 {
   "motherId": "empty-market-inflation",
   "vulnClass": 1,
+  "track": "real-incident",
   "difficulty": 1,
   "targetSentinel": "Czz",
   "pragma": "0.8.28",

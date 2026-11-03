@@ -26,7 +26,8 @@ python -m axvigil_verifier grade --challenge ../challenges/reentrancy-001 \
 python -m axvigil_verifier hash --challenge-id <id> --seed 0 --patch p.sol --poc Poc.t.sol
 ```
 
-Four deterministic checks → `passed` = all four:
+Five deterministic checks → `passed` = all five. A challenge with no
+`invariantTests` entry records `invariantsHold` as not applied.
 
 | Field | Meaning |
 |---|---|
@@ -34,10 +35,12 @@ Four deterministic checks → `passed` = all four:
 | `pocFailsAfterPatch` | the same PoC **fails** on the **patched** contract |
 | `hiddenTestsPass` | the hidden functional tests **pass** on the **patched** contract |
 | `patchWithinLimits` | bounded changed lines/bytes, contract + public interface preserved |
+| `invariantsHold` | Foundry fuzz + invariant tests **pass** on the **patched** contract, at the pinned seed `0xA11CE`, 2000 fuzz runs, 256 invariant runs, depth 32 |
 
 The anti-gaming guarantees come from the **differential** (pass-on-vulnerable ∧
-fail-on-patched) plus the limits check: a fake fix, a gutted contract and a no-op PoC
-are all rejected (`tests/test_grader.py`).
+fail-on-patched), the limits check, and the invariant suite: a fake fix, a gutted
+contract, a no-op PoC, and a patch that only special-cases the hidden unit tests
+are all rejected (`tests/test_grader.py`, `tests/test_invariants.py`).
 
 ## Sandbox
 

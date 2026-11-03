@@ -1,0 +1,62 @@
+// SPDX-License-Identifier: MIT
+pragma solidity 0.8.28;
+
+/// @notice AxVigil challenge target (sandbox, BSC testnet only). Deliberately
+///         vulnerable for an AI agent to find and fix. Do not deploy to mainnet.
+///
+/// Minimal stake-and-borrow pool. Based on Platypus Finance's MasterPlatypusV4
+/// emergencyWithdraw (Avalanche, 16 Feb 2023): solvency was checked before the
+/// stake was reduced, so collateral could leave while the debt stayed.
+/// Re-implemented from public post-mortems. No Platypus or DeFiHackLabs code.
+contract Czz {
+    uint256 public constant LTV = 95;
+
+    mapping(address => uint256) public vzzStake;
+    mapping(address => uint256) public vzzDebt;
+    uint256 public vzzTotalStake;
+    uint256 public vzzTotalDebt;
+
+// @@SHUF_BEGIN@@
+// @@SHUF@@
+    function fzzDeposit(uint256 amount) external {
+        require(amount > 0, "zero amount");
+        vzzStake[msg.sender] += amount;
+        vzzTotalStake += amount;
+    }
+// @@SHUF@@
+    function fzzBorrow(uint256 amount) external {
+        require(amount > 0, "zero amount");
+        require(vzzDebt[msg.sender] + amount <= vzzStake[msg.sender] * LTV / 100, "over borrow");
+        vzzDebt[msg.sender] += amount;
+        vzzTotalDebt += amount;
+    }
+// @@SHUF@@
+    function fzzRepay(uint256 amount) external {
+        require(vzzDebt[msg.sender] >= amount, "repay exceeds debt");
+        vzzDebt[msg.sender] -= amount;
+        vzzTotalDebt -= amount;
+    }
+// @@SHUF@@
+    /// @notice True when `who`'s debt is still inside the stake's borrow limit.
+    function fzzSolvent(address who) public view returns (bool) {
+        return vzzDebt[who] <= vzzStake[who] * LTV / 100;
+    }
+// @@SHUF@@
+    /// @notice Ordinary withdraw: stake is reduced, then solvency is checked.
+    function fzzWithdraw(uint256 amount) external {
+        require(vzzStake[msg.sender] >= amount, "exceeds stake");
+        vzzStake[msg.sender] -= amount;
+        vzzTotalStake -= amount;
+        require(fzzSolvent(msg.sender), "not solvent");
+    }
+// @@SHUF@@
+    /// @notice Emergency withdraw. Solvency is checked against the stake that
+    ///         is still on the books, and only then is the stake reduced.
+    function fzzEmergency(uint256 amount) external {
+        require(vzzStake[msg.sender] >= amount, "exceeds stake");
+        require(fzzSolvent(msg.sender), "not solvent");
+        vzzStake[msg.sender] -= amount;
+        vzzTotalStake -= amount;
+    }
+// @@SHUF_END@@
+}

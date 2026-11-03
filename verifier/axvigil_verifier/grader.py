@@ -1,6 +1,6 @@
 """Grade one submission against one challenge.
 
-The judgement is four independent, deterministic checks:
+The judgement is five independent, deterministic checks:
 
   pocProvesBug        the submitted PoC *passes* against the ORIGINAL contract
                       (it genuinely triggers the vulnerability)
@@ -11,8 +11,13 @@ The judgement is four independent, deterministic checks:
   patchWithinLimits   the patch is a real fix, not a rewrite or a gutting:
                       bounded changed lines / bytes, and the target contract
                       and its public interface still exist
+  invariantsHold      the mother's Foundry fuzz and invariant tests pass on
+                      the PATCHED contract, at the pinned seed / runs / depth.
+                      Challenges with no invariant suite record the check as
+                      not applied and do not fail the grade for its absence.
 
-passed = all four. A patch that deletes the function the PoC calls cannot win:
+passed = all five (the fifth is vacuously true only when the challenge has
+no suite). A patch that deletes the function the PoC calls cannot win:
 it fails patchWithinLimits (interface removed) or hiddenTestsPass.
 """
 
@@ -24,6 +29,13 @@ import re
 from pathlib import Path
 
 from .forge_runner import compile_failure_note, run_test, RunResult
+from .invariant_profile import (
+    FUZZ_RUNS,
+    FUZZ_SEED,
+    INVARIANT_DEPTH,
+    INVARIANT_RUNS,
+    profile as invariant_profile,
+)
 from .keccak import submission_hash
 from .model import GradeResult
 
@@ -34,6 +46,11 @@ HIDDEN_FAIL_HINT = (
     "hidden tests failed: either intended behaviour changed, or the fix does not "
     "fully cover the vulnerability class (consider other inputs/edge cases that "
     "reach the same bug)"
+)
+
+INVARIANT_FAIL_HINT = (
+    "fuzz or invariant tests failed: the patch breaks a property the unit tests "
+    "did not cover (accounting, access, or replay) under other inputs"
 )
 
 
@@ -120,11 +137,23 @@ def grade(
 
     log: list[str] = []
 
-    def _run(label: str, sources: dict[str, str], tests: dict[str, str], match: str) -> RunResult:
+    def _run(
+        label: str,
+        sources: dict[str, str],
+        tests: dict[str, str],
+        match: str,
+        *,
+        fuzz_runs: int = 48,
+        invariant_runs: int = 32,
+        invariant_depth: int = 15,
+        fuzz_seed: int = FUZZ_SEED,
+    ) -> RunResult:
         try:
             r = run_test(
                 sources=sources, tests=tests, match_path=match,
                 forge_bin=forge_bin, solc=solc, timeout_s=timeout_s,
+                fuzz_seed=fuzz_seed, fuzz_runs=fuzz_runs,
+                invariant_runs=invariant_runs, invariant_depth=invariant_depth,
             )
         except FileNotFoundError:
             log.append(
@@ -135,9 +164,10 @@ def grade(
         if r.timed_out:
             log.append(f"{label}: TIMEOUT after {timeout_s}s")
         elif not r.compiled:
-            # Hidden-test compiler output can quote that suite. Keep it generic.
+            # Hidden and invariant compiler output can quote that suite. Keep it generic.
             # A missing solc is named for every label; it is not a test name.
-            note = compile_failure_note(r.raw, include_error_line=label != "hiddenTestsPass")
+            quiet = label in ("hiddenTestsPass", "invariantsHold")
+            note = compile_failure_note(r.raw, include_error_line=not quiet)
             log.append(f"{label}: compile failed{note}")
         elif label == "hiddenTestsPass":
             # Hidden test names are the challenge's answer key. The agent sees
@@ -148,6 +178,17 @@ def grade(
             line = f"{label}: {passed_n}/{total_n} tests passed"
             if passed_n != total_n:
                 line += ". " + HIDDEN_FAIL_HINT
+            log.append(line)
+        elif label == "invariantsHold":
+            passed_n = sum(r.tests.values())
+            total_n = len(r.tests)
+            line = (
+                f"{label}: {passed_n}/{total_n} tests passed "
+                f"seed={fuzz_seed} fuzzRuns={fuzz_runs} "
+                f"invariantRuns={invariant_runs} depth={invariant_depth}"
+            )
+            if passed_n != total_n:
+                line += ". " + INVARIANT_FAIL_HINT
             log.append(line)
         else:
             log.append(f"{label}: {sum(r.tests.values())}/{len(r.tests)} tests passed {r.tests}")
@@ -182,7 +223,36 @@ def grade(
         f"interface={'ok' if iface_ok else 'MISSING ' + ','.join(missing)}"
     )
 
-    passed = poc_proves_bug and poc_fails_after_patch and hidden_tests_pass and patch_within_limits
+    # 5. Fuzz + invariant tests on the PATCHED contract, at the pinned schedule.
+    #    Static challenges (the reentrancy-001 mint demo) have no suite: the
+    #    check is recorded as not applied and does not change `passed`.
+    invariant_name = meta.get("invariantTests") or ""
+    schedule = invariant_profile(applied=bool(invariant_name))
+    if not invariant_name:
+        invariants_hold = True
+        log.append(
+            "invariantsHold: not configured "
+            f"seed={schedule['fuzzSeed']} fuzzRuns={schedule['fuzzRuns']} "
+            f"invariantRuns={schedule['invariantRuns']} depth={schedule['invariantDepth']}"
+        )
+    else:
+        invariant_test = _read(challenge_dir / "test" / invariant_name)
+        r4 = _run(
+            "invariantsHold",
+            patched_sources,
+            {invariant_name: invariant_test},
+            f"test/{invariant_name}",
+            fuzz_runs=FUZZ_RUNS,
+            invariant_runs=INVARIANT_RUNS,
+            invariant_depth=INVARIANT_DEPTH,
+            fuzz_seed=FUZZ_SEED,
+        )
+        invariants_hold = r4.all_passed
+
+    passed = (
+        poc_proves_bug and poc_fails_after_patch and hidden_tests_pass
+        and patch_within_limits and invariants_hold
+    )
 
     return GradeResult(
         challengeId=challenge_id,
@@ -193,6 +263,12 @@ def grade(
         pocFailsAfterPatch=poc_fails_after_patch,
         hiddenTestsPass=hidden_tests_pass,
         patchWithinLimits=patch_within_limits,
+        invariantsHold=invariants_hold,
+        invariantFuzzSeed=int(schedule["fuzzSeed"]),
+        invariantFuzzRuns=int(schedule["fuzzRuns"]),
+        invariantRuns=int(schedule["invariantRuns"]),
+        invariantDepth=int(schedule["invariantDepth"]),
+        invariantApplied=bool(schedule["applied"]),
         passed=passed,
         solveSeconds=solve_seconds,
         submissionHash=sub_hash,

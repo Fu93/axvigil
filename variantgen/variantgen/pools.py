@@ -57,6 +57,37 @@ POOLS: dict[str, list[str]] = {
     "verb_set_resource": ["setResource", "registerResource", "mapResource", "bindResource", "listResource"],
     "verb_deposit_native": ["depositETH", "depositNative", "lockNative", "bridgeNative", "sendNative"],
     "fn_pull": ["_safeTransferFrom", "_pullTokens", "_collect", "_take", "_receiveTokens"],
+    # platypus-emergency-withdraw (real incident: Platypus, Feb 2023)
+    "verb_emergency": ["emergencyWithdraw", "forceExit", "panicPull", "bailOut", "unstakeNow", "escapeStake"],
+    "fn_solvent": ["solvent", "isSolvent", "healthy", "inGoodStanding", "debtCovered", "withinLimit"],
+    "noun_stake": ["stakedOf", "bondedOf", "pledgedOf", "lpStaked", "suppliedOf", "coveredOf"],
+    "noun_total_stake": ["totalStaked", "stakedSupply", "aggregateStake", "bondedTotal", "pledgedTotal", "lockedSupply"],
+    "noun_total_debt": ["totalDebt", "debtSupply", "aggregateDebt", "borrowedTotal", "liabilitySupply", "owedTotal"],
+    # nomad-unproven-message (real incident: Nomad, Aug 2022)
+    "noun_updater": ["updater", "relayer", "watchman", "homeSigner", "replicator", "rootPoster"],
+    "noun_confirm": ["confirmAt", "rootTime", "acceptedAt", "rootReady", "confirmedAt", "liveAt"],
+    "noun_message_root": ["rootOf", "messageRoot", "provenRoot", "rootFor", "treeOf", "anchorOf"],
+    "noun_processed": ["processed", "didProcess", "handled", "messageDone", "consumedMessage", "finishedMessage"],
+    "noun_escrow": ["escrowed", "lockedValue", "custody", "bridgeBalance", "heldValue", "reserveValue"],
+    "noun_credit": ["creditOf", "releasedTo", "paidTo", "claimableOf", "outboundOf", "mintedTo"],
+    "verb_commit_root": ["commitRoot", "acceptRoot", "postRoot", "anchorRoot", "attestRoot", "publishRoot"],
+    "verb_prove": ["prove", "submitProof", "markProven", "includeMessage", "witnessMessage", "confirmInclusion"],
+    "verb_process": ["process", "dispatch", "executeMessage", "releaseMessage", "deliver", "handleMessage"],
+    "fn_acceptable": ["acceptableRoot", "rootAccepted", "rootReadyNow", "canUseRoot", "rootIsLive", "rootOk"],
+    "verb_fund_escrow": ["fundEscrow", "loadEscrow", "seedEscrow", "fillCustody", "endowEscrow", "provision"],
+    # beanstalk-flash-governance (real incident: Beanstalk, Apr 2022)
+    "contract_gov": ["Governor", "Council", "Assembly", "Chamber", "Ballot", "Forum", "Senate", "Directorate"],
+    "noun_votes": ["votesOf", "stalkOf", "weightOf", "powerOf", "ballotOf", "voiceOf"],
+    "noun_prior_votes": ["savedVotes", "checkpointVotes", "priorWeight", "cachedVotes", "snapVotes", "lastVotes"],
+    "noun_prior_block": ["priorBlock", "snapBlock", "checkpointBlock", "votesBlock", "savedBlock", "lastBlock"],
+    "noun_total_votes": ["totalVotes", "voteSupply", "aggregateVotes", "stalkSupply", "powerSupply", "voiceSupply"],
+    "noun_prior_total": ["savedTotal", "priorSupply", "checkpointSupply", "snapTotal", "cachedSupply", "lastSupply"],
+    "noun_prior_total_block": ["supplyBlock", "totalSnapBlock", "aggregateBlock", "supplyCheckpoint", "totalSavedBlock", "globalSnapBlock"],
+    "verb_fund_treasury": ["endow", "seedTreasury", "grantTreasury", "giftTreasury", "sponsor", "subsidize"],
+    "verb_propose": ["propose", "submitProposal", "fileMotion", "raiseProposal", "tableMotion", "introduce"],
+    "verb_emergency_exec": ["emergencyCommit", "fastExecute", "instantExecute", "rushCommit", "superExecute", "hotExecute"],
+    "fn_prior": ["priorVotes", "votesAtStart", "checkpointOf", "savedPower", "snapOf", "historicalVotes"],
+    "fn_prior_total": ["priorTotalVotes", "votesSupplyAtStart", "checkpointSupplyOf", "savedPowerSupply", "snapSupplyOf", "historicalSupply"],
 }
 
 # Structurally-distinct harmless functions. {name} is replaced with a unique id.

@@ -78,7 +78,15 @@ class RunResult:
         return self.compiled and not self.timed_out and any(self.tests.values())
 
 
-def _foundry_toml(forge_std: Path, oz: Path, solc: str | None) -> str:
+def _foundry_toml(
+    forge_std: Path,
+    oz: Path,
+    solc: str | None,
+    *,
+    fuzz_runs: int = 48,
+    invariant_runs: int = 32,
+    invariant_depth: int = 15,
+) -> str:
     lines = [
         "[profile.default]",
         'src = "src"',
@@ -95,7 +103,12 @@ def _foundry_toml(forge_std: Path, oz: Path, solc: str | None) -> str:
         f'  "@openzeppelin/contracts/={oz}/",',
         "]",
         "[fuzz]",
-        "runs = 48",
+        f"runs = {int(fuzz_runs)}",
+        "max_test_rejects = 65536",
+        "[invariant]",
+        f"runs = {int(invariant_runs)}",
+        f"depth = {int(invariant_depth)}",
+        "fail_on_revert = false",
     ]
     if solc:
         lines.append(f'# solc pinned via --use {solc}')
@@ -181,6 +194,9 @@ def run_test(
     oz: Path = DEFAULT_OZ,
     timeout_s: int = 120,
     fuzz_seed: int = 0xA11CE,
+    fuzz_runs: int = 48,
+    invariant_runs: int = 32,
+    invariant_depth: int = 15,
     mem_limit_bytes: int = 4 << 30,
     fsize_limit_bytes: int = 256 << 20,
     nproc_limit: int = int(os.environ.get("AXVIGIL_NPROC_LIMIT", "4096")),
@@ -195,7 +211,12 @@ def run_test(
     try:
         (workdir / "src").mkdir()
         (workdir / "test").mkdir()
-        (workdir / "foundry.toml").write_text(_foundry_toml(forge_std, oz, solc))
+        (workdir / "foundry.toml").write_text(_foundry_toml(
+            forge_std, oz, solc,
+            fuzz_runs=fuzz_runs,
+            invariant_runs=invariant_runs,
+            invariant_depth=invariant_depth,
+        ))
         for name, text in sources.items():
             dest = workdir / "src" / name
             dest.parent.mkdir(parents=True, exist_ok=True)

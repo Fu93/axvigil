@@ -1,6 +1,7 @@
 {
   "motherId": "bridge-phantom-deposit",
   "vulnClass": 2,
+  "track": "real-incident",
   "difficulty": 1,
   "targetSentinel": "Czz",
   "pragma": "0.8.28",

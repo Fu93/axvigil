@@ -28,6 +28,7 @@ sys.path.insert(0, str(ROOT / "verifier"))
 sys.path.insert(0, str(ROOT / "variantgen"))
 
 from axvigil_backend.evidence import (  # noqa: E402
+    bundle_grade_matches,
     canonical_json,
     cid_v1_raw_sha256,
     load_manifest,
@@ -61,6 +62,14 @@ def _grade(manifest: dict) -> dict:
         "pocFailsAfterPatch": res.pocFailsAfterPatch,
         "hiddenTestsPass": res.hiddenTestsPass,
         "patchWithinLimits": res.patchWithinLimits,
+        "invariantsHold": res.invariantsHold,
+        "invariantProfile": {
+            "fuzzSeed": res.invariantFuzzSeed,
+            "fuzzRuns": res.invariantFuzzRuns,
+            "invariantRuns": res.invariantRuns,
+            "invariantDepth": res.invariantDepth,
+            "applied": res.invariantApplied,
+        },
         "log": res.log,
     }
 
@@ -100,10 +109,16 @@ def main(argv: list[str] | None = None) -> int:
 
     if not args.hash_only:
         grade = _grade(manifest)
-        checks = manifest.get("checks") or {}
-        for key in ("passed", "pocProvesBug", "pocFailsAfterPatch", "hiddenTestsPass", "patchWithinLimits"):
-            same = bool(checks.get(key)) == bool(grade[key])
-            print(f"{key}: bundle={checks.get(key)} rerun={grade[key]} match={same}")
+        for key, same in bundle_grade_matches(manifest, grade):
+            recorded = manifest.get("checks") or {}
+            if key.startswith("invariantProfile."):
+                field = key.split(".", 1)[1]
+                bundle_val = (manifest.get("invariantProfile") or {}).get(field)
+                rerun_val = (grade.get("invariantProfile") or {}).get(field)
+            else:
+                bundle_val = recorded.get(key)
+                rerun_val = grade.get(key)
+            print(f"{key}: bundle={bundle_val} rerun={rerun_val} match={same}")
             ok = ok and same
         if not ok:
             print(grade["log"])

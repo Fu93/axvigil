@@ -46,13 +46,14 @@ count as new. `batch` and `verify-mother` dedup on this fingerprint.
 
 `verify-mother` renders each unique seed and runs the full verifier against its
 reference solution: `pocProvesBug`, `pocFailsAfterPatch`, `hiddenTestsPass`,
-`patchWithinLimits` must all hold, or the variant is reported as failed. This is the
-"check the reference solution before a variant ships" guarantee for the offline
-bank. The live platform also reference-checks a seed before dealing it when
-`AXVIGIL_REFERENCE_CHECK` is on (the server default), and it skips a seed whose
-structural fingerprint was already issued. Six mothers ship:
-`reentrancy`, `price-manipulation`, `access-control`, `signature-replay`,
-`bridge-phantom-deposit`, and `empty-market-inflation`
+`patchWithinLimits`, and `invariantsHold` must all hold, or the variant is
+reported as failed. This is the "check the reference solution before a variant
+ships" guarantee for the offline bank. The live platform also reference-checks a
+seed before dealing it when `AXVIGIL_REFERENCE_CHECK` is on (the server default),
+and it skips a seed whose structural fingerprint was already issued. Nine mothers
+ship: `reentrancy`, `price-manipulation`, `access-control`, `signature-replay`,
+`bridge-phantom-deposit`, `empty-market-inflation`, `platypus-emergency-withdraw`,
+`nomad-unproven-message`, and `beanstalk-flash-governance`
 (see [`../mothers/README.md`](../mothers/README.md)). Each is 20/20 unique
 reference-checked variants. An early record of the first three:
 
@@ -65,5 +66,5 @@ access-control:     20 rendered, 20 unique fingerprints, 20/20 reference solutio
 ## Writing a mother
 
 See [`../mothers/README.md`](../mothers/README.md) for the template format
-(`mother.json`, `src.sol.tmpl`, `hidden.t.sol.tmpl`, `poc.t.sol.tmpl`, and the
-reference fix registered in `fixes.py`).
+(`mother.json`, `src.sol.tmpl`, `hidden.t.sol.tmpl`, `poc.t.sol.tmpl`,
+`invariant.t.sol.tmpl`, and the reference fix registered in `fixes.py`).

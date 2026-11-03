@@ -1,0 +1,87 @@
+// SPDX-License-Identifier: MIT
+pragma solidity 0.8.28;
+
+import {Test} from "forge-std/Test.sol";
+import {Czz} from "../src/Czz.sol";
+
+contract Handler {
+    Czz public gov;
+    bool public broken;
+
+    constructor(Czz g) {
+        gov = g;
+    }
+
+    receive() external payable {}
+
+    function fundAndDeposit() external payable {
+        gov.fzzDeposit{value: msg.value}();
+    }
+
+    /// @dev Not payable. Moves only ETH this contract already holds, so a fuzz
+    ///      call cannot mint votes with value taken from the treasury.
+    function deposit() external {
+        uint256 amt = address(this).balance;
+        if (amt == 0) return;
+        if (amt > 1 ether) amt = 1 ether;
+        gov.fzzDeposit{value: amt}();
+    }
+
+    function trySteal() external {
+        uint256 bal = address(gov).balance;
+        uint256 votes = gov.vzzTotal();
+        if (bal < votes) {
+            broken = true;
+            return;
+        }
+        uint256 surplus = bal - votes;
+        uint256 id = gov.fzzPropose(address(this), surplus);
+        try gov.fzzEmergency(id) {
+            uint256 power = gov.fzzPrior(address(this));
+            uint256 tot = gov.fzzPriorTotal();
+            if (!(tot > 0 && power * 3 >= tot * 2)) broken = true;
+        } catch {}
+    }
+}
+
+contract InvariantTest is Test {
+    Czz internal gov;
+    Handler internal handler;
+
+    function setUp() public {
+        gov = new Czz();
+        vm.deal(address(this), 20 ether);
+        gov.fzzFund{value: 5 ether}();
+        handler = new Handler(gov);
+        vm.deal(address(handler), 3 ether);
+        handler.fundAndDeposit{value: 3 ether}();
+        handler.trySteal();
+
+        excludeContract(address(this));
+        excludeContract(address(gov));
+        targetContract(address(handler));
+        bytes4[] memory sels = new bytes4[](2);
+        sels[0] = bytes4(keccak256("deposit()"));
+        sels[1] = Handler.trySteal.selector;
+        targetSelector(FuzzSelector({addr: address(handler), selectors: sels}));
+    }
+
+    function invariant_noFlashExecution() public view {
+        assertFalse(handler.broken(), "execution without a prior supermajority");
+    }
+
+    function testFuzz_sameBlockDepositCannotExecute(uint96 amt) public {
+        amt = uint96(bound(amt, 1, 5 ether));
+        Czz fresh = new Czz();
+        fresh.fzzFund{value: 2 ether}();
+        address whale = address(0xBEEF);
+        vm.deal(whale, amt);
+        vm.startPrank(whale);
+        fresh.fzzDeposit{value: amt}();
+        uint256 id = fresh.fzzPropose(whale, 2 ether);
+        vm.expectRevert();
+        fresh.fzzEmergency(id);
+        vm.stopPrank();
+        assertEq(address(fresh).balance, 2 ether + amt);
+    }
+}

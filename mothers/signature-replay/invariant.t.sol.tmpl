@@ -1,0 +1,79 @@
+// SPDX-License-Identifier: MIT
+pragma solidity 0.8.28;
+
+import {Test} from "forge-std/Test.sol";
+import {Czz} from "../src/Czz.sol";
+
+contract Handler {
+    Czz public treasury;
+    uint256 public paid;
+    uint8 internal v;
+    bytes32 internal r;
+    bytes32 internal s;
+    bool internal armed;
+
+    constructor(Czz t) {
+        treasury = t;
+    }
+
+    function setVoucher(uint8 v_, bytes32 r_, bytes32 s_) external {
+        v = v_;
+        r = r_;
+        s = s_;
+        armed = true;
+    }
+
+    function claim() external {
+        if (!armed) return;
+        uint256 beforeBal = address(this).balance;
+        try treasury.fzzClaim(address(this), 2 ether, v, r, s) {
+            paid += address(this).balance - beforeBal;
+        } catch {}
+    }
+
+    receive() external payable {}
+}
+
+contract InvariantTest is Test {
+    Czz internal treasury;
+    Handler internal handler;
+    uint256 internal constant PK = 0xA11CE;
+
+    function setUp() public {
+        treasury = new Czz{value: 10 ether}(vm.addr(PK));
+        handler = new Handler(treasury);
+        bytes32 digest = keccak256(abi.encodePacked(address(treasury), address(handler), uint256(2 ether)));
+        (uint8 v, bytes32 r, bytes32 s) = vm.sign(PK, digest);
+        handler.setVoucher(v, r, s);
+        handler.claim();
+        handler.claim();
+
+        excludeContract(address(this));
+        excludeContract(address(treasury));
+        targetContract(address(handler));
+        bytes4[] memory sels = new bytes4[](1);
+        sels[0] = Handler.claim.selector;
+        targetSelector(FuzzSelector({addr: address(handler), selectors: sels}));
+    }
+
+    function invariant_voucherPaysOnce() public view {
+        assertEq(handler.paid(), 2 ether, "voucher paid more than once");
+        assertGe(address(treasury).balance, 8 ether);
+    }
+
+    function testFuzz_voucherPaysOnce(uint96 amt) public {
+        amt = uint96(bound(amt, 1, 2 ether));
+        Czz fresh = new Czz{value: 5 ether}(vm.addr(PK));
+        address to = address(0xBEEF);
+        bytes32 digest = keccak256(abi.encodePacked(address(fresh), to, uint256(amt)));
+        (uint8 v, bytes32 r, bytes32 s) = vm.sign(PK, digest);
+        fresh.fzzClaim(to, amt, v, r, s);
+        bool replayed;
+        try fresh.fzzClaim(to, amt, v, r, s) {
+            replayed = true;
+        } catch {}
+        assertFalse(replayed, "replay must revert");
+        assertEq(to.balance, amt, "paid exactly once");
+        assertEq(address(fresh).balance, 5 ether - amt);
+    }
+}

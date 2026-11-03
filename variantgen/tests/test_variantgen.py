@@ -29,6 +29,37 @@ _forge = forge_executable()
 _solc = discover_solc()
 
 
+REAL_INCIDENT = {
+    "bridge-phantom-deposit",
+    "empty-market-inflation",
+    "platypus-emergency-withdraw",
+    "nomad-unproven-message",
+    "beanstalk-flash-governance",
+}
+
+
+def test_identifier_assignments_do_not_collide():
+    for mdir in MOTHERS:
+        m = Mother(mdir)
+        for seed in range(30):
+            vals = list(build_context(m, seed)["ids"].values())
+            assert len(vals) == len(set(vals)), f"{m.mother_id} seed {seed} reused a name"
+
+
+def test_real_incident_mothers_cite_checked_sources():
+    import json
+    for mdir in MOTHERS:
+        meta = json.loads((mdir / "mother.json").read_text())
+        if mdir.name not in REAL_INCIDENT:
+            assert meta.get("track", "synthetic") == "synthetic"
+            continue
+        assert meta["track"] == "real-incident"
+        incident = meta["realWorld"]
+        assert incident["incident"] and incident["lossReported"] and incident["sources"]
+        assert all(src.startswith("https://") for src in incident["sources"])
+        assert (mdir / "invariant.t.sol.tmpl").is_file()
+
+
 @pytest.mark.parametrize("mdir", MOTHERS, ids=lambda p: p.name)
 def test_render_is_deterministic(mdir):
     m = Mother(mdir)

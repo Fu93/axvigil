@@ -15,6 +15,12 @@ class GradeResult:
     pocFailsAfterPatch: bool
     hiddenTestsPass: bool
     patchWithinLimits: bool
+    invariantsHold: bool
+    invariantFuzzSeed: int
+    invariantFuzzRuns: int
+    invariantRuns: int
+    invariantDepth: int
+    invariantApplied: bool
     passed: bool
     solveSeconds: int | None
     submissionHash: str  # 0x-prefixed 32-byte keccak

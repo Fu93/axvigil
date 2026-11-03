@@ -2,10 +2,11 @@
 
 Each mother is one vulnerability template. The seed variant generator in
 [`../variantgen/`](../variantgen/) renders a mother + seed into a concrete,
-gradeable challenge. The six mothers span three distinct vulnerability classes
-and all three difficulty tiers (basic, advanced, legendary), and are derived from
-well-known, publicly documented bug patterns (sandbox toys — do not deploy to
-mainnet).
+gradeable challenge. The nine mothers span three distinct vulnerability classes
+and all three difficulty tiers (basic, advanced, legendary). Five of them are the
+real-incident track: minimal, offline reproductions of public exploits. The
+grading contract, sources, and timings are in
+[`../docs/real-incident-track.md`](../docs/real-incident-track.md).
 
 | Mother | Vuln class | Difficulty | The bug | The intended fix |
 |---|---|---|---|---|
@@ -15,6 +16,9 @@ mainnet).
 | `signature-replay` | 2 access control | 2 legendary | a signed voucher is never recorded as spent, so the signature can be replayed to drain the treasury | mark each voucher digest spent after the signature check |
 | `bridge-phantom-deposit` (real incident) | 2 access control | 1 advanced | a bridge credits ERC20 deposits pulled via a low-level call that "succeeds" on an address with no code (the native resource maps to `address(0)`), so a deposit that moved nothing is withdrawn as real coin | refuse tokens with no code in the pull helper |
 | `empty-market-inflation` (real incident) | 1 price manipulation | 1 advanced | a share vault prices deposits off its live asset balance, so a direct transfer (donation) inflates the share price and rounds a later deposit down to almost nothing, which the first depositor then seizes | value the pool by assets deposited through the vault, not the raw balance |
+| `platypus-emergency-withdraw` (real incident) | 2 access control | 1 advanced | emergency withdraw checks solvency before the stake is reduced, so collateral can leave while the debt stays | reduce the stake first, then require the position to still be solvent |
+| `nomad-unproven-message` (real incident) | 2 access control | 2 legendary | an unproven message reads as root zero, and that zero root was pre-approved, so `process` releases escrow | reject the zero root even when the confirm-map says it is acceptable |
+| `beanstalk-flash-governance` (real incident) | 2 access control | 1 advanced | emergency execution counts live votes, so a same-transaction deposit can pass a supermajority | count the start-of-block checkpoint, not votes deposited in the execution transaction |
 
 The last two are **real-incident** challenges, rebuilt self-contained with no fork, and both
 graded so that only the class fix passes:
@@ -26,7 +30,9 @@ graded so that only the class fix passes:
   is accepted; partial patches such as `require(shares > 0)` are rejected by a hidden test that
   requires a depositor to recover their principal after a donation.
 
-See [`../docs/realbank/`](../docs/realbank/README.md).
+See [`../docs/realbank/`](../docs/realbank/README.md) for the first two, and
+[`../docs/real-incident-track.md`](../docs/real-incident-track.md) for the full
+track, including Platypus, Nomad, and Beanstalk, plus the fuzz/invariant check.
 
 Each PoC passes on the vulnerable version and fails on the patched one, so the
 grader scores the **differential**, not an absolute test.
@@ -39,6 +45,7 @@ mothers/<id>/
   src.sol.tmpl         vulnerable contract, with sentinel identifiers and shuffle fences
   hidden.t.sol.tmpl    hidden functional tests (sentinel identifiers)
   poc.t.sol.tmpl       reference PoC exploit (sentinel identifiers)
+  invariant.t.sol.tmpl fuzz + stateful invariant tests (sentinel identifiers)
 ```
 
 **Sentinel identifiers** are valid Solidity names (`Czz`, `fzzWithdraw`, `vzzBal`,

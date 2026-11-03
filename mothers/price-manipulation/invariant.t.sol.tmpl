@@ -1,0 +1,76 @@
+// SPDX-License-Identifier: MIT
+pragma solidity 0.8.28;
+
+import {Test} from "forge-std/Test.sol";
+import {Czz} from "../src/Czz.sol";
+
+contract Handler {
+    Czz public pool;
+
+    constructor(Czz p) {
+        pool = p;
+    }
+
+    function deposit(uint256 amt) external {
+        amt = amt % 400 + 1;
+        pool.fzzDeposit(amt);
+    }
+
+    function manipulateAndBorrow(uint256 baseOut) external {
+        uint256 base = pool.vzzRb();
+        if (base < 2) return;
+        baseOut = baseOut % (base - 1);
+        if (baseOut > 0) {
+            try pool.fzzSwap(0, baseOut) {} catch {}
+        }
+        uint256 col = pool.vzzCol(address(this));
+        uint256 cap = col * pool.fzzSafe() / 1e18;
+        if (pool.vzzDebt(address(this)) > cap) return;
+        try pool.fzzBorrow(cap + 1) {} catch {}
+    }
+}
+
+contract InvariantTest is Test {
+    Czz internal pool;
+    Handler internal handler;
+
+    function setUp() public {
+        pool = new Czz(1000, 1000, 1e18);
+        pool.fzzDeposit(250);
+        pool.fzzSwap(0, 800);
+        try pool.fzzBorrow(500) {} catch {}
+        handler = new Handler(pool);
+
+        excludeContract(address(this));
+        excludeContract(address(pool));
+        targetContract(address(handler));
+        bytes4[] memory sels = new bytes4[](2);
+        sels[0] = Handler.deposit.selector;
+        sels[1] = Handler.manipulateAndBorrow.selector;
+        targetSelector(FuzzSelector({addr: address(handler), selectors: sels}));
+    }
+
+    function invariant_debtWithinReference() public view {
+        _bound(address(this));
+        _bound(address(handler));
+    }
+
+    function _bound(address who) internal view {
+        uint256 cap = pool.vzzCol(who) * pool.fzzSafe() / 1e18;
+        assertLe(pool.vzzDebt(who), cap);
+    }
+
+    function testFuzz_swapCannotRaiseBorrowLimit(uint128 col, uint128 baseOut) public {
+        col = uint128(bound(col, 1, 500));
+        baseOut = uint128(bound(baseOut, 0, 900));
+        Czz fresh = new Czz(1000, 1000, 1e18);
+        fresh.fzzDeposit(col);
+        if (baseOut > 0) {
+            fresh.fzzSwap(0, baseOut);
+        }
+        uint256 cap = uint256(col) * fresh.fzzSafe() / 1e18;
+        try fresh.fzzBorrow(cap + 1) {
+            assertLe(fresh.vzzDebt(address(this)), cap);
+        } catch {}
+    }
+}

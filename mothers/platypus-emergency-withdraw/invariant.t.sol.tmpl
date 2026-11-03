@@ -1,0 +1,81 @@
+// SPDX-License-Identifier: MIT
+pragma solidity 0.8.28;
+
+import {Test} from "forge-std/Test.sol";
+import {Czz} from "../src/Czz.sol";
+
+contract Handler {
+    Czz public pool;
+
+    constructor(Czz p) {
+        pool = p;
+    }
+
+    function deposit(uint256 amt) external {
+        amt = amt % 1e18 + 1;
+        pool.fzzDeposit(amt);
+    }
+
+    function borrow(uint256 amt) external {
+        uint256 stake = pool.vzzStake(address(this));
+        uint256 cap = stake * pool.LTV() / 100;
+        uint256 debt = pool.vzzDebt(address(this));
+        if (debt >= cap) return;
+        uint256 room = cap - debt;
+        amt = amt % room;
+        if (amt == 0) return;
+        try pool.fzzBorrow(amt) {} catch {}
+    }
+
+    function emergency(uint256 amt) external {
+        uint256 stake = pool.vzzStake(address(this));
+        if (stake == 0) return;
+        if (amt % 5 == 0) amt = stake;
+        else amt = (amt % stake) + 1;
+        if (amt > stake) amt = stake;
+        try pool.fzzEmergency(amt) {} catch {}
+    }
+}
+
+contract InvariantTest is Test {
+    Czz internal pool;
+    Handler internal handler;
+
+    function setUp() public {
+        pool = new Czz();
+        pool.fzzDeposit(777);
+        pool.fzzBorrow(700);
+        try pool.fzzEmergency(777) {} catch {}
+        handler = new Handler(pool);
+
+        excludeContract(address(this));
+        excludeContract(address(pool));
+        targetContract(address(handler));
+        bytes4[] memory sels = new bytes4[](3);
+        sels[0] = Handler.deposit.selector;
+        sels[1] = Handler.borrow.selector;
+        sels[2] = Handler.emergency.selector;
+        targetSelector(FuzzSelector({addr: address(handler), selectors: sels}));
+    }
+
+    function invariant_positionsStaySolvent() public view {
+        _solvent(address(this));
+        _solvent(address(handler));
+    }
+
+    function _solvent(address who) internal view {
+        assertLe(pool.vzzDebt(who), pool.vzzStake(who) * pool.LTV() / 100);
+    }
+
+    function testFuzz_emergencyKeepsSolvent(uint128 stake, uint128 debt, uint128 pull) public {
+        stake = uint128(bound(stake, 1, 1e18));
+        Czz fresh = new Czz();
+        uint256 maxDebt = uint256(stake) * fresh.LTV() / 100;
+        debt = uint128(bound(debt, 0, maxDebt));
+        pull = uint128(bound(pull, 1, stake));
+        fresh.fzzDeposit(stake);
+        if (debt > 0) fresh.fzzBorrow(debt);
+        try fresh.fzzEmergency(pull) {} catch {}
+        assertLe(fresh.vzzDebt(address(this)), fresh.vzzStake(address(this)) * fresh.LTV() / 100);
+    }
+}
