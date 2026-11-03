@@ -30,7 +30,7 @@ The gap between them is a **trust problem**: there is no independent, re-runnabl
 **1. An anti-memorization challenge engine (`variantgen/` and the family-template directory).**
 Each "vulnerability family" is one vulnerability template. A seed renders a structurally unique fresh rewrite every time — renamed identifiers, injected distractor functions, reordered bodies — and a structural fingerprint discards look-alikes before issue. So a public answer is worthless; the agent has to fix the *class* of bug, not recall a known hack.
 
-- **6 vulnerability families across 3 vulnerability classes and all 3 difficulty tiers**, each shipping **20 self-verified fresh rewrites — 120 in all**. Two rebuild already-patched public incidents, and the grader accepts only the class fix.
+- **6 vulnerability families across 3 vulnerability classes and all 3 difficulty tiers**, each shipping **20 self-verified fresh rewrites — 120 in all**. (The repository contains 9 mother templates overall, including 5 minimal offline reproductions of DeFi incidents; 6 core vulnerability classes are benchmarked in the arena). Two rebuild already-patched public incidents, and the grader accepts only the class fix.
 
 | Vulnerability family | Class | Difficulty |
 |---|---|---|
@@ -42,7 +42,7 @@ Each "vulnerability family" is one vulnerability template. A seed renders a stru
 | `empty-market-inflation` | Price Manipulation (Hundred Finance / Sonne) | Advanced |
 
 **2. A deterministic grader that scores the *difference*, not a test suite (`verifier/`).**
-Four checks, every one required:
+Five checks, every one required:
 
 | Check | What it proves |
 |---|---|
@@ -50,6 +50,7 @@ Four checks, every one required:
 | `pocFailsAfterPatch` | the same PoC fails after the patch (the bug is actually gone) |
 | `hiddenTestsPass` | hidden functional tests still pass (the fix didn't break the contract) |
 | `patchWithinLimits` | changed-lines / bytes are capped (no "delete the whole contract" cheat) |
+| `invariantsHold` | Foundry fuzz & stateful invariants (2000 fuzz + 256 invariant runs at seed `0xA11CE`) prevent test-specific cheating |
 
 Runs in a hardened sandbox — `ffi` off, no network, wall-clock timeout and POSIX resource limits, its own process group — with **zero third-party dependencies**. Grading is reproducible and can't reach the host.
 
@@ -65,6 +66,14 @@ A FastAPI server issues challenges (the agent never sees the vulnerability famil
 
 ## Live proof (BSC testnet, chain 97)
 
+> [!NOTE]
+> **Deployment & Verification Note:**
+> - **Public Testnet (BSC Chain ID 97)**: The deployed addresses below represent our **PR #8 snapshot** deployment.
+> - **Latest Features**: The newly integrated `AxVigilChallenge` (Optimistic Challenge Window) and Foundry Invariant fuzzing test suites (`invariantsHold`) are fully integrated and verified locally.
+> - **Judge Reproduction**: To review and verify the complete, bleeding-edge architecture with zero network dependencies, judges can run a single command locally:
+>   `./scripts/judge_demo.sh`
+>   *(Runs local Anvil, offline oracle agent, verifier checks, EIP-712 signing, and dynamic SVG metadata output).*
+
 - **Deployed and exercised on-chain.** Original skill `0x3377…CD18`, collectible `0x0658…4658` (signer rotated to `0x91Ae…e081`; token #2 revealed LEGENDARY, artId 320000). Threshold 2-of-3 collectible `0x0e87…C8eB`, skill `0xE165…5F59`, validators `0xc32d…95F9` / `0xD5f5…4645` / `0x133F…ec7f`. Registry `0x7Aa4…d45e` is still MockAgentID.
 - **Muse Spark (`muse-spark-1.1`) on the threshold contract:** three server-dealt sessions, each solved on the first request, each evidence bundle re-checked (`verify_evidence.py` OK), each mint using 2 of 3 validator signatures. Grading used the subprocess sandbox, not Docker. The earlier signature-replay mint on `0x0658…4658` is token #2. The reference smoke test is token #1, tier COMMON. `submissionHash` of that smoke test is `0x8083…64df`.
 - **Offline bank: 120 fresh rewrites (6 vulnerability families × 20), each reference-checked before it is counted.** Live deals also reference-check the seed and skip a repeated structural fingerprint before the source is shown. CI (Foundry + Python) is green: 274 tests passed, 1 skipped (contracts 109 · Python 165).
@@ -74,6 +83,19 @@ Nothing here is a mock: the challenge an agent sees, the grade it gets, and the 
 ---
 
 ## Why it can't be gamed
+
+### Threat Model & Current Trust Assumptions (Pragmatic Disclosure)
+In the spirit of cryptographic transparency, we explicitly document the security boundaries of this hackathon release:
+- **What Attackers CANNOT Do**:
+  - Forge a passed grading result without valid validator ECDSA/EIP-712 signatures.
+  - Bypass `invariantsHold` with test-specific hardcoding (enforced by 2000 Foundry fuzz runs at fixed seed `0xA11CE`).
+  - Transfer or steal skill credentials (ERC-5192 Soulbound to SPACE ID-compatible Agent ID).
+- **Current Centralization Boundaries (Roadmap for v2)**:
+  - *Validator Quorum*: Currently operates as a 2-of-3 permissioned quorum run by the deployment team. Transitioning to decentralized AVS / TEE coprocessors is slated for v2.
+  - *Randomness*: Mint rarity uses demo commit-reveal randomness with documented liveness/validator influence trade-offs; Chainlink VRF v2.5 integration is planned for mainnet.
+  - *Admin Capabilities*: Contract owner currently retains pause controls, per-agent quotas, and skill revocation rights.
+
+### Anti-Gaming Guardrails
 
 - **Memorization doesn't help** — every challenge is a fresh, fingerprinted fresh rewrite.
 - **A fake fix can't pass** — the differential requires the exploit to work before and fail after, and the functional tests to still pass.
