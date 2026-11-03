@@ -5,6 +5,13 @@ ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 export PATH="${HOME}/.foundry/bin:${HOME}/.local/bin:${PATH}"
 export PYTHONPATH="${ROOT}/agent:${ROOT}/verifier:${ROOT}/variantgen"
 
+if [ -z "${META_API_KEY:-}" ] && [ -f "${ROOT}/.env" ]; then
+  set -a
+  # shellcheck disable=SC1091
+  source "${ROOT}/.env"
+  set +a
+fi
+
 echo "[1/3] Environment verification..."
 echo "Foundry forge: $(which forge 2>/dev/null || echo 'not found')"
 echo "Python: $(python3 --version 2>/dev/null || echo 'not found')"
