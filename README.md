@@ -35,7 +35,7 @@ The current public prototype implements the smart-contract capability record lay
 
 The platform layers are now integrated on top of the capability record layer:
 
-- the family-template directory and `variantgen/`: the anti-memorization engine. Six vulnerability family templates (漏洞類型) across three vulnerability classes and all three difficulty tiers — reentrancy, price-manipulation, access-control, a legendary signature-replay treasury, plus two real-incident challenges: `bridge-phantom-deposit` (Qubit QBridge, Jan 2022) and `empty-market-inflation` (Hundred Finance / Sonne Compound-fork share inflation) — both already patched and public, self-contained with no fork, and graded so that only the class fix passes (see [`docs/realbank/`](docs/realbank/README.md)). A seed renders a fresh, structurally-unique fresh rewrite each time (renamed identifiers, distractor functions, reordering), so an agent must fix the bug class, not recall a public answer. Each vulnerability family ships 20/20 unique, self-verified fresh rewrites — 120 in all.
+- the family-template directory (`mothers/`) and `variantgen/`: the anti-memorization engine. Nine vulnerability family templates (漏洞類型) across three vulnerability classes and all three difficulty tiers: four core families (reentrancy, price-manipulation, access-control, a legendary signature-replay treasury) and five real-incident reproductions (Qubit QBridge `bridge-phantom-deposit`, Hundred Finance / Sonne `empty-market-inflation`, Platypus, Nomad, Beanstalk). All five are already-patched public incidents, self-contained with no fork, and graded so that only the class fix passes (see [`docs/realbank/`](docs/realbank/README.md) and [`docs/real-incident-track.md`](docs/real-incident-track.md)). A seed renders a fresh, structurally-unique rewrite each time (renamed identifiers, distractor functions, reordering), so an agent must fix the bug class, not recall a public answer. The test suite checks 20 distinct fingerprints per family, 180 fresh rewrites in all. The arena benchmarks six of the nine families (see below).
 - `verifier/axvigil_verifier/`: the single canonical grader, run in a hardened sandbox (ffi off, no network, wall-clock + POSIX resource limits). Grades both the seed-variant challenges and the patch-based `reentrancy-001` demo (`grade --patch`); zero third-party dependencies.
 - `backend/axvigil_backend/`: the platform API — agents `login` with a wallet signature, `start` a server-issued fresh rewrite (source only), `submit` to be graded in a session, and `authorize` a grade-then-signed reward. SQLite persistence, per-agent rate limits, an answer-leak circuit breaker and a difficulty-weighted leaderboard. `backend/mint_auth.py` remains the single-file signer for the deployed demo.
 - `agent/`: an autonomous propose → grade → feed-back → retry solve loop (Meta Model API, with an offline oracle) and a multi-model arena that compares Muse Spark models on the same fresh rewrites.
@@ -151,27 +151,9 @@ A separate 2-of-3 collectible is live: [`0x0e87…C8eB`](https://testnet.bscscan
 | AxVigilSkill | `0x337743Da5894B58039743f46f689337991cECD18` | [view](https://testnet.bscscan.com/address/0x337743Da5894B58039743f46f689337991cECD18) |
 | AxVigilCollectible | `0x06580BFc1626f7DD3d7B841FD304e6f2B23e4658` | [view](https://testnet.bscscan.com/address/0x06580BFc1626f7DD3d7B841FD304e6f2B23e4658) |
 
-### Previous deployment (PR #4, superseded)
-
-That superseded bytecode never drew Hidden. AxVigilSkill `0xF572376A24467F5a70D0063448e5386BB842cD30`, AxVigilCollectible [`0x7dd86cB7d4e2d7E0b731FB86D53Bd12D02751685`](https://testnet.bscscan.com/address/0x7dd86cB7d4e2d7E0b731FB86D53Bd12D02751685). Its smoke-test token `1` is unrevealed. Full record under `previous` in the manifest. The current rule, live on the addresses above, draws Hidden only from pool 2 at a fixed 0.25%.
-
-### Original deployment (pre-PR #4, superseded)
-
-The first public testnet deployment (now superseded) is below. The deployment uses the demo-only `MockAgentID` registry and a 50 mint-per-hour cap. Its live demo did commit a batch, mint token `1`, and reveal it (details under the table).
-
-| Contract | Address | Explorer |
-|---|---|---|
-| MockAgentID | `0x7Aa441477f0246353bdAe504cF0F9B3027D6d45e` | [view](https://testnet.bscscan.com/address/0x7Aa441477f0246353bdAe504cF0F9B3027D6d45e) |
-| AxVigilSkill | `0xaCd74265DcFc516bD81d9E7173a57ddEdBD3a593` | [view](https://testnet.bscscan.com/address/0xaCd74265DcFc516bD81d9E7173a57ddEdBD3a593) |
-| AxVigilCollectible | `0xFDc7744074d49e9049B82A7CCc76824f75f80437` | [view](https://testnet.bscscan.com/address/0xFDc7744074d49e9049B82A7CCc76824f75f80437) |
+Superseded deployments (PR #4 and the original) are kept in [`docs/deployment-history.md`](docs/deployment-history.md).
 
 The full public deployment record, including transaction hashes, is [`deployments/bsc-testnet-97.json`](deployments/bsc-testnet-97.json).
-
-The collection art plan is documented in [`docs/prd-v1.4-asset-pipeline.md`](docs/prd-v1.4-asset-pipeline.md): Muse Image creates a small Aki source set, while a deterministic local compositor produces the 7,777 final images and metadata. This preserves character consistency, keeps generation cost low and binds the verified vulnerability class to the visual effect.
-
-On that previous deployment, the first live demo completed: verifier `reentrancy-001` passed, Agent ID `1` was created, and Collectible token `1` was minted to the deployer. `AxVigilSkill.totalSolves(1)` was `1` and `currentBatch` was `1`. Those transactions are [commit seed](https://testnet.bscscan.com/tx/0x493ac2cb71504cb643f95c8e1b3a2a7dd53cc33e95428d6cc8297138e100155b), [create Agent ID](https://testnet.bscscan.com/tx/0xc125505638e6562e965977610cbad7a0cfc6f3579c38f3660c24a578a73f5ecd), and [mint collectible](https://testnet.bscscan.com/tx/0xf78ae69add796a107302aaafc178c0b45c4c5936ebcb5ebe47c58f3836b14fce). The reusable script is [`contracts/script/BscLiveDemo.s.sol`](contracts/script/BscLiveDemo.s.sol); its seed is generated and retained locally, never committed.
-
-That original token `1` was revealed as `REENTRANCY`, tier `COMMON`, with `artId = 0`. The [seed reveal transaction](https://testnet.bscscan.com/tx/0x4a0cb0039cd88c8573cab7bd30a909c2d601036f2607b516dc62abe34f407733) and [token reveal transaction](https://testnet.bscscan.com/tx/0xe17d8f2ea32ee87698bc5367aca087ebb12a841083cd2416111aea525dba6401) are under `previous.previous` in the deployment manifest. The current deployment's token `1` was revealed as tier **COMMON**, artId `20000` (see above).
 
 Once a result has `passed: true`, the backend bridge binds its `submissionHash` into the contract's EIP-712 authorization:
 
@@ -186,7 +168,7 @@ python -m backend.mint_auth --result verifier-result.json \
 
 ## Multi-model arena
 
-The arena is the piece that shows Meta models doing agentic security work. Every contestant receives the same variantgen challenges (the six mothers, rendered from seeds). Each one proposes a patch and a proof of concept, the real verifier grades it, failed checks go back to the model, and it retries until the patch passes or the iteration budget ends. A static leaderboard ranks the results.
+The arena is the piece that shows Meta models doing agentic security work. Every contestant receives the same variantgen challenges (six of the nine families, rendered from seeds; the Platypus, Nomad and Beanstalk families are not benchmarked yet). Each one proposes a patch and a proof of concept, the real verifier grades it, failed checks go back to the model, and it retries until the patch passes or the iteration budget ends. A static leaderboard ranks the results.
 
 What that demonstrates:
 
@@ -273,18 +255,22 @@ PYTHONPATH=agent:verifier:variantgen python -m axvigil_agent arena \
   --summary web/arena_summary.md
 ```
 
+**Reading the results.** The committed matrix is one seed per family, so each contestant has 6 runs. Treat it as a smoke test of the loop and the grader, not a ranking of the models: a single failed run moves a pass rate by 17 points, and differences between baseline contestants are within that noise. Larger seed counts are a flag away (`--seeds N`).
+
 ## Security and demo scope
 
 This is a hackathon prototype for a BSC testnet/whitehat sandbox. It is not audited and should not be used with production funds. The demo commit-reveal randomness has known owner/validator influence and liveness limitations; the production plan is to replace it with Chainlink VRF v2.5. Admin powers, metadata mutability and skill revocation are documented in [`contracts/README.md`](contracts/README.md).
 
+
+**Grading sandbox.** The default grader runs Foundry as an offline subprocess: `ffi` off, no network, a wall-clock timeout and POSIX resource limits. That is resource-limiting, not strong isolation. A locked-down Docker mode exists (`AXVIGIL_SANDBOX=docker`, image `axvigil-sandbox:1.8.7`, memory/CPU/pid caps), but the image is not built in CI and the live BSC testnet grades used the subprocess mode (see [`docs/operator-runbook.md`](docs/operator-runbook.md)). Because agent-written Solidity is untrusted input, run the grader on a disposable machine, or in Docker mode, for anything beyond this demo.
 ## Real-incident track and invariant grading
 
 Five mothers are minimal offline reproductions of public DeFi incidents (Qubit, Hundred/Sonne, Platypus, Nomad, Beanstalk). Every mother is also graded with a fifth check, `invariantsHold`: Foundry fuzz and stateful invariant tests on the patched contract at a fixed seed (`0xA11CE`), 2000 fuzz runs, and 256 invariant runs of depth 32. Patches that only special-case the hidden unit tests fail that check. Sources, timings, and the two cheating-patch fixtures are in [`docs/real-incident-track.md`](docs/real-incident-track.md).
 
-## License
-
-This project is MIT-licensed. See [LICENSE](LICENSE).
-
 ## Optimistic challenge window
 
 A mint can stay pending for a configurable window so anyone can recompute the evidence and challenge it. Two of three validators sign an EIP-712 `ChallengeVerdict`; an upheld challenge flags the collectible and drops that skill solve from `isValid`. After the window, `finalize` confirms an unchallenged record. The mechanism, deploy script, demo commands, and trust assumptions are in [`docs/challenge-window.md`](docs/challenge-window.md).
+
+## License
+
+This project is MIT-licensed. See [LICENSE](LICENSE).

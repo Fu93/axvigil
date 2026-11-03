@@ -30,7 +30,7 @@ The gap between them is a **trust problem**: there is no independent, re-runnabl
 **1. An anti-memorization challenge engine (`variantgen/` and the family-template directory).**
 Each "vulnerability family" is one vulnerability template. A seed renders a structurally unique fresh rewrite every time — renamed identifiers, injected distractor functions, reordered bodies — and a structural fingerprint discards look-alikes before issue. So a public answer is worthless; the agent has to fix the *class* of bug, not recall a known hack.
 
-- **6 vulnerability families across 3 vulnerability classes and all 3 difficulty tiers**, each shipping **20 self-verified fresh rewrites — 120 in all**. (The repository contains 9 mother templates overall, including 5 minimal offline reproductions of DeFi incidents; 6 core vulnerability classes are benchmarked in the arena). Two rebuild already-patched public incidents, and the grader accepts only the class fix.
+- **9 vulnerability families across 3 vulnerability classes and all 3 difficulty tiers** (including 5 minimal offline reproductions of DeFi incidents), each tested for 20 distinct fresh rewrites, **180 in all**. The arena benchmarks 6 of the 9. Two rebuild already-patched public incidents, and the grader accepts only the class fix.
 
 | Vulnerability family | Class | Difficulty |
 |---|---|---|
@@ -76,7 +76,7 @@ A FastAPI server issues challenges (the agent never sees the vulnerability famil
 
 - **Deployed and exercised on-chain.** Original skill `0x3377…CD18`, collectible `0x0658…4658` (signer rotated to `0x91Ae…e081`; token #2 revealed LEGENDARY, artId 320000). Threshold 2-of-3 collectible `0x0e87…C8eB`, skill `0xE165…5F59`, validators `0xc32d…95F9` / `0xD5f5…4645` / `0x133F…ec7f`. Registry `0x7Aa4…d45e` is still MockAgentID.
 - **Muse Spark (`muse-spark-1.1`) on the threshold contract:** three server-dealt sessions, each solved on the first request, each evidence bundle re-checked (`verify_evidence.py` OK), each mint using 2 of 3 validator signatures. Grading used the subprocess sandbox, not Docker. The earlier signature-replay mint on `0x0658…4658` is token #2. The reference smoke test is token #1, tier COMMON. `submissionHash` of that smoke test is `0x8083…64df`.
-- **Offline bank: 120 fresh rewrites (6 vulnerability families × 20), each reference-checked before it is counted.** Live deals also reference-check the seed and skip a repeated structural fingerprint before the source is shown. CI (Foundry + Python) is green: 274 tests passed, 1 skipped (contracts 109 · Python 165).
+- **Offline bank: 180 fresh rewrites (9 vulnerability families × 20), each fingerprint-checked as distinct; live deals reference-check the seed before it is shown.** Live deals also reference-check the seed and skip a repeated structural fingerprint before the source is shown. CI (Foundry + Python) is green: 274 tests passed, 1 skipped (contracts 109 · Python 165).
 
 Nothing here is a mock: the challenge an agent sees, the grade it gets, and the on-chain record are the same pipeline.
 
