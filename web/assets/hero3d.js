@@ -43,7 +43,19 @@ export const HERO3D = {
   perf: { maxDprDesktop: 1.75, maxDprMobile: 1.5, frameBudgetMs: 22 }
 };
 
-const GLB = "assets/3d/axvigil_core_web.glb";
+const HALVES = "assets/3d/halves_meshopt.glb";
+const SHARDS = "assets/3d/shards_meshopt.glb";
+const NODE = "assets/3d/node_meshopt.glb";
+const MODEL_SCALE = 2.4 / 1.9;
+const SHARD_CENTROIDS = [
+  [0.0235, 0.5383, 0.0131],
+  [0.1876, 0.1634, 0.0381],
+  [-0.0628, 0.2071, -0.178],
+  [-0.155, 0.2342, 0.1167],
+  [-0.0797, -0.1606, 0.1328],
+  [0.0481, -0.1922, -0.1395],
+  [0.0157, -0.5384, -0.0261]
+];
 const ACCENT = HERO3D.accent;
 let started = false;
 
@@ -181,12 +193,16 @@ export function mount() {
   const hiddenMat = lineMat(1.15, 0);
   hiddenMat.depthFunc = THREE.GreaterDepth;
 
-  const nodeMat = new THREE.MeshBasicMaterial({
-    color: hdr(2.15),
-    toneMapped: false,
+  const nodeMat = new THREE.MeshStandardMaterial({
+    color: 0x14160c,
+    emissive: ACCENT,
+    emissiveIntensity: 0.55,
+    roughness: 0.32,
+    metalness: 0.2,
     transparent: true,
     opacity: playIntro ? 0 : 1
   });
+  const nodeEdgeMat = lineMat(2.5, playIntro ? 0 : 1);
   const ringMat = new THREE.LineBasicMaterial({
     color: 0xffffff,
     transparent: true,
@@ -195,20 +211,14 @@ export function mount() {
     toneMapped: false
   });
 
-  const inner = new THREE.Mesh(
-    new THREE.OctahedronGeometry(0.22, 0),
-    new THREE.MeshBasicMaterial({
-      color: hdr(2.3),
-      toneMapped: false,
-      transparent: true,
-      opacity: 0,
-      depthWrite: false
-    })
-  );
-    inner.layers.enable(1);
-  inner.userData.bloom = true;
-  inner.visible = false;
-  yaw.add(inner);
+  const innerMat = new THREE.MeshBasicMaterial({
+    color: hdr(2.3),
+    toneMapped: false,
+    transparent: true,
+    opacity: 0,
+    depthWrite: false
+  });
+  let inner = null;
 
   const apexMark = new THREE.Object3D();
   apexMark.position.set(0, 1.2, 0);
@@ -242,10 +252,8 @@ export function mount() {
     const ring = new THREE.Line(ringGeo, ringMat);
     ring.visible = !mobile || i === 0;
     pivot.add(ring);
-    const orb = new THREE.Mesh(new THREE.OctahedronGeometry(HERO3D.nodes.size, 0), nodeMat);
+    const orb = new THREE.Group();
     orb.position.set(radius, 0, 0);
-    orb.layers.enable(1);
-    orb.userData.bloom = true;
     pivot.add(orb);
     const hit = new THREE.Mesh(
       new THREE.SphereGeometry(0.25, 8, 8),
@@ -286,27 +294,11 @@ export function mount() {
     return line;
   });
 
-  const shardCount = mobile || reduced ? 0 : 22;
-  const shards = shardCount ? new THREE.InstancedMesh(
-    new THREE.OctahedronGeometry(0.05, 0),
-    new THREE.MeshBasicMaterial({ color: hdr(1.6), transparent: true, opacity: 0, toneMapped: false, depthWrite: false }),
-    shardCount
-  ) : null;
-  const shardSeed = [];
-  if (shards) {
-    const dummy = new THREE.Object3D();
-    for (let i = 0; i < shardCount; i += 1) {
-      const dir = new THREE.Vector3(Math.cos(i * 2.4), Math.sin(i * 1.7) * 0.65, Math.sin(i * 2.4)).normalize();
-      shardSeed.push(dir);
-      dummy.position.copy(dir).multiplyScalar(0.2);
-      dummy.scale.setScalar(0.2);
-      dummy.updateMatrix();
-      shards.setMatrixAt(i, dummy.matrix);
-    }
-    shards.instanceMatrix.needsUpdate = true;
-    shards.frustumCulled = false;
-    yaw.add(shards);
-  }
+  const shardPieces = [];
+  const shardMat = bodyMat.clone();
+  shardMat.transparent = true;
+  shardMat.opacity = 0;
+  shardMat.depthWrite = false;
 
   const hud = buildHud();
   const chrome = buildChrome(playIntro);
@@ -358,19 +350,65 @@ export function mount() {
   }
   chrome.onSkip(finishIntro);
 
-  const loader = new GLTFLoader();
+  const manager = new THREE.LoadingManager();
+  manager.onProgress = function (_url, loaded, total) {
+    if (total) chrome.progress(loaded / total);
+  };
+  const loader = new GLTFLoader(manager);
   loader.setMeshoptDecoder(MeshoptDecoder);
   const t0 = performance.now();
-  loader.load(GLB, function (gltf) {
-    const baked = bakeCrystal(gltf.scene);
-    const parts = splitGeometry(baked);
-    baked.dispose();
-    addHalf(topGroup, parts.top);
-    addHalf(botGroup, parts.bot);
-    const entry = performance.getEntriesByType("resource").filter(function (row) {
-      return row.name.indexOf("axvigil_core_web.glb") !== -1;
-    }).pop();
-    host.dataset.glbBytes = String(entry ? (entry.decodedBodySize || entry.transferSize || 0) : 0);
+  function loadOne(url) {
+    return new Promise(function (resolve, reject) {
+      loader.load(url, resolve, undefined, reject);
+    });
+  }
+  Promise.all([loadOne(HALVES), loadOne(SHARDS), loadOne(NODE)]).then(function (loaded) {
+    const halves = meshesByName(loaded[0].scene);
+    const shardMap = meshesByName(loaded[1].scene);
+    const nodes = meshesByName(loaded[2].scene);
+    if (halves.half_top) addHalf(topGroup, halves.half_top);
+    if (halves.half_bottom) addHalf(botGroup, halves.half_bottom);
+    if (halves.core) {
+      inner = halves.core;
+      inner.material = innerMat;
+      inner.scale.setScalar(MODEL_SCALE);
+      inner.layers.enable(1);
+      inner.userData.bloom = true;
+      inner.visible = false;
+      yaw.add(inner);
+    }
+    SHARD_CENTROIDS.forEach(function (centroid, index) {
+      const src = shardMap["shard_0" + (index + 1)];
+      if (!src) return;
+      const piece = src;
+      piece.material = shardMat;
+      piece.scale.setScalar(MODEL_SCALE);
+      piece.visible = playIntro;
+      const dir = new THREE.Vector3(centroid[0] * 3, centroid[1], centroid[2] * 3).normalize();
+      yaw.add(piece);
+      shardPieces.push({ mesh: piece, dir: dir, delay: index * 0.04 });
+    });
+    const nodeSrc = nodes.validator_node;
+    if (nodeSrc) {
+      const edgeGeo = new THREE.EdgesGeometry(nodeSrc.geometry, 1);
+      sats.forEach(function (sat) {
+        const mesh = new THREE.Mesh(nodeSrc.geometry, nodeMat);
+        mesh.scale.setScalar(0.18);
+        const edges = new THREE.LineSegments(edgeGeo, nodeEdgeMat);
+        edges.scale.setScalar(1.02);
+        edges.layers.enable(1);
+        edges.userData.bloom = true;
+        mesh.add(edges);
+        mesh.layers.enable(1);
+        mesh.userData.bloom = true;
+        sat.orb.add(mesh);
+        sat.node = mesh;
+      });
+    }
+    const bytes = performance.getEntriesByType("resource").filter(function (row) {
+      return /halves_meshopt|shards_meshopt|node_meshopt/.test(row.name);
+    }).reduce(function (sum, row) { return sum + (row.decodedBodySize || row.transferSize || 0); }, 0);
+    host.dataset.glbBytes = String(bytes);
     host.dataset.glbMs = String(Math.round(performance.now() - t0));
     host.classList.add("is-live");
     meshReady = true;
@@ -378,37 +416,37 @@ export function mount() {
     chrome.loaded();
     resize();
     setActive(true);
-  }, function (ev) {
-    if (ev && ev.lengthComputable) chrome.progress(ev.loaded / ev.total);
-  }, function () {
+  }).catch(function () {
     chrome.loaded();
     document.documentElement.classList.add("intro-go");
     host.classList.remove("is-live");
   });
 
-  function addHalf(group, geometry) {
-    const mesh = new THREE.Mesh(geometry, bodyMat);
+  function addHalf(group, source) {
+    const mesh = source.isMesh ? source : new THREE.Mesh(source, bodyMat);
+    mesh.material = bodyMat;
+    mesh.scale.setScalar(MODEL_SCALE);
     mesh.layers.set(0);
     group.add(mesh);
-    const edges = makeEdges(geometry);
+    const edges = makeEdges(mesh.geometry);
     const solid = new THREE.LineSegments(edges, solidMat);
     solid.scale.setScalar(1.004);
     solid.layers.enable(1);
     solid.userData.bloom = true;
-    group.add(solid);
+    mesh.add(solid);
     const glint = new THREE.LineSegments(edges, glintMat);
     glint.scale.setScalar(1.006);
     glint.computeLineDistances();
     glint.layers.enable(1);
     glint.userData.bloom = true;
-    group.add(glint);
+    mesh.add(glint);
     const hidden = new THREE.LineSegments(edges, hiddenMat);
     hidden.scale.setScalar(1.004);
     hidden.layers.enable(1);
     hidden.userData.bloom = true;
     hidden.visible = false;
     hiddenLines.push(hidden);
-    group.add(hidden);
+    mesh.add(hidden);
   }
 
   function resize() {
@@ -644,14 +682,18 @@ export function mount() {
     solidMat.color.copy(lit).lerp(ink, pose.light * 0.78);
     glintMat.color.copy(lit).lerp(ink, pose.light * 0.55);
 
-    inner.visible = pose.split > 0.04;
-    inner.material.opacity = Math.min(1, pose.split * 1.25);
-    inner.scale.setScalar(0.35 + pose.split * 0.85);
-    inner.rotation.y = idle * 0.6;
+    if (inner) {
+      inner.visible = pose.split > 0.04;
+      innerMat.opacity = Math.min(1, pose.split * 1.25);
+      const coreScale = MODEL_SCALE * (0.72 + pose.split * 0.28);
+      inner.scale.setScalar(coreScale);
+      inner.rotation.y = idle * 0.6;
+    }
 
     disc.material.opacity = 0.08 + pose.light * 0.62;
     orbits.scale.setScalar(0.6 + 0.4 * nodeEase);
     nodeMat.opacity = nodeEase;
+    nodeEdgeMat.opacity = nodeEase;
     ringMat.opacity = HERO3D.nodes.ringOpacity * nodeEase * (0.35 + pose.orbit * 0.65);
 
     let hoverIndex = -1;
@@ -668,7 +710,8 @@ export function mount() {
       const lineup = [0.35, 1.55, 2.75][sat.index];
       sat.angle += shortAngle(sat.angle, lineup) * pose.proof * Math.min(1, dt * 3.2);
       sat.pivot.rotation.y = sat.angle;
-      sat.orb.scale.setScalar(sat.hover ? 1.45 : 1);
+      const nodeScale = 0.18 * (sat.hover ? 1.45 : 1);
+      if (sat.node) sat.node.scale.setScalar(nodeScale);
     });
 
     const pulse = signEnvelope(now * 0.001);
@@ -687,20 +730,14 @@ export function mount() {
       line.material.opacity = envIn * nodeEase;
     });
 
-    if (shards) {
-      const dummy = new THREE.Object3D();
-      const spread = 0.25 + buildP * 1.15;
-      const shardFade = playIntro ? Math.max(0, 1 - clamp01((introT - 1.15) / 0.7)) : 0;
-      shards.material.opacity = shardFade;
-      shardSeed.forEach(function (dir, i) {
-        dummy.position.copy(dir).multiplyScalar(spread * (0.65 + (i % 5) * 0.08));
-        dummy.scale.setScalar(0.35 + buildP * 0.8);
-        dummy.rotation.set(i, buildP * 2, i * 0.3);
-        dummy.updateMatrix();
-        shards.setMatrixAt(i, dummy.matrix);
+    if (shardPieces.length) {
+      const fade = playIntro ? 1 - clamp01((introT - 1.45) / 0.4) : 0;
+      shardMat.opacity = fade;
+      shardPieces.forEach(function (piece) {
+        const local = playIntro ? elasticOut(clamp01((introT - piece.delay) / 1.35)) : 1;
+        piece.mesh.position.copy(piece.dir).multiplyScalar((1 - local) * 1.15);
+        piece.mesh.visible = fade > 0.03;
       });
-      shards.instanceMatrix.needsUpdate = true;
-      shards.visible = shardFade > 0.02;
     }
 
     placePins(nodeEase, hoverIndex);
@@ -1117,84 +1154,12 @@ function easeInOutSine(p) {
   return -(Math.cos(Math.PI * clamp01(p)) - 1) / 2;
 }
 
-function bakeCrystal(root) {
-  const geos = [];
-  root.updateWorldMatrix(true, true);
+function meshesByName(root) {
+  const map = {};
   root.traverse(function (obj) {
-    if (!obj.isMesh || !obj.geometry) return;
-    const geo = obj.geometry.clone();
-    geo.applyMatrix4(obj.matrixWorld);
-    geos.push(geo);
+    if (obj.isMesh && obj.name) map[obj.name] = obj;
   });
-  const geo = geos[0] || new THREE.BufferGeometry();
-  for (let i = 1; i < geos.length; i += 1) {
-    geos[i].dispose();
-  }
-  geo.computeBoundingBox();
-  const box = geo.boundingBox;
-  const center = box.getCenter(new THREE.Vector3());
-  const size = box.getSize(new THREE.Vector3());
-  geo.translate(-center.x, -center.y, -center.z);
-  const s = HERO3D.crystal.height / (size.y || 1);
-  geo.scale(s, s, s);
-  geo.computeVertexNormals();
-  return geo;
-}
-
-function splitGeometry(geometry) {
-  const pos = geometry.getAttribute("position");
-  const index = geometry.getIndex();
-  const top = [];
-  const bot = [];
-  const count = index ? index.count : pos.count;
-  function read(i) {
-    return [pos.getX(i), pos.getY(i), pos.getZ(i)];
-  }
-  function push(buf, a, b, c) {
-    buf.push(a[0], a[1], a[2], b[0], b[1], b[2], c[0], c[1], c[2]);
-  }
-  function cut(p, q) {
-    const t = p[1] / (p[1] - q[1]);
-    return [p[0] + (q[0] - p[0]) * t, 0, p[2] + (q[2] - p[2]) * t];
-  }
-  for (let i = 0; i < count; i += 3) {
-    const a = read(index ? index.getX(i) : i);
-    const b = read(index ? index.getX(i + 1) : i + 1);
-    const c = read(index ? index.getX(i + 2) : i + 2);
-    const above = [];
-    const below = [];
-    [a, b, c].forEach(function (p) { (p[1] >= 0 ? above : below).push(p); });
-    if (above.length === 3) { push(top, a, b, c); continue; }
-    if (below.length === 3) { push(bot, a, b, c); continue; }
-    if (above.length === 1) {
-      const p = above[0];
-      const q = below[0];
-      const r = below[1];
-      const pq = cut(p, q);
-      const pr = cut(p, r);
-      push(top, p, pq, pr);
-      push(bot, pq, q, r);
-      push(bot, pq, r, pr);
-    } else {
-      const p = below[0];
-      const q = above[0];
-      const r = above[1];
-      const pq = cut(p, q);
-      const pr = cut(p, r);
-      push(bot, p, pq, pr);
-      push(top, pq, q, r);
-      push(top, pq, r, pr);
-    }
-  }
-  return { top: geoFrom(top), bot: geoFrom(bot) };
-}
-
-function geoFrom(arr) {
-  const geo = new THREE.BufferGeometry();
-  geo.setAttribute("position", new THREE.Float32BufferAttribute(arr, 3));
-  geo.computeVertexNormals();
-  geo.computeBoundingSphere();
-  return geo;
+  return map;
 }
 
 function makeEdges(geometry) {
