@@ -29,6 +29,7 @@ import re
 from pathlib import Path
 
 from .forge_runner import compile_failure_note, run_test, RunResult
+from .gas_guard import check_poc_failure_is_valid_remediation
 from .invariant_profile import (
     FUZZ_RUNS,
     FUZZ_SEED,
@@ -38,6 +39,11 @@ from .invariant_profile import (
 )
 from .keccak import submission_hash
 from .model import GradeResult
+from .storage_guard import (
+    extract_storage_layout_from_project,
+    parse_storage_layout_json,
+    verify_storage_layout_preservation,
+)
 
 # Shown when hidden tests fail. Both failure modes are named, and neither the
 # hidden tests nor the intended fix are. A retry must not be told to shrink the
@@ -206,6 +212,11 @@ def grade(
     poc_fails_after_patch = (
         r2.compiled and not r2.timed_out and bool(r2.tests) and not r2.any_passed
     )
+    if poc_fails_after_patch:
+        valid_remediation, oog_err = check_poc_failure_is_valid_remediation(r2.reasons)
+        if not valid_remediation:
+            poc_fails_after_patch = False
+            log.append(f"pocFailsAfterPatch: {oog_err}")
 
     # 3. Hidden functional tests pass on the PATCHED contract.
     r3 = _run("hiddenTestsPass", patched_sources, {hidden_name: hidden_test}, f"test/{hidden_name}")
@@ -217,10 +228,24 @@ def grade(
     iface_ok, missing = _interface_preserved(patched_target, contract_name, required_selectors)
     within_lines = changed <= max_changed
     within_bytes = nbytes <= max_bytes
-    patch_within_limits = within_lines and within_bytes and iface_ok
+
+    storage_ok = True
+    storage_violations: list[str] = []
+    if meta.get("checkStorageLayout", False) and iface_ok:
+        orig_layout_raw = meta.get("originalStorageLayout")
+        patched_layout_raw = meta.get("patchedStorageLayout")
+        if orig_layout_raw and patched_layout_raw:
+            orig_slots = parse_storage_layout_json(orig_layout_raw)
+            patched_slots = parse_storage_layout_json(patched_layout_raw)
+            storage_ok, storage_violations = verify_storage_layout_preservation(orig_slots, patched_slots)
+
+    patch_within_limits = within_lines and within_bytes and iface_ok and storage_ok
+    storage_note = ""
+    if meta.get("checkStorageLayout", False):
+        storage_note = f" storage={'ok' if storage_ok else 'CORRUPTED ' + '; '.join(storage_violations)}"
     log.append(
         f"patchWithinLimits: changedLines={changed}/{max_changed} bytes={nbytes}/{max_bytes} "
-        f"interface={'ok' if iface_ok else 'MISSING ' + ','.join(missing)}"
+        f"interface={'ok' if iface_ok else 'MISSING ' + ','.join(missing)}{storage_note}"
     )
 
     # 5. Fuzz + invariant tests on the PATCHED contract, at the pinned schedule.

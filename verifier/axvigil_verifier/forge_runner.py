@@ -67,6 +67,8 @@ class RunResult:
     compiled: bool
     timed_out: bool
     tests: dict[str, bool] = field(default_factory=dict)  # "testName()" -> passed
+    reasons: dict[str, str | None] = field(default_factory=dict)  # "testName()" -> failure reason
+    gas_used: dict[str, int | None] = field(default_factory=dict)  # "testName()" -> gas units
     raw: str = ""
 
     @property
@@ -182,13 +184,21 @@ def _run_in_docker(workdir: Path, match_path: str, fuzz_seed: int, timeout_s: in
     except FileNotFoundError:
         return RunResult(compiled=False, timed_out=False, raw="docker was not found")
     stdout = proc.stdout or ""
-    tests_map = _parse_forge_json(stdout)
-    if tests_map is None:
+    details = _parse_forge_json_details(stdout)
+    if details is None:
         raw = (proc.stderr or "") + stdout
         if not raw.strip():
             raw = f"docker sandbox exited with status {proc.returncode} without output"
         return RunResult(compiled=False, timed_out=False, raw=raw)
-    return RunResult(compiled=True, timed_out=False, tests=tests_map, raw=stdout)
+    tests_map, reasons_map, gas_map = details
+    return RunResult(
+        compiled=True,
+        timed_out=False,
+        tests=tests_map,
+        reasons=reasons_map,
+        gas_used=gas_map,
+        raw=stdout,
+    )
 
 
 def run_test(
@@ -272,13 +282,19 @@ def run_test(
         stdout = stdout or ""
         # Keep the old attribute name used below. stderr is folded into compile failures.
         proc_stderr = stderr or ""
-        tests_map = _parse_forge_json(stdout)
-        # A compile failure yields no JSON test map and a non-zero exit with a
-        # "Compiler run failed" / error marker on stderr or stdout.
-        compiled = tests_map is not None
+        details = _parse_forge_json_details(stdout)
+        compiled = details is not None
         if not compiled:
             return RunResult(compiled=False, timed_out=False, raw=proc_stderr + stdout)
-        return RunResult(compiled=True, timed_out=False, tests=tests_map, raw=stdout)
+        tests_map, reasons_map, gas_map = details
+        return RunResult(
+            compiled=True,
+            timed_out=False,
+            tests=tests_map,
+            reasons=reasons_map,
+            gas_used=gas_map,
+            raw=stdout,
+        )
     finally:
         shutil.rmtree(workdir, ignore_errors=True)
 
@@ -347,12 +363,13 @@ def environment_failure(log: str) -> bool:
     return "solidity compiler is not available" in low or "forge was not found" in low
 
 
-def _parse_forge_json(stdout: str) -> dict[str, bool] | None:
-    """Extract {testName: passed} from `forge test --json` output.
+def _parse_forge_json_details(
+    stdout: str,
+) -> tuple[dict[str, bool], dict[str, str | None], dict[str, int | None]] | None:
+    """Extract (tests, reasons, gas_used) from `forge test --json` output.
 
     Returns None if no parseable test JSON was produced (e.g. compile error).
     """
-    # forge may print non-JSON lines; find the JSON object line(s).
     obj = None
     for line in stdout.splitlines():
         line = line.strip()
@@ -368,12 +385,45 @@ def _parse_forge_json(stdout: str) -> dict[str, bool] | None:
             obj = json.loads(stdout)
         except json.JSONDecodeError:
             return None
+    if not isinstance(obj, dict):
+        return None
+
     results: dict[str, bool] = {}
+    reasons: dict[str, str | None] = {}
+    gas_map: dict[str, int | None] = {}
+
     for _suite, data in obj.items():
         tr = data.get("test_results") if isinstance(data, dict) else None
         if not isinstance(tr, dict):
             continue
         for test_name, info in tr.items():
-            status = info.get("status") if isinstance(info, dict) else None
-            results[test_name] = (status == "Success")
-    return results if results else None
+            if not isinstance(info, dict):
+                continue
+            status = info.get("status")
+            passed = (status == "Success")
+            results[test_name] = passed
+            reasons[test_name] = info.get("reason")
+
+            kind = info.get("kind")
+            gas: int | None = None
+            if isinstance(kind, dict):
+                if "Unit" in kind and isinstance(kind["Unit"], dict):
+                    gas = kind["Unit"].get("gas")
+                elif "Fuzz" in kind and isinstance(kind["Fuzz"], dict):
+                    gas = kind["Fuzz"].get("mean_gas")
+            elif isinstance(info.get("gas"), int):
+                gas = info["gas"]
+            gas_map[test_name] = gas
+
+    if not results:
+        return None
+    return results, reasons, gas_map
+
+
+def _parse_forge_json(stdout: str) -> dict[str, bool] | None:
+    """Extract {testName: passed} from `forge test --json` output.
+
+    Returns None if no parseable test JSON was produced (e.g. compile error).
+    """
+    details = _parse_forge_json_details(stdout)
+    return details[0] if details is not None else None
