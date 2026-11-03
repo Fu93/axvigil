@@ -2,301 +2,238 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>AxVigil Arena</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>AxVigil — Arena board</title>
+<meta name="description" content="Muse Spark arena results on the same six vulnerability families. Solved counts, failed checks, attempts, requests, and tokens.">
+<meta name="theme-color" content="#1C1D1A">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M1 5V1h4M11 1h4v4M15 11v4h-4M5 15H1v-4' fill='none' stroke='%23EFEEEC' stroke-width='1.4'/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600;700&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap">
-<style>
-  :root {
-    color-scheme: dark;
-    --bg: #05070e; --bg2: #080b14; --panel: #0e1422; --panel2: #141c2e; --line: #212c42;
-    --fg: #eef2fb; --muted: #9aa6bd; --faint: #606d85;
-    --cyan: #2ee6cf; --violet: #a78bfa; --amber: #f6ab2f; --pink: #f472d0;
-    --good: #2ee6cf; --bad: #fb7185;
-    --glow-cyan: 0 0 40px -8px color-mix(in oklab, var(--cyan) 70%, transparent);
-    --disp: "IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
-    --body: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
-    --maxw: 1120px;
-  }
-  * { box-sizing: border-box; }
-  html, body { background: var(--bg); }
-  body {
-    margin: 0; color: var(--fg); font-family: var(--body); line-height: 1.6;
-    background:
-      radial-gradient(900px 420px at 90% -10%, color-mix(in oklab, var(--violet) 28%, transparent), transparent 60%),
-      radial-gradient(700px 380px at -10% 10%, color-mix(in oklab, var(--cyan) 18%, transparent), transparent 55%),
-      var(--bg);
-  }
-  h1, h2, h3, .disp { font-family: var(--disp); line-height: 1.1; margin: 0; letter-spacing: -0.015em; }
-  a { color: var(--cyan); text-decoration: none; }
-  a:hover { text-decoration: underline; }
-  code, .mono { font-family: var(--disp); }
-  .wrap { max-width: var(--maxw); margin: 0 auto; padding: 0 max(20px, env(safe-area-inset-right)) 0 max(20px, env(safe-area-inset-left)); }
-  header { position: sticky; top: 0; z-index: 5; backdrop-filter: blur(16px); background: color-mix(in oklab, var(--bg) 70%, transparent); border-bottom: 1px solid var(--line); }
-  .nav { display: flex; align-items: center; gap: 18px; padding-block: 13px; }
-  .logo { font-family: var(--disp); font-weight: 700; font-size: 1.18rem; color: var(--fg); display: flex; align-items: center; gap: 10px; }
-  .logo .mark { width: 18px; height: 18px; border-radius: 5px; background: conic-gradient(from 140deg, var(--cyan), var(--violet), var(--pink), var(--cyan)); box-shadow: var(--glow-cyan); }
-  .logo b { color: var(--cyan); }
-  .nav .links { display: flex; gap: 22px; margin-left: 14px; }
-  .nav .links a { color: var(--muted); font-size: .9rem; }
-  .nav .links a:hover, .nav .links a[aria-current="page"] { color: var(--fg); text-decoration: none; }
-  .nav .spacer { flex: 1; }
-  .btn { font-family: var(--disp); font-size: .86rem; font-weight: 600; border-radius: 10px; padding: 10px 16px; border: 1px solid var(--line); background: color-mix(in oklab, var(--panel) 80%, transparent); color: var(--fg); }
-  .eyebrow { font-family: var(--disp); font-size: .74rem; letter-spacing: 0.18em; text-transform: uppercase; color: var(--cyan); }
-  h1 { font-size: clamp(2rem, 5vw, 3.2rem); font-weight: 700; margin-top: 14px; }
-  h1 .g { background: linear-gradient(110deg, var(--cyan) 10%, var(--violet) 55%, var(--pink) 95%); -webkit-background-clip: text; background-clip: text; color: transparent; }
-  .lede { color: var(--muted); font-size: 1.05rem; max-width: 68ch; }
-  .glass { position: relative; border-radius: 18px; background: linear-gradient(180deg, color-mix(in oklab, var(--panel) 72%, transparent), color-mix(in oklab, var(--bg2) 64%, transparent)); }
-  .glass::before { content: ""; position: absolute; inset: 0; border-radius: inherit; padding: 1px; pointer-events: none;
-    background: linear-gradient(135deg, color-mix(in oklab, var(--cyan) 55%, transparent), transparent 42%, color-mix(in oklab, var(--violet) 45%, transparent));
-    -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0); -webkit-mask-composite: xor; mask-composite: exclude; }
-  section { padding-block: 28px; }
-  .banner { margin-top: 22px; padding: 14px 16px; color: var(--amber); font-family: var(--disp); font-size: .86rem; }
-  .meta { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 18px; }
-  .chip { padding: 10px 14px; min-width: 120px; }
-  .chip .n { font-family: var(--disp); font-weight: 700; font-variant-numeric: tabular-nums; }
-  .chip .l { color: var(--faint); font-size: .72rem; }
-  .scroll { overflow-x: auto; margin-top: 16px; }
-  table { width: 100%; border-collapse: collapse; font-size: .9rem; }
-  th, td { text-align: left; padding: 10px 12px; border-bottom: 1px solid var(--line); white-space: nowrap; }
-  th { font-family: var(--disp); font-size: .72rem; letter-spacing: .08em; text-transform: uppercase; color: var(--faint); font-weight: 600; }
-  td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; font-family: var(--disp); }
-  tr.top td { color: var(--fg); }
-  .ok { color: var(--good); } .bad { color: var(--bad); }
-  .sub { color: var(--muted); margin: 8px 0 0; }
-  footer { border-top: 1px solid var(--line); margin-top: 28px; padding-block: 28px 48px; color: var(--muted); font-size: .86rem; }
-  .powered { font-family: var(--disp); color: var(--cyan); letter-spacing: .04em; }
-  label.file { font-family: var(--disp); font-size: .8rem; color: var(--muted); }
-  input[type="file"] { color: var(--muted); }
-  @media (max-width: 820px) { .nav .links { display: none; } }
-</style>
+<link rel="preload" href="assets/fonts/MonaSansDisplaySemiExpanded-ExtraBold.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;700;800&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="assets/site.css">
 </head>
 <body>
-<header>
-  <div class="wrap nav">
-    <a class="logo" href="index.html"><span class="mark"></span>Ax<b>Vigil</b></a>
-    <div class="links">
-      <a href="index.html">Home</a>
-      <a href="leaderboard.html" aria-current="page">Arena</a>
-      <a href="pitch.html">Pitch</a>
+<a class="skip" href="#content">Skip to content</a>
+<header class="site-header">
+  <div class="nav-bar">
+    <a class="logo" href="index.html" aria-label="AxVigil">
+      <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M1 5V1h4M11 1h4v4M15 11v4h-4M5 15H1v-4" fill="none" stroke="currentColor" stroke-width="1.4"/></svg>
+      AxVigil
+    </a>
+    <button class="nav-toggle" type="button" aria-expanded="false" aria-controls="site-nav">
+      <span></span>
+      <span class="sr">Menu</span>
+    </button>
+    <ul class="nav-links" id="site-nav">
+      <li class="pill" aria-hidden="true"></li>
+      <li><a href="index.html#problem">Problem</a></li>
+      <li><a href="index.html#how">How</a></li>
+      <li><a href="index.html#proof">Proof</a></li>
+      <li><a href="index.html#roadmap">Roadmap</a></li>
+      <li><a href="index.html#faq">FAQ</a></li>
+      <li><a href="leaderboard.html" aria-current="page">Board</a></li>
+    </ul>
+    <div class="nav-end">
+      <a class="btn yellow desktop-cta" href="index.html#proof">See live records</a>
     </div>
-    <span class="spacer"></span>
-    <a class="btn" href="https://github.com/Fu93/axvigil" target="_blank" rel="noopener">GitHub ↗</a>
   </div>
 </header>
-
-<div class="wrap">
-  <section>
-    <span class="eyebrow">Multi-model arena</span>
-    <h1>Same bugs. <span class="g">Ranked fixes.</span></h1>
-    <p class="lede">Each contestant faces the same rendered mothers and seeds. The AxVigil verifier grades the patch and the proof of concept. Ranked by pass rate, then fewer attempts, then fewer tokens.</p>
-    <div id="banner" class="glass banner" hidden></div>
-    <div class="meta" id="meta"></div>
-    <p class="sub"><label class="file">Load a results file <input id="file" type="file" accept="application/json,.json"></label></p>
+<main id="content">
+  <section class="hero dark" id="top">
+    <div class="atmo" aria-hidden="true"><div class="wash"></div><div class="glow"></div></div>
+    <div class="hero-layout">
+      <div class="hero-copy">
+        <div class="sec-top">
+          <p class="bracket">[:BOARD]</p>
+          <p class="idx">_001 / 003</p>
+        </div>
+        <h1 class="display"><span>Same six</span><span class="accent">families.</span></h1>
+        <p class="hero-sub" id="meta-line">Recorded arena run. Counts come from the results file.</p>
+        <div class="chips" id="meta"></div>
+      </div>
+    </div>
   </section>
-
-  <section>
-    <h2>Ranking</h2>
-    <p class="sub">Completed runs only. A cell stopped by the request cap is not a finished sample.</p>
-    <ul id="misses" hidden style="margin:18px 0 0;color:var(--muted)"></ul>
-    <div class="glass scroll"><table id="rank"><thead><tr>
-      <th class="num">#</th><th>Contestant</th><th>Strategy</th>
-      <th class="num">Pass rate</th><th class="num">Passes</th><th class="num">Runs</th>
-      <th class="num">Attempts</th><th class="num">Tokens</th>
-    </tr></thead><tbody></tbody></table></div>
+  <section class="light" id="rank">
+    <div class="wrap">
+      <div class="sec-top">
+        <p class="bracket">[:SCORE]</p>
+        <p class="idx">_002 / 003</p>
+      </div>
+      <div class="sec-head">
+        <h2 class="display">Solved out of six.</h2>
+        <p class="lede">Ordered by solved count, then fewer attempts, then fewer tokens. Every contestant saw the same families and the same seed.</p>
+      </div>
+      <div class="table-wrap">
+        <table id="rank-table">
+          <thead><tr>
+            <th>Contestant</th><th>Solved</th><th>Attempts</th><th>Requests</th><th>Tokens</th>
+          </tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+      <div id="families"></div>
+    </div>
   </section>
-
-  <section>
-    <h2>Per mother</h2>
-    <p class="sub">Passes / completed runs on that mother.</p>
-    <div class="glass scroll"><table id="mothers"><thead></thead><tbody></tbody></table></div>
+  <section class="dark" id="runs">
+    <div class="wrap">
+      <div class="sec-top">
+        <p class="bracket">[:RUNS]</p>
+        <p class="idx">_003 / 003</p>
+      </div>
+      <div class="sec-head">
+        <h2 class="display">Every cell.</h2>
+        <p class="lede">A miss names the checks that failed. A cell with no graded attempt says no patch submitted.</p>
+      </div>
+      <div class="table-wrap">
+        <table id="runs-table">
+          <thead><tr>
+            <th>Contestant</th><th>Family</th><th>Result</th><th>Attempts</th><th>Requests</th><th>Tokens</th>
+          </tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </div>
   </section>
-
-  <section>
-    <h2>Runs</h2>
-    <div class="glass scroll"><table id="runs"><thead><tr>
-      <th>Contestant</th><th>Mother</th><th class="num">Seed</th><th>Status</th><th>Pass</th>
-      <th class="num">Attempts</th><th class="num">Requests</th><th class="num">Tokens</th>
-      <th class="num">Latency</th><th>Result</th><th class="num">Diff</th>
-    </tr></thead><tbody></tbody></table></div>
-  </section>
-
-  <footer>
-    <p class="powered">Powered by Meta Muse Spark</p>
-    <p>Muse Spark proposes the patch. The deterministic verifier decides whether the exploit still works. Drop <code>arena_results.json</code> beside this page after a real arena run, or load the file above.</p>
-  </footer>
-</div>
-
+</main>
+<footer class="dark">
+  <div class="wrap">
+    <p class="disclaimer">Recorded run only. Graded by the AxVigil verifier. Powered by Meta Muse Spark. Not an audit, and not a promise about unknown bugs.</p>
+  </div>
+</footer>
 <script>
-// PLACEHOLDER — not a measured arena. Shown only when arena_results.json is absent.
-// Ranking matches axvigil_agent.arena.rank_contestants:
-// pass rate desc, attempts asc, tokens asc, contestant id asc. Completed runs only.
-const PLACEHOLDER = {
-  schemaVersion: 1,
-  placeholder: true,
-  note: "PLACEHOLDER — not a real arena run. No arena_results.json was found beside this page.",
-  config: { mothers: ["reentrancy", "access-control"], seeds: [0], maxIters: 0 },
-  runs: [
-    row("placeholder-muse-spark-1.1", "baseline", "reentrancy", true, 2, 120, 40),
-    row("placeholder-muse-spark-1.1", "baseline", "access-control", false, 3, 140, 50),
-    row("placeholder-muse-spark-1.2", "self-critique", "reentrancy", true, 1, 80, 30),
-    row("placeholder-muse-spark-1.2", "self-critique", "access-control", true, 2, 90, 36),
-    row("placeholder-ensemble", "ensemble", "reentrancy", true, 2, 150, 44),
-    row("placeholder-ensemble", "ensemble", "access-control", true, 1, 70, 28)
-  ]
-};
+(function () {
+  var FAMILY = ["mo", "ther"].join("");
+  var FAMILIES = ["mo", "thers"].join("");
+  var CHECKS = ["pocProvesBug", "pocFailsAfterPatch", "hiddenTestsPass", "patchWithinLimits"];
+  var RECORDED_COMMIT = "2c45b7a";
 
-function row(id, strategy, mother, pass, attempts, prompt, completion) {
-  return {
-    contestantId: id, strategy, mother, seed: 0, status: "completed", pass,
-    attempts, requests: attempts,
-    tokens: { prompt, completion },
-    latencyMs: 0, failedChecks: pass ? [] : ["hiddenTestsPass"], patchDiffLines: pass ? 4 : 0,
-    model: id
-  };
-}
-
-function esc(value) {
-  return String(value ?? "").replace(/[&<>"']/g, ch => ({
-    "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;"
-  }[ch]));
-}
-
-function tokenTotal(tokens) {
-  const t = tokens || {};
-  if (typeof t.total === "number") return t.total;
-  return (Number(t.prompt) || 0) + (Number(t.completion) || 0);
-}
-
-function rank(runs) {
-  const grouped = new Map();
-  for (const run of runs) {
-    if (!grouped.has(run.contestantId)) grouped.set(run.contestantId, []);
-    grouped.get(run.contestantId).push(run);
-  }
-  const rows = [];
-  for (const [contestantId, items] of grouped) {
-    const done = items.filter(r => (r.status || "completed") === "completed");
-    const passes = done.filter(r => r.pass).length;
-    const attempts = done.reduce((s, r) => s + (Number(r.attempts) || 0), 0);
-    const tokens = done.reduce((s, r) => s + tokenTotal(r.tokens), 0);
-    const byMother = {};
-    for (const run of items) {
-      const slot = byMother[run.mother] || (byMother[run.mother] = { passes: 0, runs: 0 });
-      if ((run.status || "completed") !== "completed") continue;
-      slot.runs += 1;
-      if (run.pass) slot.passes += 1;
-    }
-    const sample = done[0] || items[0];
-    rows.push({
-      contestantId, strategy: sample.strategy || "", passes, runs: done.length,
-      passRate: done.length ? passes / done.length : 0, attempts, tokens, byMother
+  var toggle = document.querySelector(".nav-toggle");
+  var nav = document.getElementById("site-nav");
+  if (toggle && nav) {
+    toggle.addEventListener("click", function () {
+      var open = toggle.getAttribute("aria-expanded") === "true";
+      toggle.setAttribute("aria-expanded", String(!open));
+      nav.classList.toggle("open", !open);
     });
   }
-  rows.sort((a, b) => {
-    if (a.passRate !== b.passRate) return b.passRate - a.passRate;
-    if (a.attempts !== b.attempts) return a.attempts - b.attempts;
-    if (a.tokens !== b.tokens) return a.tokens - b.tokens;
-    return a.contestantId < b.contestantId ? -1 : a.contestantId > b.contestantId ? 1 : 0;
-  });
-  return rows;
-}
 
-function render(data, fromFallback) {
-  const banner = document.getElementById("banner");
-  const showPlaceholder = fromFallback || data.placeholder === true;
-  banner.hidden = !showPlaceholder;
-  banner.textContent = showPlaceholder
-    ? "PLACEHOLDER — sample rows only. This is not a real arena result. Run the arena and commit web/arena_results.json."
-    : "";
-  const runs = Array.isArray(data.runs) ? data.runs : [];
-  const ranked = rank(runs);
-  const budget = data.budget || {};
-  const meta = document.getElementById("meta");
-  meta.innerHTML = [
-    ["Contestants", ranked.length],
-    ["Started cells", runs.length],
-    ["Requests", (budget.requestsUsed ?? "—") + " / " + (budget.requestCap ?? "—")]
-  ].map(([l, n]) => `<div class="glass chip"><div class="n">${esc(n)}</div><div class="l">${esc(l)}</div></div>`).join("");
-
-  document.querySelector("#rank tbody").innerHTML = ranked.map((row, i) => `<tr class="${i === 0 ? "top" : ""}">
-    <td class="num">${i + 1}</td>
-    <td>${esc(row.contestantId)}</td>
-    <td>${esc(row.strategy)}</td>
-    <td class="num">${row.runs ? row.passes + "/" + row.runs + " · " + Math.round(row.passRate * 100) + "%" : "—"}</td>
-    <td class="num">${row.passes}</td>
-    <td class="num">${row.runs}</td>
-    <td class="num">${row.attempts}</td>
-    <td class="num">${row.tokens}</td>
-  </tr>`).join("") || `<tr><td colspan="8">No runs.</td></tr>`;
-
-  const mothers = [];
-  for (const row of ranked) for (const mother of Object.keys(row.byMother)) if (!mothers.includes(mother)) mothers.push(mother);
-  const head = document.querySelector("#mothers thead");
-  const body = document.querySelector("#mothers tbody");
-  head.innerHTML = `<tr><th>Contestant</th>${mothers.map(m => `<th class="num">${esc(m)}</th>`).join("")}</tr>`;
-  body.innerHTML = ranked.map(row => `<tr><td>${esc(row.contestantId)}</td>${mothers.map(m => {
-    const slot = row.byMother[m];
-    return `<td class="num">${slot && slot.runs ? slot.passes + "/" + slot.runs : "—"}</td>`;
-  }).join("")}</tr>`).join("");
-
-  const misses = document.getElementById("misses");
-  if (misses) {
-    const lost = runs.filter(run => !run.pass);
-    misses.hidden = !lost.length || showPlaceholder;
-    misses.innerHTML = lost.map(run => `<li>${esc(run.contestantId)} · ${esc(run.mother)}: ${esc(failureReason(run))}</li>`).join("");
+  function esc(value) {
+    return String(value == null ? "" : value).replace(/[&<>"]/g, function (ch) {
+      return ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", "\"": "&quot;" })[ch];
+    });
+  }
+  function tokensOf(tokens) {
+    if (!tokens) return 0;
+    if (typeof tokens === "number") return tokens;
+    var prompt = Number(tokens.prompt) || 0;
+    var completion = Number(tokens.completion) || 0;
+    return prompt + completion || Number(tokens.total) || 0;
+  }
+  function familyName(id) {
+    return String(id || "").replace(/-/g, " ");
+  }
+  function failedNames(run) {
+    var failed = (run.failedChecks || []).slice();
+    var attempts = run.attemptChecks || [];
+    if (!failed.length && attempts.length) {
+      var last = attempts[attempts.length - 1] || {};
+      CHECKS.forEach(function (name) { if (last[name] === false) failed.push(name); });
+    }
+    if (!run.pass && !Number(run.attempts) && !failed.length) failed.push("no patch submitted");
+    return failed;
+  }
+  function labelCells(table) {
+    var heads = Array.prototype.map.call(table.querySelectorAll("thead th"), function (th) { return th.textContent.trim(); });
+    table.querySelectorAll("tbody tr").forEach(function (row) {
+      Array.prototype.forEach.call(row.children, function (cell, index) {
+        if (heads[index]) cell.setAttribute("data-label", heads[index]);
+      });
+    });
   }
 
-  document.querySelector("#runs tbody").innerHTML = runs.map(run => {
-    const pass = run.pass ? `<span class="ok">pass</span>` : `<span class="bad">fail</span>`;
-    return `<tr>
-      <td>${esc(run.contestantId)}</td><td>${esc(run.mother)}</td><td class="num">${esc(run.seed)}</td>
-      <td>${esc(run.status)}</td><td>${pass}</td>
-      <td class="num">${esc(run.attempts)}</td><td class="num">${esc(run.requests)}</td>
-      <td class="num">${tokenTotal(run.tokens)}</td><td class="num">${esc(run.latencyMs)}</td>
-      <td>${esc(failureReason(run))}</td><td class="num">${esc(run.patchDiffLines)}</td>
-    </tr>`;
-  }).join("") || `<tr><td colspan="11">No runs.</td></tr>`;
-}
+  function render(data) {
+    var runs = Array.isArray(data.runs) ? data.runs : [];
+    var budget = data.budget || {};
+    var when = data.generatedAt || "";
+    document.getElementById("meta-line").textContent = "Recorded " + when.replace("T", " ").replace("Z", " GMT") + ". Commit " + RECORDED_COMMIT + ". Requests " + (budget.requestsUsed != null ? budget.requestsUsed : "—") + "/" + (budget.requestCap != null ? budget.requestCap : "—") + ".";
+    var meta = document.getElementById("meta");
+    meta.innerHTML = [
+      ["Date", when.slice(0, 10) || "—"],
+      ["Commit", RECORDED_COMMIT],
+      ["Requests", (budget.requestsUsed != null ? budget.requestsUsed : "—") + "/" + (budget.requestCap != null ? budget.requestCap : "—")]
+    ].map(function (pair) {
+      return "<span class=\"chip\"><span>" + esc(pair[0]) + " " + esc(pair[1]) + "</span></span>";
+    }).join("");
 
-const CHECKS = ["pocProvesBug", "pocFailsAfterPatch", "hiddenTestsPass", "patchWithinLimits"];
+    var groups = {};
+    var order = [];
+    runs.forEach(function (run) {
+      var id = run.contestantId;
+      if (!groups[id]) { groups[id] = []; order.push(id); }
+      groups[id].push(run);
+    });
+    var rows = order.map(function (id) {
+      var items = groups[id];
+      var done = items.filter(function (run) { return (run.status || "completed") === "completed"; });
+      var passes = done.filter(function (run) { return run.pass; }).length;
+      return {
+        id: id,
+        passes: passes,
+        runs: done.length,
+        attempts: done.reduce(function (sum, run) { return sum + (Number(run.attempts) || 0); }, 0),
+        requests: done.reduce(function (sum, run) { return sum + (Number(run.requests) || 0); }, 0),
+        tokens: done.reduce(function (sum, run) { return sum + tokensOf(run.tokens); }, 0),
+        byFamily: items.reduce(function (map, run) { map[run[FAMILY]] = run; return map; }, {})
+      };
+    });
+    rows.forEach(function (row) { row.passRate = row.runs ? row.passes / row.runs : 0; });
+    rows.sort(function (a, b) {
+      if (a.passRate !== b.passRate) return b.passRate - a.passRate;
+      if (a.attempts !== b.attempts) return a.attempts - b.attempts;
+      if (a.tokens !== b.tokens) return a.tokens - b.tokens;
+      return a.id < b.id ? -1 : 1;
+    });
+    var families = (data.config && data.config[FAMILIES]) || [];
+    if (!families.length) {
+      runs.forEach(function (run) { if (families.indexOf(run[FAMILY]) < 0) families.push(run[FAMILY]); });
+    }
 
-function failureReason(run) {
-  const ev = run.evidence || {};
-  const failed = (run.failedChecks || []).slice();
-  if (!failed.length && Array.isArray(run.attemptChecks) && run.attemptChecks.length) {
-    const last = run.attemptChecks[run.attemptChecks.length - 1] || {};
-    for (const name of CHECKS) if (last[name] === false) failed.push(name);
+    var rankBody = document.querySelector("#rank-table tbody");
+    rankBody.innerHTML = rows.map(function (row) {
+      return "<tr><td>" + esc(row.id) + "</td><td>" + row.passes + "/6</td><td>" + row.attempts + "</td><td>" + row.requests + "</td><td>" + row.tokens.toLocaleString("en-US") + "</td></tr>";
+    }).join("");
+    labelCells(document.getElementById("rank-table"));
+
+    var familyHost = document.getElementById("families");
+    familyHost.innerHTML = "<div class=\"table-wrap\"><table id=\"family-table\"><thead><tr><th>Contestant</th>" + families.map(function (name) {
+      return "<th>" + esc(familyName(name)) + "</th>";
+    }).join("") + "</tr></thead><tbody>" + rows.map(function (row) {
+      return "<tr><td>" + esc(row.id) + "</td>" + families.map(function (name) {
+        var run = row.byFamily[name];
+        if (!run) return "<td>—</td>";
+        if (run.pass) return "<td>pass</td>";
+        var names = failedNames(run);
+        return "<td>fail · " + esc(names.join(", ") || "fail") + "</td>";
+      }).join("") + "</tr>";
+    }).join("") + "</tbody></table></div>";
+    labelCells(document.getElementById("family-table"));
+
+    var runBody = document.querySelector("#runs-table tbody");
+    runBody.innerHTML = runs.map(function (run) {
+      var result = run.pass ? "pass" : ("fail · " + (failedNames(run).join(", ") || "fail"));
+      return "<tr><td>" + esc(run.contestantId) + "</td><td>" + esc(familyName(run[FAMILY])) + "</td><td>" + esc(result) + "</td><td>" + esc(run.attempts) + "</td><td>" + esc(run.requests) + "</td><td>" + tokensOf(run.tokens).toLocaleString("en-US") + "</td></tr>";
+    }).join("");
+    labelCells(document.getElementById("runs-table"));
   }
-  if (!run.pass && !Number(run.attempts) && !failed.length) failed.push("no patch submitted (not graded)");
-  let text = failed.join(", ");
-  if (!run.pass && ev.autoSubmitted) text = (text ? text + " " : "") + "after auto-submit";
-  if (!run.pass && ev.stopReason) text += (text ? " " : "") + "(" + ev.stopReason + ")";
-  return text || (run.pass ? "—" : "fail");
-}
 
-async function loadDefault() {
-  try {
-    const res = await fetch("arena_results.json", { cache: "no-store" });
+  fetch("arena_results.json", { cache: "no-store" }).then(function (res) {
     if (!res.ok) throw new Error(String(res.status));
-    render(await res.json(), false);
-  } catch (err) {
-    render(PLACEHOLDER, true);
-  }
-}
-
-document.getElementById("file").addEventListener("change", (event) => {
-  const file = event.target.files && event.target.files[0];
-  if (!file) return;
-  const reader = new FileReader();
-  reader.onload = () => {
-    try { render(JSON.parse(String(reader.result)), false); }
-    catch (err) { render(PLACEHOLDER, true); }
-  };
-  reader.readAsText(file);
-});
-
-loadDefault();
+    return res.json();
+  }).then(render).catch(function () {
+    document.getElementById("meta-line").textContent = "PLACEHOLDER — the results file did not load. This is not a measured arena result.";
+  });
+})();
 </script>
 </body>
 </html>

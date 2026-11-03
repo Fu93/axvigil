@@ -1,8 +1,8 @@
 # AxVigil
 
-> Train and certify AI agents that fix smart-contract vulnerabilities.
+> Every inference, a line of defense.
 
-AxVigil is a hackathon prototype for turning verified smart-contract fixes into portable, on-chain credentials for AI agents. An agent solves a vulnerability challenge, a deterministic verifier checks the patch and proof of concept, and a signed EIP-712 authorization lets the Agent ID owner mint both a tradeable collectible and a non-transferable skill record.
+AxVigil points Web3's AI compute at smart-contract exploits instead of puzzles that exist only to mint an NFT. An agent patches a fresh rewrite inside a vulnerability sandbox, a deterministic grader checks the patch and the proof of concept, and three validators (currently permissioned, run by the team) re-grade it. At least two signatures let the Agent ID owner mint a collectible and a non-transferable skill record: a verifiable on-chain capability record.
 
 **Meta Global AI Developer Hackathon · BSC testnet · sandbox/whitehat demo**
 
@@ -15,14 +15,14 @@ AxVigil is a hackathon prototype for turning verified smart-contract fixes into 
 AI coding agents can generate patches, but it is difficult to distinguish a plausible answer from a fix that actually removes an exploit without breaking the contract. AxVigil connects four pieces:
 
 ```text
-challenge → AI-generated patch + PoC → deterministic verifier → signed on-chain credential
+challenge → AI-generated patch + PoC → deterministic verifier → signed on-chain capability record
 ```
 
-The credential is bound to a SPACE ID-style Agent ID rather than a wallet. The collectible records the challenge category and difficulty, while the ERC-5192 skill record accumulates the agent's verified vulnerability-solving history.
+The capability record is bound to a SPACE ID-style Agent ID rather than a wallet. The collectible records the challenge category and difficulty, while the ERC-5192 skill record accumulates the agent's verified vulnerability-solving history.
 
 ## Current repository status
 
-The current public prototype implements the smart-contract credential layer:
+The current public prototype implements the smart-contract capability record layer:
 
 - `AxVigilCollectible`: ERC-721 collectible with EIP-712 mint authorization, fixed tier pools, staged rarity release, commit-reveal demo randomness, per-Agent ID quota, hourly cap and pause controls.
 - `AxVigilSkill`: ERC-5192-style soulbound skill record bound to an Agent ID, with vulnerability-class counts, maximum difficulty, revocation and on-chain SVG metadata.
@@ -33,15 +33,15 @@ The current public prototype implements the smart-contract credential layer:
 - `backend`: EIP-712 bridge that signs `MintAuth` only for a passed verifier result; it does not submit transactions.
 - `contracts/test/VerifierMintIntegration.t.sol`: verifies that the signed verifier hash reaches the mint event and that collectible + skill state are created together.
 
-The platform layers are now integrated on top of the credential layer:
+The platform layers are now integrated on top of the capability record layer:
 
-- `mothers/` + `variantgen/`: the anti-memorization engine. Six mother templates (母題) across three vulnerability classes and all three difficulty tiers — reentrancy, price-manipulation, access-control, a legendary signature-replay treasury, plus two real-incident challenges: `bridge-phantom-deposit` (Qubit QBridge, Jan 2022) and `empty-market-inflation` (Hundred Finance / Sonne Compound-fork share inflation) — both already patched and public, self-contained with no fork, and graded so that only the class fix passes (see [`docs/realbank/`](docs/realbank/README.md)). A seed renders a fresh, structurally-unique variant each time (renamed identifiers, distractor functions, reordering), so an agent must fix the bug class, not recall a public answer. Each mother ships 20/20 unique, self-verified variants — 120 in all.
+- the family-template directory and `variantgen/`: the anti-memorization engine. Six vulnerability family templates (漏洞類型) across three vulnerability classes and all three difficulty tiers — reentrancy, price-manipulation, access-control, a legendary signature-replay treasury, plus two real-incident challenges: `bridge-phantom-deposit` (Qubit QBridge, Jan 2022) and `empty-market-inflation` (Hundred Finance / Sonne Compound-fork share inflation) — both already patched and public, self-contained with no fork, and graded so that only the class fix passes (see [`docs/realbank/`](docs/realbank/README.md)). A seed renders a fresh, structurally-unique fresh rewrite each time (renamed identifiers, distractor functions, reordering), so an agent must fix the bug class, not recall a public answer. Each vulnerability family ships 20/20 unique, self-verified fresh rewrites — 120 in all.
 - `verifier/axvigil_verifier/`: the single canonical grader, run in a hardened sandbox (ffi off, no network, wall-clock + POSIX resource limits). Grades both the seed-variant challenges and the patch-based `reentrancy-001` demo (`grade --patch`); zero third-party dependencies.
-- `backend/axvigil_backend/`: the platform API — agents `login` with a wallet signature, `start` a server-issued variant (source only), `submit` to be graded in a session, and `authorize` a grade-then-signed reward. SQLite persistence, per-agent rate limits, an answer-leak circuit breaker and a difficulty-weighted leaderboard. `backend/mint_auth.py` remains the single-file signer for the deployed demo.
-- `agent/`: an autonomous propose → grade → feed-back → retry solve loop (Meta Model API, with an offline oracle) and a multi-model arena that ranks Muse Spark models on the same variants.
+- `backend/axvigil_backend/`: the platform API — agents `login` with a wallet signature, `start` a server-issued fresh rewrite (source only), `submit` to be graded in a session, and `authorize` a grade-then-signed reward. SQLite persistence, per-agent rate limits, an answer-leak circuit breaker and a difficulty-weighted leaderboard. `backend/mint_auth.py` remains the single-file signer for the deployed demo.
+- `agent/`: an autonomous propose → grade → feed-back → retry solve loop (Meta Model API, with an offline oracle) and a multi-model arena that compares Muse Spark models on the same fresh rewrites.
 - `demo/`: a self-contained demo page (the loop, anti-memorization, the on-chain skill SVG, and the live testnet deployment).
 
-**Production reward rule.** Each Agent ID gets two lifetime reward attempts. The server deals the challenge: the caller cannot pick the mother or the difficulty, every available mother is equally likely (so basic, advanced, and legendary can all come up), and a fresh variant seed is drawn each time. Opening the session spends the attempt, including if the agent abandons it, lets it expire, or fails the grade — so it cannot reroll until it sees an easy one. A passed attempt can be authorized once, as one collectible mint. The on-chain skill record is written only by that mint, so solves and mints stay 1:1 and neither can exceed 2. Practice mode (`practice: true`) may choose a mother and is not reward-bearing.
+**Production reward rule.** Each Agent ID gets two lifetime reward attempts. The server deals the challenge: the caller cannot pick the vulnerability family or the difficulty, every available vulnerability family is equally likely (so basic, advanced, and legendary can all come up), and a fresh rewrite seed is drawn each time. Opening the session spends the attempt, including if the agent abandons it, lets it expire, or fails the grade — so it cannot reroll until it sees an easy one. A passed attempt can be authorized once, as one collectible mint. The on-chain skill record is written only by that mint, so solves and mints stay 1:1 and neither can exceed 2. Practice mode (`practice: true`) may choose a vulnerability family and is not reward-bearing.
 
 **Rarity ladder.** The signed pool must equal the difficulty (the contract rejects a mismatch): basic is a uniform draw, advanced uses multipliers `[1, 2, 4, 8]`, legendary uses `[1, 3, 8, 16]` on Common / Rare / Epic / Legendary. That is a better chance at rarer public tiers, never a guarantee, and still without replacement inside 5444 / 1555 / 622 / 152. The 4 Hidden pieces are drawable only from pool 2, at a fixed 0.25% (25/10000, strictly below 0.30%) that does not rise as other tiers deplete. Pools 0 and 1 never draw Hidden. Hidden counts toward the 7,777 cap and does not consume a public slot, so all 7,773 public pieces stay mintable. Hidden that is not rolled stays unminted. The current BSC testnet collectible includes this roll. See [`SPEC.md`](SPEC.md).
 
@@ -67,7 +67,7 @@ python3 -m pip install -r backend/requirements.txt
 ./scripts/judge_demo.sh
 ```
 
-The script uses public Anvil keys on a local chain only. It warms solc with `forge build`, runs the offline `--oracle` agent (no `META_API_KEY`), deploys the production quotas, and talks to the API with the local MockAgentID as `AGENT_REGISTRY` so login checks `ownerOf`. Reward start is server-random (`practice: true` is how you pick a mother). The mint uses the three-pool ladder: `pool` equals the solved difficulty. The script then reveals the token and prints `tokenURI` plus the on-chain skill metadata.
+The script uses public Anvil keys on a local chain only. It warms solc with `forge build`, runs the offline `--oracle` agent (no `META_API_KEY`), deploys the production quotas, and talks to the API with the local MockAgentID as `AGENT_REGISTRY` so login checks `ownerOf`. Reward start is server-random (`practice: true` is how you pick a vulnerability family). The mint uses the three-pool ladder: `pool` equals the solved difficulty. The script then reveals the token and prints `tokenURI` plus the on-chain skill metadata.
 
 Shorter slices: `./scripts/demo_pipeline.sh` and `./scripts/local_anvil_demo.sh`. A live model reads `META_API_KEY`, or `MODEL_API_KEY` when that is the only one set.
 

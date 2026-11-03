@@ -19,7 +19,7 @@ Requests this process: 83 / 114.
 | 3 | muse-spark-1.3 | baseline | 100% | 6 | 6 | 9 | 11976 | 67099 |
 | 4 | muse-spark-1.1:agentic | agentic | 67% | 4 | 6 | 5 | 179146 | 40455 |
 
-## Per mother
+## Per vulnerability family
 
 | Contestant | reentrancy | price-manipulation | access-control | signature-replay | bridge-phantom-deposit | empty-market-inflation |
 |---|---|---|---|---|---|---|

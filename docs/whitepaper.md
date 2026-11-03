@@ -1,8 +1,8 @@
 # AxVigil Whitepaper (v3.1)
 
-> **From Compute to Protection** — turning AI's code-reasoning compute into a verifiable defense for smart contracts and on-chain assets.
+> **Every inference, a line of defense.**
 
-**Status discipline (read this first).** This document describes one thing that exists and two that do not yet. **Layer 1 — the Crucible (certification)** is built, tested, and live on BSC testnet today. **Layer 2 (defense network)** and **Layer 3 (settlement & orchestration)** are the roadmap. Every forward-looking claim is marked as such. Where this document says "today" it means code in `Fu93/axvigil` at `main`; where it says "roadmap" or "future" it means design intent, not shipped software.
+**Status discipline (read this first).** This document describes one thing that exists and two that do not yet. **Layer 1 — the Crucible** is built, tested, and live on BSC testnet today. **Layer 2 (defense network)** and **Layer 3 (settlement and orchestration)** are planned. Every forward-looking claim is marked as such. Where this document says "today" it means code in `Fu93/axvigil` at `main`; where it says "planned" or "future" it means design intent, not shipped software.
 
 **No token has been issued.** Nothing in this document is an offer to sell a token or a solicitation to invest. Points are an off-chain score with no monetary value. The collectible carries no financial rights. A later utility-token design, and the fee model that is meant to fund the project without one, are in §8. Both are planned, not built.
 
@@ -10,33 +10,34 @@
 
 ## 0. Positioning
 
-**AxVigil is an anti-memorization proving ground that certifies AI agents to *fix* smart-contract vulnerabilities, and the trust root for a defense network built on top of it.**
+**Every inference, a line of defense.**
 
-The near-term, demonstrable product is the proving ground — **the Crucible**. The long-term vision is to route certified agents at real contract-security work. We lead with the first because it is real; we describe the second because it is where the first is aimed.
+AxVigil wants to spend Web3's AI compute where it actually matters. There is an absurd pattern right now: more and more projects send AI agents to solve math problems and compute hashes, only to mint an NFT or mine a new token. The compute is burned, and the chain is no safer. At the same time, the crypto industry loses billions of dollars to theft every year — more than $3.4 billion in 2025. The largest hauls mostly come from private keys and infrastructure being broken, but smart-contract code bugs are still the most frequent attack type. In 2025 that category alone caused about $350 million to $500 million in real losses, and AI is making attacks cheaper and faster. AxVigil points this compute at that real pain: AI agents patch contracts inside a vulnerability sandbox that is reshuffled every time, three validators re-grade, and at least two signatures must agree. Every successful patch leaves an on-chain capability record anyone can recompute. When a protocol chooses an AI scanning tool, it can check these records instead of listening to an advertisement. We do not issue an empty token, and we do not run a zero-sum game. We only want each AI inference to take one more step toward protecting on-chain assets.
 
-*From Compute to Protection — make every AI inference a layer of security, not a zero-sum puzzle.*
+The three validators are currently permissioned and run by the team. An open validator set is planned, not live. Muse Spark (`muse-spark-1.1`) is the first model with public records on AxVigil. That is not a ranking.
+
+### Sources for the 2025 figures
+
+- Chainalysis, [2025 Crypto Theft Reaches $3.4 Billion](https://www.chainalysis.com/blog/crypto-hacking-stolen-funds-2026/): more than $3.4 billion stolen from January through early December 2025. The largest service losses are concentrated in a few attacks on private-key infrastructure and signing.
+- TRM Labs, [2026 Crypto Crime Report](https://www.trmlabs.com/reports-and-whitepapers/2026-crypto-crime-report): code exploits were the most frequent hack category in 2025 (52 incidents) and accounted for $350 million. Infrastructure attacks (keys, wallets, privileged access) were $2.2 billion across 45 incidents.
+- Hacken, [2025 Yearly Security Report](https://assets.hacken.io/assets/Hacken-2025-Yearly-Security-Report.pdf): smart-contract vulnerabilities accounted for $512 million. The "$350 million to $500 million" range in the paragraph above is the span of the TRM code-exploit total and the Hacken smart-contract total, rounded.
+
+The near-term product is the Crucible. Sections below keep the technical body and the sustainability model in §8. On-chain facts match `main`.
 
 ---
 
-## 1. Executive summary
+## 1. What a passing record is
 
-AI agents can already draft smart-contract patches. But a plausible patch is not a verified fix, and the industry has no independent, re-runnable way to tell them apart. Meanwhile two things sit side by side:
+A plausible patch is not a fix. An agent is dealt a reshuffled vulnerable contract, submits a patch and a proof of concept, and a deterministic sandboxed grader confirms the exploit worked before the patch and fails after, without breaking the contract. Pass, and the chain writes a verifiable capability record bound to the agent's identity.
 
-- **Compute is wasted.** Many Web3 projects point AI at SAT instances, prime hunts and mazes, then mint NFTs to prove "my AI is fast." The output protects no one.
-- **Security is under-supplied.** DeFi exploits have cost billions; audits are slow and expensive; most newly deployed protocols ship unaudited.
-
-**AxVigil's thesis: route the first kind of compute at the second kind of pain — but only after proving the compute is actually competent.**
-
-The piece we built, and the piece this space is missing, is **verification**: an agent is dealt a freshly generated vulnerable contract, submits a patch *and* a proof-of-concept exploit, and a deterministic sandboxed grader confirms the exploit worked before the patch and fails after — without the patch breaking the contract. Pass, and the agent earns a **soulbound license** bound to its on-chain identity. That certification is the trust root; a defense network that puts licensed agents on real work is the destination.
-
-| Item | Today (built) | Roadmap |
+| Item | Today (built) | Planned |
 |---|---|---|
-| Core | The Crucible: deal challenge → agent fixes → deterministic verify → on-chain license | Defense network: automated review, continuous monitoring, bounty scanning |
-| Credential | `AxVigilSkill` — ERC-5192 soulbound license bound to Agent ID | license gates access to real defense tasks |
-| Verification | differential 4-check grader + anti-memorization variant engine | multi-node re-run / decentralized verification |
-| Economy | off-chain points with no monetary value; no token issued | stablecoin or fiat fees (§8.2, planned); a utility token only if the §8.3 triggers are met |
-| Deployment | BSC testnet (chain 97), full flow exercised on-chain | mainnet, gated on Layer 1 proving itself |
-| Challenge source | only patched, publicly disclosed bugs, transformed by `variantgen` | sponsored challenges; private-eval mode with responsible disclosure |
+| Core | The Crucible: deal a fresh rewrite, the agent patches, a deterministic grader checks, an on-chain capability record is written | Defense network: automated review, continuous monitoring, bounty scanning |
+| Record | `AxVigilSkill` — ERC-5192 record bound to an Agent ID | the record is what a protocol can check before it trusts a scan |
+| Verification | four-check grader plus anti-memorization fresh rewrites | multi-node re-run |
+| Economy | off-chain points with no monetary value; no token issued | stablecoin or fiat fees (§8.2); a utility token only if the §8.3 triggers are met |
+| Deployment | BSC testnet (chain 97) | mainnet, only after the earlier phases |
+| Challenge source | only patched, publicly disclosed bugs, reshuffled by `variantgen` | sponsored challenges; private eval with responsible disclosure |
 
 ---
 
@@ -44,7 +45,7 @@ The piece we built, and the piece this space is missing, is **verification**: an
 
 ### 2.1 Compute layer — AI reasoning is being wasted
 
-Through 2025–2026, agent code-reasoning capability grew fast, and a large share of Web3 pointed it at **zero-sum games with no social value**: SAT/boolean-satisfiability puzzles, prime hunts, maze runs, repeated benchmark screenshots — each burning real GPU time to mint a "proof" that protects nobody. **Compute spins; the real-world security gap widens.**
+Through 2025–2026, agent code-reasoning capability grew fast, and a large share of Web3 pointed it at **zero-sum games with no social value**: SAT/boolean-satisfiability puzzles, prime hunts, puzzle runs, repeated benchmark screenshots — each burning real GPU time to mint a "proof" that protects nobody. **Compute spins; the real-world security gap widens.**
 
 ### 2.2 Security layer — contract defense is badly under-supplied
 
@@ -62,7 +63,7 @@ Even for those who want to use AI for security:
 
 1. **Capability can't be verified** — "security skill" rests on benchmark screenshots or self-report, with no independently re-runnable evidence.
 2. **Challenges get memorized** — public problem sets enter training data fast; fixed challenges measure recall, not repair.
-3. **Credentials bind to the wrong thing** — capability should belong to the agent, not a wallet.
+3. **Capability records bind to the wrong thing** — capability should belong to the agent, not a wallet.
 4. **Authors aren't rewarded** — whitehats' curated bug patterns get reused with no ongoing return.
 5. **Everyone rebuilds the harness** — each team builds its own sandbox, sources its own challenges, fights its own cheating.
 6. **No path from exam to battlefield** — even a proven agent has no network to actually protect real assets.
@@ -77,7 +78,7 @@ Even for those who want to use AI for security:
 
 AxVigil is **trust and dispatch infrastructure for security AI**. Not another benchmark, not another audit shop, not another NFT drop.
 
-- To AI teams: a licensing exam today, a job board tomorrow.
+- To AI teams: a proving ground today, a job board tomorrow.
 - To protocols: an automated line of defense (roadmap).
 - To whitehat authors: knowledge that keeps paying out.
 - To the ecosystem: a converter from idle compute into a security public good.
@@ -92,8 +93,8 @@ AxVigil is **trust and dispatch infrastructure for security AI**. Not another be
 │  Layer 2 — Defense Network (The Shield)             [roadmap] │
 │  automated first-pass review · continuous monitoring · bounty scanning
 ├─────────────────────────────────────────────────────────────┤
-│  Layer 1 — Certification (The Crucible)        ← BUILT, LIVE  │
-│  anti-memorization challenges · deterministic sandbox · soulbound license
+│  Layer 1 — Passing record (The Crucible)        ← BUILT, LIVE  │
+│  anti-memorization challenges · deterministic sandbox · soulbound capability record
 └─────────────────────────────────────────────────────────────┘
 ```
 
@@ -102,12 +103,12 @@ AxVigil is **trust and dispatch infrastructure for security AI**. Not another be
 | Layer | Function | Component | State |
 |---|---|---|---|
 | **L1 — Crucible** | identity | Agent ID (SPACE-ID-style ERC-721 registry) | built |
-| | challenge library | `mothers/` + `variantgen/` (6 mothers × 20 variants) | built |
+| | challenge library | `variantgen/` and the family-template directory (6 vulnerability families × 20 fresh rewrites) | built |
 | | verification | `axvigil_verifier` (4 checks + sandbox) | built |
-| | license | `AxVigilSkill` (ERC-5192 soulbound) | built |
+| | capability record | `AxVigilSkill` (ERC-5192 soulbound) | built |
 | | commemorative | `AxVigilCollectible` (ERC-721, free) | built |
 | **L2 — Defense** | task dispatch | queue + match engine | roadmap |
-| | execution | licensed-agent SDK | roadmap |
+| | execution | recorded-agent SDK | roadmap |
 | | result review | responsible-disclosure pipeline | roadmap |
 | **L3 — Settlement** | bounty payout | USDC settlement | roadmap |
 | | service fee | subscription / per-scan billing | roadmap |
@@ -118,8 +119,8 @@ AxVigil is **trust and dispatch infrastructure for security AI**. Not another be
 1. **Compute must produce real protection** — reward removing a bug, not "solving" per se.
 2. **Re-runnable and verifiable** — any result can be independently reproduced.
 3. **Challenges are issued, not chosen** — agents can't pick or memorize.
-4. **Credentials follow the agent** — bound to Agent ID, not a wallet.
-5. **Free to participate, revenue from real budgets** — certification is free; defense work earns real income.
+4. **Capability records follow the agent** — bound to Agent ID, not a wallet.
+5. **Free to participate, revenue from real budgets** — passing record is free; defense work earns real income.
 6. **No speculative token** — operation is meant to be funded by security budgets (§8.2). A token is only the §8.3 design, and none has been issued.
 
 ---
@@ -130,10 +131,10 @@ AxVigil is **trust and dispatch infrastructure for security AI**. Not another be
 
 Today's prototype (`Fu93/axvigil`, `main`) implements **Layer 1**. Its job: **ensure an agent entering the defense network has real capability — not compute that would generate false positives and waste protocols' time.** An agent that hasn't passed the Crucible can't reach Layer 2. This is the network's trust root — and it is the hackathon deliverable, working end to end.
 
-### 4.2 Certification flow (end to end)
+### 4.2 Passing record flow (end to end)
 
 ```
-Backend (FastAPI) ──deal a fresh variant (source only)──▶ AI Agent
+Backend (FastAPI) ──deal a fresh rewrite (source only)──▶ AI Agent
       ▲                                                     │
       │                      patch + PoC                    ▼
       │                                               Verifier (deterministic sandbox)
@@ -143,9 +144,9 @@ Backend (FastAPI) ──deal a fresh variant (source only)──▶ AI Agent
       │◀──── EIP-712 MintAuth (only if all pass) ──── ④ patchWithinLimits
       ▼
 Agent ID owner submits mint
-  → AxVigilSkill (ERC-5192): license updated
+  → AxVigilSkill (ERC-5192): capability record updated
   → AxVigilCollectible (ERC-721): free commemorative
-  → agent is now licensed; eligible for Layer 2 (roadmap)
+  → agent is now recorded; eligible for Layer 2 (roadmap)
 ```
 
 ### 4.3 Current components
@@ -194,11 +195,11 @@ The agent loop is propose → grade → feed the grader log back → retry (`age
 **Failure analysis (two benchmark bugs, both fixed in PR #11).**
 
 1. Hidden-test failure text said the patch had changed intended behaviour and to keep the fix minimal. A correct class diagnosis (phantom deposit) was then patched only for `token == address(0)`. `test_codelessNonZeroTokenCannotPhantomDeposit` rejects that. The hint now says the failure is either changed behaviour or an incomplete class fix, and it does not name the hidden test or the `code.length` repair.
-2. `mothers/access-control/hidden.t.sol.tmpl` required the revert string `"not owner"`. Rendering renames the role (`custodian`, `manager`, …) and that string is not in the vulnerable source, so a correct `"not custodian"` revert was a false fail. The hidden test now accepts any revert from an unauthorized caller.
+2. the access-control hidden-test template required the revert string `"not owner"`. Rendering renames the role (`custodian`, `manager`, …) and that string is not in the vulnerable source, so a correct `"not custodian"` revert was a false fail. The hidden test now accepts any revert from an unauthorized caller.
 
 ### 4.6 Trust model and threat model
 
-What a pass means: one sandboxed grader, on one machine, accepted one patch against one rendered variant. The `Minted` event's `submissionHash` commits to `(challengeId, seed, patch, PoC)` under the canonical encoding in `verifier/axvigil_verifier/keccak.py`. It does not, by itself, prove that a second implementation of the grader would agree, or that the signer key was not the same key as the owner.
+What a pass means: one sandboxed grader, on one machine, accepted one patch against one rendered fresh rewrite. The `Minted` event's `submissionHash` commits to `(challengeId, seed, patch, PoC)` under the canonical encoding in `verifier/axvigil_verifier/keccak.py`. It does not, by itself, prove that a second implementation of the grader would agree, or that the signer key was not the same key as the owner.
 
 | Actor | Can | Cannot |
 |---|---|---|
@@ -209,7 +210,7 @@ What a pass means: one sandboxed grader, on one machine, accepted one patch agai
 
 The sandbox that graded the live BSC runs, including the three threshold mints, was the resource-limited offline subprocess: `ffi` off, `FOUNDRY_OFFLINE`, a wall-clock timeout, and POSIX `rlimit` on CPU, address space, file size, and process count. Docker was not installed on that machine and was not used. `AXVIGIL_SANDBOX=docker` is implemented (`verifier/docker/Dockerfile`, image `axvigil-sandbox:1.8.7`: `--network none`, read-only root, uid 1000, CPU/memory/pid limits, tmpfs workdir) and is the mode you opt into. Unset or `subprocess` is the runner that actually graded. Neither mode is a TEE or a zkVM. The Docker image check in CI is skipped until the image is built.
 
-Known false-pass gap: **none known** on the two real-incident mothers after the negative controls (an `address(0)`-only bridge patch, and `require(shares > 0)` on the vault, both fail). That is not a proof that no other false-pass exists.
+Known false-pass gap: **none known** on the two real-incident vulnerability families after the negative controls (an `address(0)`-only bridge patch, and `require(shares > 0)` on the vault, both fail). That is not a proof that no other false-pass exists.
 
 ### 4.7 Decentralisation roadmap
 
@@ -235,9 +236,9 @@ Known false-pass gap: **none known** on the two real-incident mothers after the 
 - `MockAgentID` is an open mint. It is not the SPACE ID Agent ID registry.
 - The backend refuses a third reward session. The contract reverts a third mint. They are not the same counter: an abandoned session spends a backend attempt and does not mint.
 - Skill art can show a new emblem per class passed, but a single Agent ID can record at most two solves, because each solve is written by a mint and mints are capped at two.
-- Hidden tests are withheld from the session payload and are public in `mothers/*/hidden.t.sol.tmpl`.
+- Hidden tests are withheld from the session payload and are public in the hidden-test templates in the family-template directory.
 - Author revenue share, commercial eval stake or fee, and B2B scan billing are roadmap. They are not implemented.
-- Offline `verify-mother` checks 20 unique variants per mother (120). Live dealing now also reference-checks the dealt seed and skips a repeated structural fingerprint. It does not pre-publish an exhaustive list of every future seed.
+- The offline verify command checks 20 unique fresh rewrites per vulnerability family (120). Live dealing now also reference-checks the dealt seed and skips a repeated structural fingerprint. It does not pre-publish an exhaustive list of every future seed.
 
 ---
 
@@ -245,13 +246,13 @@ Known false-pass gap: **none known** on the two real-incident mothers after the 
 
 ### 5.1 Why anti-memorization is the prerequisite
 
-If an agent merely memorized answers, it is **dead weight** in the defense layer — it can't recognize new variants in the wild. The Crucible's core value is ensuring every licensed agent has **generalizable** repair capability, not recall of specific problems.
+If an agent merely memorized answers, it is **dead weight** in the defense layer — it can't recognize new fresh rewrites in the wild. The Crucible's core value is ensuring every recorded agent has **generalizable** repair capability, not recall of specific problems.
 
 ### 5.2 `variantgen` — the anti-memorization engine
 
-Each mother is one vulnerability template. Per seed, `variantgen` renames identifiers, injects distractor functions and reorders bodies. A structural fingerprint treats rename-only copies as the same variant. Offline `verify-mother` discards those look-alikes while it builds the 20-variant bank. The live server does the same check before it returns source: it skips a fingerprint it has already issued, and when `AXVIGIL_REFERENCE_CHECK` is on (the default for `Settings.from_env`) it grades the reference solution before dealing. The agent must fix the class of bug.
+Each vulnerability family is one vulnerability template. Per seed, `variantgen` renames identifiers, injects distractor functions and reorders bodies. A structural fingerprint treats rename-only copies as the same fresh rewrite. The offline verify command discards those look-alikes while it builds the 20-variant bank. The live server does the same check before it returns source: it skips a fingerprint it has already issued, and when `AXVIGIL_REFERENCE_CHECK` is on (the default for `Settings.from_env`) it grades the reference solution before dealing. The agent must fix the class of bug.
 
-| Mother | Class | Difficulty |
+| Vulnerability family | Class | Difficulty |
 |---|---|---|
 | `reentrancy` | Reentrancy | Basic |
 | `access-control` | Access Control | Basic |
@@ -260,7 +261,7 @@ Each mother is one vulnerability template. Per seed, `variantgen` renames identi
 | `bridge-phantom-deposit` | Access Control (Qubit QBridge, Jan 2022) | Advanced |
 | `empty-market-inflation` | Price Manipulation (Hundred Finance / Sonne) | Advanced |
 
-**Today: 4 canonical mothers plus 2 rebuilt incidents — 6 mothers, 20 self-verified unique variants each, 120 offline.** Classes are three because `NUM_CLASSES = 3`. `signature-replay` is legendary access-control, not a fourth class. The two incidents are `bridge-phantom-deposit` (Qubit QBridge, January 2022, loss figure as reported by the post-mortems linked from `mother.json`) and `empty-market-inflation` (Hundred Finance, April 2023, and Sonne, May 2024, same). Only the class fix passes those two: an `address(0)`-only bridge patch, and a vault patch that merely does `require(shares > 0)`, are rejected. There is no known false-pass gap on either. That is not a claim that every possible patch has been enumerated.
+**Today: 4 canonical vulnerability families plus 2 rebuilt incidents — 6 vulnerability families, 20 self-verified unique fresh rewrites each, 120 offline.** Classes are three because `NUM_CLASSES = 3`. `signature-replay` is legendary access-control, not a fourth class. The two incidents are `bridge-phantom-deposit` (Qubit QBridge, January 2022, loss figure as reported by the post-mortems linked from `the family metadata file`) and `empty-market-inflation` (Hundred Finance, April 2023, and Sonne, May 2024, same). Only the class fix passes those two: an `address(0)`-only bridge patch, and a vault patch that merely does `require(shares > 0)`, are rejected. There is no known false-pass gap on either. That is not a claim that every possible patch has been enumerated.
 
 ### 5.3 The differential four checks
 
@@ -280,18 +281,18 @@ Each mother is one vulnerability template. Per seed, `variantgen` renames identi
 
 ---
 
-## 6. Credentials & commemorative
+## 6. Capability records & commemorative
 
-### 6.1 The license (the credential that matters): `AxVigilSkill`
+### 6.1 The capability record (the capability record that matters): `AxVigilSkill`
 
-`AxVigilSkill` is not a trophy — it is a **license**. It means: *"this agent has passed the Crucible, has real capability in [class], and is cleared for AxVigil defense work (roadmap)."*
+`AxVigilSkill` is not a trophy — it is a **capability record**. It means: *"this agent has passed the Crucible, has real capability in [class], and is cleared for AxVigil defense work (roadmap)."*
 
 | Attribute | Detail |
 |---|---|
 | Standard | ERC-5192 (soulbound) |
 | Binding | `tokenId` = Agent ID; `ownerOf` follows the Agent ID registry |
 | Transferability | `locked()` always true — cannot be sold or transferred |
-| Record | per-class certification counts, max difficulty, total |
+| Record | per-class passing record counts, max difficulty, total |
 | Visual | on-chain SVG; a new emblem per class passed. A single Agent ID can pass at most two mints, so at most two solves are recorded |
 | Revocation | admin can revoke (e.g. malicious false positives in real work) |
 
@@ -299,9 +300,9 @@ Because it can't be bought, a buyer can't fake competence — which is exactly w
 
 ### 6.2 The commemorative (cosmetic only): `AxVigilCollectible`
 
-A free, non-speculative ERC-721 marking a **real verification event**. The `submissionHash` is in the `Minted` event, not in `tokenURI`. Before reveal, `tokenURI` is the unrevealed URI (`ipfs://unrevealed.json` on the current testnet deployment). It is deliberately free and gives no financial claim. Rarity mechanics exist in the contract but are kept out of the core narrative — see **Appendix A**. The license is the credential; the collectible is a souvenir.
+A free, non-speculative ERC-721 marking a **real verification event**. The `submissionHash` is in the `Minted` event, not in `tokenURI`. Before reveal, `tokenURI` is the unrevealed URI (`ipfs://unrevealed.json` on the current testnet deployment). It is deliberately free and gives no financial claim. Rarity mechanics exist in the contract but are kept out of the core narrative — see **Appendix A**. The capability record is the capability record; the collectible is a souvenir.
 
-> Note on consistency: AxVigil critiques "mint-an-NFT-to-prove-compute" projects, so its own token design is deliberately the opposite — the thing that carries meaning (the license) can't be traded, and the thing that can be seen (the collectible) is free and cosmetic.
+> Note on consistency: AxVigil critiques "mint-an-NFT-to-prove-compute" projects, so its own token design is deliberately the opposite — the thing that carries meaning (the capability record) can't be traded, and the thing that can be seen (the collectible) is free and cosmetic.
 
 ---
 
@@ -311,8 +312,8 @@ A free, non-speculative ERC-721 marking a **real verification event**. The `subm
 
 | Party | Provides | Gets |
 |---|---|---|
-| Whitehat authors | mothers, fix rules, hidden tests | usage-based revenue share (not a one-time buyout); author ranking |
-| AI teams / agents | compute + code reasoning | a license → access to real defense work → real security income *(roadmap)* |
+| Whitehat authors | vulnerability families, fix rules, hidden tests | usage-based revenue share (not a one-time buyout); author ranking |
+| AI teams / agents | compute + code reasoning | a capability record → access to real defense work → real security income *(roadmap)* |
 | Protocols | security budget (scan fees / bounty pools) | automated defense, trustworthy reports, continuous monitoring *(roadmap)* |
 | Sponsors / grants | funding for specific challenge pools | brand exposure, ecosystem influence, priority access |
 
@@ -320,8 +321,8 @@ A free, non-speculative ERC-721 marking a **real verification event**. The `subm
 
 ```
 better library (whitehats)
-  → stricter certification (weeds out ineffective AI)
-    → higher-quality licensed agents
+  → stricter passing record (weeds out ineffective AI)
+    → higher-quality recorded agents
       → better real-world defense (more bugs intercepted)      [roadmap]
         → protocols pay (security budget flows in)             [roadmap]
           → authors + AI teams earn more
@@ -357,9 +358,9 @@ All of the following is planned. None of it is implemented, priced, or under con
 | Who pays | For what | How | Status |
 |---|---|---|---|
 | Protocols | An agent fix, or a posted fix-bounty | Platform take rate, or a per-eval verification fee | planned, not built |
-| AI labs and agent developers | Certification evals on a private hidden-test set (benchmark-as-a-service) | Per eval or subscription | planned, not built |
+| AI labs and agent developers | Passing record evals on a private hidden-test set (benchmark-as-a-service) | Per eval or subscription | planned, not built |
 | Audit firms | Agent pre-screening, priced by volume | Per-volume fee | planned, not built |
-| — | Challenge authors, when an eval uses their mother | Revenue share of that eval | planned, not built |
+| — | Challenge authors, when an eval uses their vulnerability family | Revenue share of that eval | planned, not built |
 
 Early funding, also planned and not committed: hackathon prizes, ecosystem grants, and early design-partner protocols. Payment, when it exists, is stablecoin or fiat. It does not require a project token.
 
@@ -377,7 +378,7 @@ Utilities are there to close an operating loop, not to promise profit:
 - Validator staking, with slashing for bad grades.
 - A fee sink: part of protocol and bounty fees is converted to a buy-and-burn, or is distributed to validators.
 - Rewards for challenge authors and agents, by usage.
-- Governance over which mothers enter the library, and over slashing parameters.
+- Governance over which vulnerability families enter the library, and over slashing parameters.
 
 **Illustrative supply, allocation, vesting, emission, and burn. Illustrative, subject to change.** These figures are a proposal for discussion. They are not a cap, not a vote, and not an offer. Example supply: 1,000,000,000 units.
 
@@ -401,8 +402,8 @@ Legal review is required before any issuance. The design aims at utility (the ri
 
 | Flow | Trigger | Note |
 |---|---|---|
-| author share *(roadmap, not built)* | an eval uses their mother | the §8.2 revenue share, not a buyout and not a token |
-| agent points | passing certification / completing defense work | off-chain; no monetary value. Weights: Basic 1, Advanced 3, Legendary 8 |
+| author share *(roadmap, not built)* | an eval uses their vulnerability family | the §8.2 revenue share, not a buyout and not a token |
+| agent points | passing passing record / completing defense work | off-chain; no monetary value. Weights: Basic 1, Advanced 3, Legendary 8 |
 | sponsor pool | sponsor funds a challenge pool | planned; not built |
 | defense bounty *(Phase B+)* | agent finds a real bug in the field | planned; paid from the bounty in stablecoin or fiat |
 | scan fee *(Phase B+)* | protocol asks for a fix or a pre-screen | the §8.2 fee; planned, not built |
@@ -421,21 +422,21 @@ The backend opens at most two reward sessions per Agent ID (the attempt is spent
 
 | Priority | Source | Note | Window |
 |---|---|---|---|
-| 🥇 | **B2B automated scanning** | licensed AI does first-pass review of new contracts; per-scan or subscription | pilot in 3–6 mo |
+| 🥇 | **B2B automated scanning** | recorded AI does first-pass review of new contracts; per-scan or subscription | pilot in 3–6 mo |
 | 🥈 | **bounty share** | agents find bugs on Immunefi / Code4rena; AxVigil takes a platform fee (5–15%) | 6–12 mo |
-| 🥉 | **private eval service** | certification evals on a private hidden-test set (§8.2) | planned, not built |
+| 🥉 | **private eval service** | passing record evals on a private hidden-test set (§8.2) | planned, not built |
 | 4 | **sponsorship / grants** | ecosystem security grants, sponsored challenge pools | ongoing |
-| 5 | **certified-agent marketplace** | match licensed agents with protocols that need security | 18 mo+ |
+| 5 | **recorded-agent marketplace** | match recorded agents with protocols that need security | 18 mo+ |
 
-### 9.2 Why certification stays free
+### 9.2 Why passing record stays free
 
-Certification (Layer 1) is the **gate, not the product** — the product is defense service. Free certification maximizes the pool of licensed agents (and thus defense-side compute supply), and charging would choke cold-start.
+Passing record (Layer 1) is the **gate, not the product** — the product is defense service. Free passing record maximizes the pool of recorded agents (and thus defense-side compute supply), and charging would choke cold-start.
 
 ### 9.3 Versus the market
 
 | Dimension | Audit firm | Bug bounty | AxVigil |
 |---|---|---|---|
-| Executor | human auditors | human whitehats | **licensed AI agents** |
+| Executor | human auditors | human whitehats | **recorded AI agents** |
 | Speed | weeks–months | days–weeks | **minutes–hours** |
 | Cost | priced per engagement | per severity | **per-scan / subscription (roadmap pricing, not a quoted tariff)** |
 | Coverage | static (pre-deploy) | passive (wait for submissions) | **continuous (24/7)** |
@@ -447,11 +448,11 @@ Certification (Layer 1) is the **gate, not the product** — the product is defe
 
 The single most important caveat in this document, and the thing a sharp reviewer will ask about:
 
-**Certification today proves an agent can *fix a known class* of bug on a controlled target. A production defense network also needs *finding unknown* issues in real code — a strictly harder problem the Crucible does not yet test.** Passing the Crucible does not, by itself, imply an agent will find novel 0-days.
+**Passing record today proves an agent can *fix a known class* of bug on a controlled target. A production defense network also needs *finding unknown* issues in real code — a strictly harder problem the Crucible does not yet test.** Passing the Crucible does not, by itself, imply an agent will find novel 0-days.
 
 We treat this as a scoping decision, not a hand-wave:
 
-- **Layer 2 v1 is scoped to pattern-class detection and triage within an agent's licensed classes** — surfacing instances of the bug classes it is certified for — not open-ended 0-day hunting.
+- **Layer 2 v1 is scoped to pattern-class detection and triage within an agent's recorded classes** — surfacing instances of the bug classes already on its record — not open-ended 0-day hunting.
 - The near-term value proposition is therefore "fast, cheap, continuous first-pass triage for known classes," explicitly positioned as **assistive, not a replacement for human audit**.
 - Closing the gap toward genuine discovery is future research, and the roadmap is gated on it rather than assuming it.
 
@@ -459,17 +460,16 @@ We would rather ship a smaller claim we can back with code than a larger one we 
 
 ---
 
-## 11. Roadmap (value-gated)
+## 11. Roadmap
 
-| Phase | Window | Focus | Acceptance |
-|---|---|---|---|
-| **Phase 0 — Crucible** | to 2026-11-05 | collection art and a demo video are still open. Hidden, signer rotation, batch-2 reveal, the 2-of-3 collectible, and three threshold Muse Spark mints are on BSC testnet. Docker grading was not part of that run | demo reproducible; offline bank 20/20 per mother; live deal reference-checks when the flag is on |
-| **Phase 1 — hardening** | after the hackathon, no calendar promise | move off `MockAgentID`; external review of the grader; reveal the threshold collectible's batch. VRF and a legal opinion are not scheduled as if they were already underway | a written review of the grader, not a claim that one exists today |
-| **Phase 2 — Defense Alpha** | 2027 Q1 (conditional) | mainnet; first real-scan pilots (3–5 protocols) | ≥100 licensed agents; ≥1 paying scan customer |
-| **Phase 3 — flywheel** | 3–6 mo post-mainnet | library to 15–20 mothers; bounty-platform integration; B2B pricing | monthly scan revenue covers opex; first bounty settled |
-| **Later** | conditional | decentralized verification, conditional token, agent marketplace, cross-chain | — |
+No dates. A phase is live only when the row says Live.
 
-**Principle: each phase starts because the previous one produced real value — not because time passed.**
+| Phase | Status | What it is |
+|---|---|---|
+| **Phase 0** | Live on BSC testnet | Vulnerability sandbox. Hidden-test grading. 2-of-3 validator mint. Evidence CIDs. Three Muse Spark threshold mints, with `verify_evidence.py` OK. The three validators are permissioned and run by the team. Live grades used the subprocess sandbox. |
+| **Phase 1** | Planned | Replace MockAgentID with a real agent registry. External grader review. Reveal the threshold batch. Run the Docker sandbox on live grades. Publish multi-model arena results. |
+| **Phase 2** | Planned | Scanning pilots on real protocols, and bounty integrations. More vulnerability families. An open validator set. |
+| **Phase 3** | Planned | A decentralised validator network. A utility token only as described in §8. Not an offer. Mainnet. |
 
 ---
 
@@ -480,9 +480,9 @@ We would rather ship a smaller claim we can back with code than a larger one we 
 | Verifier bypassed (forged pass) | 🔴 fatal | medium | differential 4-check + public red-team challenge + multi-node re-run *(future)* |
 | Contract / backend vulnerability | 🔴 high | low | audit, bug bounty, pause switch |
 | Single signer compromised | 🔴 high | medium | KMS, multisig, role split, rotation |
-| Challenges leak / get memorized | 🟠 medium | medium | `variantgen`, circuit breaker, mother rotation |
+| Challenges leak / get memorized | 🟠 medium | medium | `variantgen`, circuit breaker, vulnerability family rotation |
 | Sybil Agent IDs farm rewards | 🟠 medium | high (today) | real registry, attempt caps, future staking |
-| **Find-vs-fix gap** (certification ≠ discovery) | 🔴 high | — | scope L2 v1 to pattern-class triage; position as assistive; see §10 |
+| **Find-vs-fix gap** (passing record ≠ discovery) | 🔴 high | — | scope L2 v1 to pattern-class triage; position as assistive; see §10 |
 | **AI false positives erode protocol trust** | 🔴 high | medium | human review before any public result; false positives trigger Skill revocation |
 | **Protocols won't let external AI scan their contracts** | 🟠 medium | medium | private-deploy option; NDAs; scan only public contract code |
 | Regulatory change | 🟠 medium | medium | points first, free mint, legal opinion |
@@ -498,10 +498,10 @@ We would rather ship a smaller claim we can back with code than a larger one we 
 3. Who custodies sponsor funds, and how, to avoid becoming a regulated financial activity?
 4. Are the §8.3 triggers (multi-validator grading live, and paying demand under §8.2) the right gate, and who attests that both are met?
 5. B2B product: SaaS or private deployment?
-6. Layer 2 dispatch: how to match a protocol's scan need to a licensed agent's certified classes?
+6. Layer 2 dispatch: how to match a protocol's scan need to a recorded agent's classes?
 7. Legal boundary of real scanning: does scanning public contract code need protocol authorization? If an agent finds a 0-day, what disclosure flow?
 8. Bounty-share ratio and settlement: how to avoid being classed as a financial intermediary?
-9. Commercial-use license scope of AI-generated art?
+9. Commercial-use capability record scope of AI-generated art?
 10. Operating entity, jurisdiction, and tax.
 
 ---
@@ -510,9 +510,9 @@ We would rather ship a smaller claim we can back with code than a larger one we 
 
 | Issue | Response |
 |---|---|
-| Random draw + tradeable (loot-box concern) | free mint, certification-gated, no mint fee |
+| Random draw + tradeable (loot-box concern) | free mint, passing record-gated, no mint fee |
 | Token might be deemed a security | no token has been issued; this paper is not an offer; any issuance needs legal review and is specified as utility, not a profit expectation (§8.3) |
-| Insurance / claims pool | excluded; distant idea only, would require licensing |
+| Insurance / claims pool | excluded; distant idea only, would require a regulatory permit |
 | Vulnerability material | only patched, publicly disclosed bugs; real work via responsible disclosure |
 | Legal boundary of AI scanning third-party contracts | prioritize open-source contracts; private scans need explicit authorization + NDA |
 | Whether bounty settlement is financial intermediation | initially protocols forward bounties directly; long-term needs legal opinion |
@@ -543,8 +543,8 @@ From a checkout of `main`, with Foundry installed and `cd contracts && forge bui
 
 ```bash
 scripts/test_all.sh
-# offline bank, one mother:
-cd variantgen && python3 -m variantgen verify-mother --mother ../mothers/reentrancy --count 20
+# offline bank, one vulnerability family:
+See variantgen/README.md for the command that checks 20 fresh rewrites of one family.
 ```
 
 A graded session writes `backend/evidence/<submissionHash>/manifest.json` (override with `EVIDENCE_DIR`). Recompute:
@@ -553,7 +553,7 @@ A graded session writes `backend/evidence/<submissionHash>/manifest.json` (overr
 python3 scripts/verify_evidence.py backend/evidence/<submissionHash>/manifest.json
 ```
 
-That checks the CID, `submissionHash = H(challengeId, seed, patch, poc)`, the seed commitment, and a fresh grader run. Hidden tests are read from `mothers/` in this repo.
+That checks the CID, `submissionHash = H(challengeId, seed, patch, poc)`, the seed commitment, and a fresh grader run. Hidden tests are read from the family-template directory in this repo.
 
 Chain, no key:
 
@@ -580,6 +580,6 @@ The offline stand-in is `--oracle`. It does not call `https://api.meta.ai/v1`.
 
 AI compute should not be wasted on zero-sum puzzles. Every GPU-hour and every inference should produce real protection — a protocol's TVL, a user's deposit, a chain's safety.
 
-AxVigil's end vision is not "launch a token" or "sell NFTs." It is this: **when a new contract is deployed, a Crucible-certified agent should be able to offer a first pass that a human audit can start from.** That pass is not a replacement for the audit, and this paper does not quote a market price for one.
+AxVigil's end vision is not "launch a token" or "sell NFTs." It is this: **when a new contract is deployed, an agent with a Crucible record should be able to offer a first pass that a human audit can start from.** That pass is not a replacement for the audit, and this paper does not quote a market price for one.
 
 We're not there yet. What we have today is the part that makes the rest trustworthy: a proving ground where an AI's fix is verified, not just claimed. That is where compute should go.
