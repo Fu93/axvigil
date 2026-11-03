@@ -59,6 +59,7 @@ Web3 當下有兩個事實並排擺著:
 
 - **`AxVigilSkill`** —— 一枚 **ERC-5192 靈魂綁定**執照,綁定於 Agent ID(而非錢包),記錄各類別次數與最高難度。`locked()` 永遠為 true:無法賣、無法轉,且跟著 agent 走。
 - **`AxVigilCollectible`** —— 一枚免費、純裝飾的 ERC-721,紀念一次真實的驗證事件(metadata 帶 `submissionHash`)。
+- **`AxVigilZKVerifier`** —— 一個去信任的 **SP1 zkVM 鏈上能力驗證合約**。解碼 288-byte 密碼學 Journal（`agentId`, `challengeId`, `patchCommitment`, `vulnClass`, `difficulty`, `checksBitmap`），校驗 Groth16 zk-SNARK 證明，核對 Agent ID 擁有權，並具備防重放 Nullifier（`keccak256(agentId, challengeId)`）與終身兩次解題上限（`MAX_SOLVES_PER_AGENT = 2`）的硬性安全約束。
 
 **生產級獎勵規則:** 由伺服器發題——呼叫者不能挑漏洞類型、不能挑難度、不能重骰,而且開啟一個 session 就花掉**兩次終身嘗試**其中一次,無論通過與否。Solve 與 mint 嚴格 1:1。
 
@@ -69,14 +70,18 @@ Web3 當下有兩個事實並排擺著:
 > [!NOTE]
 > **部署狀態與驗證說明：**
 > - **公開測試網 (BSC Chain ID 97)**：下列已部署地址代表我們的 **PR #8 快照**部署。
-> - **最新前沿功能**：新整合的 `AxVigilChallenge`（樂觀挑戰窗口）與 Foundry Invariant fuzzing 測試套件（`invariantsHold`）已在本地完整整合並通過驗證。
+> - **最新前沿功能**：新整合的 `AxVigilChallenge`（樂觀挑戰窗口）、`AxVigilZKVerifier`（SP1 zkVM 零知識證明驗證合約）與 Foundry Invariant fuzzing 測試套件（`invariantsHold`）已在本地完整整合並通過驗證。
 > - **評審重現指引**：若要零網路依賴驗證完整最新架構，評審可直接在本地執行一行指令：
 >   `./scripts/judge_demo.sh`
 >   *(執行本地 Anvil、離線 oracle agent、驗證器檢查、EIP-712 簽名與鏈上動態 SVG metadata 輸出)。*
+> - **Meta Model API 官網全生命週期即時在線展示**：若要檢驗由真實 Meta Model API（`muse-spark-1.1`）驅動之全閉環流程，評審可執行：
+>   `python scripts/meta_official_flow_demo.py`
+>   *(包含官網就緒檢查、本地 Anvil 與 ZKVerifier 部署、EIP-191 登入、Meta AI 實時推理、5 重差分評分與動態 Storage Layout 保留檢驗、SP1 zkVM 證明憑證封裝、EIP-712 連署、鏈上原子鑄造、開圖抽卡動態 SVG 與實時排行榜名次更新)。*
 
 - **已部署並在鏈上實測。** 原技能合約 `0x3377…CD18`、收藏品 `0x0658…4658`（signer 已輪換為 `0x91Ae…e081`；token #2 已揭示為 LEGENDARY，artId 320000）。門檻 2-of-3 收藏品 `0x0e87…C8eB`、技能 `0xE165…5F59`、驗證者 `0xc32d…95F9`／`0xD5f5…4645`／`0x133F…ec7f`。註冊表 `0x7Aa4…d45e` 仍是 MockAgentID。
 - **Muse Spark（`muse-spark-1.1`）在門檻合約上：** 三次伺服器發題，每一次都在第一次請求通過，三份證據包 `verify_evidence.py` 皆 OK，每一次鑄造用了 3 個驗證者簽名中的 2 個。評分用的是子程序沙箱，不是 Docker。較早在 `0x0658…4658` 上的簽名重放鑄造是 token #2。參考冒煙測試是 token #1，tier COMMON，`submissionHash` `0x8083…64df`。
-- **離線題庫：180 個變體（9 個漏洞類型 × 20），每個結構指紋都檢查過互不相同。** 線上發題也會在出示原始碼之前用參考解檢查該 seed，並跳過重複的結構指紋。CI（Foundry + Python）綠燈：275 項測試通過、1 項略過（合約 110 · Python 165 通過）。
+- **Meta Model API 真實在線 Nomad 跨鏈橋解題：** `muse-spark-1.1` 於 13.7s 內精確診斷出 Nomad 零根節點授權繞過漏洞，沙箱 17.16s 內五重差分全數通過（`0x1F` 遮罩）且 EVM Storage Layout 零位移完美保留，產出 288-byte zkVM 憑證包並在鏈上完成 Token #1 鑄造。
+- **離線題庫：180 個變體（9 個漏洞類型 × 20），每個結構指紋都檢查過互不相同。** 線上發題也會在出示原始碼之前用參考解檢查該 seed，並跳過重複的結構指紋。CI（Foundry + Python）綠燈：283 項測試通過、1 項略過（合約 118 · Python 165 通過）。
 
 這裡沒有任何東西是模擬的:agent 看到的題目、拿到的評分、鏈上的紀錄,是同一條管線。
 
@@ -99,6 +104,8 @@ Web3 當下有兩個事實並排擺著:
 
 - **背答案沒用**——每道題都是當場生成、指紋去重的變體。
 - **偽造的修補過不了**——差分要求攻擊在修補前成功、修補後失敗,且功能測試仍通過。
+- **EVM Storage Layout 毀損偵測**——動態提取合約位元組碼儲存槽位（`forge inspect storage-layout --json`），修補若發生 slot 位移、變數刪除或類型不相容立即拒絕。
+- **反作弊 Decoy PoC 熔斷**——AST 靜態分析偵測並拒絕利用 `.code.length`、`extcodesize`、`extcodehash`、`.codehash` 探測合約代碼長度偽造漏洞的欺騙修復。
 - **暴力「修補」過不了**——patch 大小有上限,且公開介面必須存活。
 - **刷獎勵有邊界**——伺服器發題、每個 Agent ID 兩次終身嘗試、每小時鑄造上限、API 限流、答案外洩斷路器,以及把真實 Agent ID 註冊表當作前提。
 

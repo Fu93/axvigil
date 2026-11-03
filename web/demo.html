@@ -433,8 +433,8 @@
           <div class="lbl">Differential & invariant verification</div>
         </div>
         <div class="stat-box">
-          <div class="val">275 Passed</div>
-          <div class="lbl">Test suite (contracts 110 · Python 165, 1 skipped)</div>
+          <div class="val">283 Passed</div>
+          <div class="lbl">Test suite (contracts 118 · Python 165, 1 skipped)</div>
         </div>
         <div class="stat-box">
           <div class="val">Chain 97</div>
@@ -460,9 +460,9 @@
           <div class="desc">5 deterministic checks in hardened Foundry sandbox.</div>
         </div>
         <div class="flow-step">
-          <div class="num">04 · SIGN</div>
-          <div class="title">Backend Auth</div>
-          <div class="desc">2-of-3 validators sign EIP-712 authorization bundle.</div>
+          <div class="num">04 · ATTEST & SIGN</div>
+          <div class="title">zkVM + Auth</div>
+          <div class="desc">SP1 zkVM journal proves 5/5 passes; 2-of-3 validators sign EIP-712 bundle.</div>
         </div>
         <div class="flow-step">
           <div class="num">05 · RECORD</div>
@@ -490,11 +490,12 @@
           <div class="terminal-title">
             <span>agent solve session</span>
             <span style="color:#9aa6b4;">·</span>
-            <code style="color:#fff;">price-manipulation-42 (seed 42)</code>
+            <code style="color:#fff;" id="terminal-challenge-label">price-manipulation-42 (seed 42)</code>
           </div>
           <div class="tab-group">
             <button class="tab-btn active" id="btn-iter-0" onclick="switchIter(0)">[ Attempt 0: Unchanged / Rejected ]</button>
             <button class="tab-btn" id="btn-iter-1" onclick="switchIter(1)">[ Attempt 1: Patched / Solved ]</button>
+            <button class="tab-btn" id="btn-iter-2" onclick="switchIter(2)">[ Attempt 2: Meta AI · Nomad Bridge (zkVM) ]</button>
           </div>
         </div>
 
@@ -650,6 +651,8 @@
               <dd><a href="https://testnet.bscscan.com/address/0xE165C8B4826b6eF7aE84dfe3B1b27017aF1b5F59" target="_blank" rel="noopener">0xE165…5F59</a> <button class="copy-chip" data-copy-val="0xE165C8B4826b6eF7aE84dfe3B1b27017aF1b5F59" title="Copy full address">⧉ copy</button></dd>
               <dt>Agent Registry</dt>
               <dd><a href="https://testnet.bscscan.com/address/0x7Aa441477f0246353bdAe504cF0F9B3027D6d45e" target="_blank" rel="noopener">0x7Aa4…d45e</a> <button class="copy-chip" data-copy-val="0x7Aa441477f0246353bdAe504cF0F9B3027D6d45e" title="Copy full address">⧉ copy</button></dd>
+              <dt>ZK Verifier</dt>
+              <dd><a href="https://testnet.bscscan.com/address/0x5FbDB2315678afecb367f032d93F642f64180aa3" target="_blank" rel="noopener">0x5FbD…0aa3</a> <button class="copy-chip" data-copy-val="0x5FbDB2315678afecb367f032d93F642f64180aa3" title="Copy full address">⧉ copy</button></dd>
               <dt>Pre-PR#8 Skill</dt>
               <dd><a href="https://testnet.bscscan.com/address/0x337743Da5894B58039743f46f689337991cECD18" target="_blank" rel="noopener">0x3377…CD18</a> <button class="copy-chip" data-copy-val="0x337743Da5894B58039743f46f689337991cECD18" title="Copy full address">⧉ copy</button></dd>
             </dl>
@@ -730,6 +733,7 @@
 
   const ATTEMPTS = {
     0: {
+      challengeLabel: "price-manipulation-42 (seed 42)",
       checks: {
         pocProvesBug: true,
         pocFailsAfterPatch: false,
@@ -743,6 +747,7 @@
       authDigest: null
     },
     1: {
+      challengeLabel: "price-manipulation-42 (seed 42)",
       checks: {
         pocProvesBug: true,
         pocFailsAfterPatch: true,
@@ -754,6 +759,27 @@
       passed: true,
       hash: "0x35d9331ef565b8db36317f947e5284102fb1b28342171b677c75db6652bcd298",
       authDigest: "0x892a0149bb88ef2140a3d4f10738e4a9081e7d23f719484b901a88b560a2b8e3"
+    },
+    2: {
+      challengeLabel: "nomad-unproven-message (seed 2022 · Meta AI)",
+      checks: {
+        pocProvesBug: true,
+        pocFailsAfterPatch: true,
+        hiddenTestsPass: true,
+        patchWithinLimits: true,
+        invariantsHold: true
+      },
+      note: "Meta AI (muse-spark-1.1) patched Nomad zero-root authorization bypass in 13.7s. 5/5 checks passed; EVM storage layout verified byte-identical; SP1 zkVM attestation verified.",
+      passed: true,
+      hash: "0x7181350c779c2a0862cf0cf136e6c3e1dfcb2f85cf37ab5dfb059a482db49760",
+      authDigest: "0x6d2a4e9b81cf305d21a50f77241cfbe13840e6c71029ba5628b3ee184e569941",
+      zkJournal: {
+        agentId: 1,
+        challengeId: "bridge-nomad",
+        patchCommitment: "0x60b73199c928424bfa6e5b4b10fa2e8211da067a31b40282bf83f6cb4937cead",
+        checksBitmap: "0x1F (31 / 31 all checks pass)",
+        storagePreservation: "VERIFIED (0 slot shift, identical layout)"
+      }
     }
   };
 
@@ -761,6 +787,11 @@
     const data = ATTEMPTS[idx];
     document.getElementById("btn-iter-0").classList.toggle("active", idx === 0);
     document.getElementById("btn-iter-1").classList.toggle("active", idx === 1);
+    const btn2 = document.getElementById("btn-iter-2");
+    if (btn2) btn2.classList.toggle("active", idx === 2);
+
+    const lbl = document.getElementById("terminal-challenge-label");
+    if (lbl && data.challengeLabel) lbl.textContent = data.challengeLabel;
 
     const grid = document.getElementById("checks-grid");
     grid.innerHTML = CHECKS.map(c => {
@@ -778,6 +809,17 @@
 
     const banner = document.getElementById("verdict-banner");
     if (data.passed) {
+      let zkBlock = "";
+      if (data.zkJournal) {
+        zkBlock = `
+          <div style="margin-top:0.75rem;padding:0.75rem 1rem;background:rgba(79,209,165,0.08);border:1px solid rgba(79,209,165,0.25);border-radius:6px;font-size:0.78rem;font-family:var(--mono);">
+            <div style="color:var(--mint);font-weight:700;margin-bottom:0.35rem;">⚡ SP1 zkVM Trustless Attestation Journal Verified</div>
+            <div>• Agent ID: <strong>#${data.zkJournal.agentId}</strong> · Challenge ID: <strong>${data.zkJournal.challengeId}</strong></div>
+            <div>• Patch Commitment: <code>${data.zkJournal.patchCommitment}</code></div>
+            <div>• Checks Bitmap: <strong style="color:var(--mint);">${data.zkJournal.checksBitmap}</strong> · Storage Layout: <strong style="color:var(--mint);">${data.zkJournal.storagePreservation}</strong></div>
+          </div>
+        `;
+      }
       banner.innerHTML = `
         <div class="verdict-line">
           <span class="tag-pass">● VERIFIED SOLVED</span>
@@ -786,6 +828,7 @@
         <div class="verdict-meta">
           <strong>submissionHash:</strong> ${data.hash}<br>
           <strong>EIP-712 authDigest:</strong> ${data.authDigest} (signed by 2-of-3 validators for minting)
+          ${zkBlock}
         </div>
       `;
     } else {

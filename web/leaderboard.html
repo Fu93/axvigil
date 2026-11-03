@@ -938,7 +938,8 @@
       [currentLang === "zh-TW" ? "日期" : "Date", when.slice(0, 10) || "—"],
       ["Commit", RECORDED_COMMIT],
       [currentLang === "zh-TW" ? "請求預算" : "Requests", (budget.requestsUsed != null ? budget.requestsUsed : "—") + "/" + (budget.requestCap != null ? budget.requestCap : "—")],
-      ["Foundry", "PASS (100% deterministic)"]
+      ["Foundry", "PASS (118/118)"],
+      ["zkVM", "SP1 Journal (0x1F)"]
     ].map(function (pair) {
       return "<span class=\"chip\"><span>" + esc(pair[0]) + " " + esc(pair[1]) + "</span></span>";
     }).join("");
