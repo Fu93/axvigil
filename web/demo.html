@@ -3,6 +3,9 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<meta http-equiv="Pragma" content="no-cache">
+<meta http-equiv="Expires" content="0">
 <title>AxVigil — Interactive Crucible Demo</title>
 <meta name="description" content="Interactive end-to-end demonstration of AxVigil: Seed-rendered mutation, 5-check differential verification, dynamic on-chain skill SBT, and BSC testnet evidence.">
 <meta name="theme-color" content="#1C1D1A">
@@ -391,7 +394,7 @@
   .kv-list dd { font-family: var(--mono); margin: 0; word-break: break-all; }
   .kv-list dd a { color: var(--mint); text-decoration: underline; }
 
-  @media (max-width: 900px) {
+  @media (max-width: 1100px) {
     .flow-track { grid-template-columns: 1fr; }
     .code-pair-grid { grid-template-columns: 1fr; }
     .skill-stage-section { grid-template-columns: 1fr; }
@@ -453,48 +456,48 @@
       <div class="demo-stats-strip">
         <div class="stat-box">
           <div class="val">9 × 20</div>
-          <div class="lbl">Vulnerability families × fresh rewrites (180 total)</div>
+          <div class="lbl" data-i18n="demo.stat1.lbl">Vulnerability families × fresh rewrites (180 total)</div>
         </div>
         <div class="stat-box">
-          <div class="val">5 Checks</div>
-          <div class="lbl">Differential & invariant verification</div>
+          <div class="val" data-i18n="demo.stat2.val">5 Checks</div>
+          <div class="lbl" data-i18n="demo.stat2.lbl">Differential & invariant verification</div>
         </div>
         <div class="stat-box">
-          <div class="val">315 Passed</div>
-          <div class="lbl">Test suite (contracts 122 · Python 193, 1 skipped)</div>
+          <div class="val" data-i18n="demo.stat3.val">315 Passed</div>
+          <div class="lbl" data-i18n="demo.stat3.lbl">Test suite (contracts 122 · Python 193, 1 skipped)</div>
         </div>
         <div class="stat-box">
           <div class="val">Chain 97</div>
-          <div class="lbl">Live BSC testnet threshold deployment</div>
+          <div class="lbl" data-i18n="demo.stat4.lbl">Live BSC testnet threshold deployment</div>
         </div>
       </div>
 
       <!-- Pipeline Steps -->
       <div class="flow-track">
         <div class="flow-step">
-          <div class="num">01 · MUTATE</div>
-          <div class="title">Family + Seed</div>
-          <div class="desc">Renamed, distractors injected, AST fingerprint checked.</div>
+          <div class="num" data-i18n="demo.flow.1.num">01 · MUTATE</div>
+          <div class="title" data-i18n="demo.flow.1.title">Family + Seed</div>
+          <div class="desc" data-i18n="demo.flow.1.desc">Renamed, distractors injected, AST fingerprint checked.</div>
         </div>
         <div class="flow-step active">
-          <div class="num">02 · SOLVE</div>
-          <div class="title">Agent Loop</div>
-          <div class="desc">Muse Spark proposes patch + PoC; retries on failure.</div>
+          <div class="num" data-i18n="demo.flow.2.num">02 · SOLVE</div>
+          <div class="title" data-i18n="demo.flow.2.title">Agent Loop</div>
+          <div class="desc" data-i18n="demo.flow.2.desc">Muse Spark proposes patch + PoC; retries on failure.</div>
         </div>
         <div class="flow-step">
-          <div class="num">03 · GRADE</div>
-          <div class="title">Verifier</div>
-          <div class="desc">5 deterministic checks in hardened Foundry sandbox.</div>
+          <div class="num" data-i18n="demo.flow.3.num">03 · GRADE</div>
+          <div class="title" data-i18n="demo.flow.3.title">Verifier</div>
+          <div class="desc" data-i18n="demo.flow.3.desc">5 deterministic checks in hardened Foundry sandbox.</div>
         </div>
         <div class="flow-step">
-          <div class="num">04 · ATTEST & SIGN</div>
-          <div class="title">Journal + Auth</div>
-          <div class="desc">288-byte attestation journal built (proof is a simulated placeholder; real SP1 prover is roadmap); 2-of-3 validators sign the EIP-712 bundle.</div>
+          <div class="num" data-i18n="demo.flow.4.num">04 · ATTEST & SIGN</div>
+          <div class="title" data-i18n="demo.flow.4.title">Journal + Auth</div>
+          <div class="desc" data-i18n="demo.flow.4.desc">288-byte attestation journal built (proof is a simulated placeholder; real SP1 prover is roadmap); 2-of-3 validators sign the EIP-712 bundle.</div>
         </div>
         <div class="flow-step">
-          <div class="num">05 · RECORD</div>
-          <div class="title">On-Chain</div>
-          <div class="desc">Mint collectible + dynamic ERC-5192 soulbound skill.</div>
+          <div class="num" data-i18n="demo.flow.5.num">05 · RECORD</div>
+          <div class="title" data-i18n="demo.flow.5.title">On-Chain</div>
+          <div class="desc" data-i18n="demo.flow.5.desc">Mint collectible + dynamic ERC-5192 soulbound skill.</div>
         </div>
       </div>
     </div>
@@ -504,25 +507,25 @@
   <section class="dark" id="crucible" style="border-top:1px solid rgba(255,255,255,0.08);padding-block:3.5rem;">
     <div class="wrap">
       <div class="sec-top">
-        <p class="bracket">[:DIFFERENTIAL GRADER]</p>
+        <p class="bracket" data-i18n="demo.crucible.bracket">[:DIFFERENTIAL GRADER]</p>
         <p class="idx">_002 / 004</p>
       </div>
       <div class="sec-head">
-        <h2 class="display">Fail, learn, then pass.</h2>
-        <p class="lede">A live differential solve transcript on <code>price-manipulation-42</code>. The agent first submits the contract unchanged, failing the differential check. After receiving compiler and test trace feedback, it submits the true root fix.</p>
+        <h2 class="display" data-i18n="demo.crucible.h2">Fail, learn, then pass.</h2>
+        <p class="lede" data-i18n="demo.crucible.lede">A live differential solve transcript on <code>price-manipulation-42</code>. The agent first submits the contract unchanged, failing the differential check. After receiving compiler and test trace feedback, it submits the true root fix.</p>
       </div>
 
       <div class="terminal-card">
         <div class="terminal-topbar">
           <div class="terminal-title">
-            <span>agent solve session</span>
+            <span data-i18n="demo.terminal.title">agent solve session</span>
             <span style="color:#9aa6b4;">·</span>
             <code style="color:#fff;" id="terminal-challenge-label">price-manipulation-42 (seed 42)</code>
           </div>
           <div class="tab-group" role="tablist" aria-label="Verification attempts">
-            <button role="tab" aria-selected="true" aria-controls="checks-grid" class="tab-btn active" id="btn-iter-0" onclick="switchIter(0)">[ Attempt 0: Unchanged / Rejected ]</button>
-            <button role="tab" aria-selected="false" aria-controls="checks-grid" class="tab-btn" id="btn-iter-1" onclick="switchIter(1)">[ Attempt 1: Patched / Solved ]</button>
-            <button role="tab" aria-selected="false" aria-controls="checks-grid" class="tab-btn" id="btn-iter-2" onclick="switchIter(2)">[ Attempt 2: Meta AI · Nomad Bridge ]</button>
+            <button role="tab" aria-selected="true" aria-controls="checks-grid" class="tab-btn active" id="btn-iter-0" onclick="switchIter(0)" data-i18n="demo.tab.0">[ Attempt 0: Unchanged / Rejected ]</button>
+            <button role="tab" aria-selected="false" aria-controls="checks-grid" class="tab-btn" id="btn-iter-1" onclick="switchIter(1)" data-i18n="demo.tab.1">[ Attempt 1: Patched / Solved ]</button>
+            <button role="tab" aria-selected="false" aria-controls="checks-grid" class="tab-btn" id="btn-iter-2" onclick="switchIter(2)" data-i18n="demo.tab.2">[ Attempt 2: Meta AI · Nomad Bridge ]</button>
           </div>
         </div>
 
@@ -594,12 +597,12 @@
   <section class="dark" id="records" style="border-top:1px solid rgba(255,255,255,0.08);padding-block:3.5rem;">
     <div class="wrap">
       <div class="sec-top">
-        <p class="bracket">[:ON-CHAIN CAPABILITY]</p>
+        <p class="bracket" data-i18n="demo.rec.bracket">[:ON-CHAIN CAPABILITY]</p>
         <p class="idx">_004 / 004</p>
       </div>
       <div class="sec-head">
-        <h2 class="display">A skill record that grows on-chain.</h2>
-        <p class="lede">Each AI agent holds a non-transferable Soulbound Skill Token (ERC-5192) bound to its Agent ID. The artwork is dynamically generated on-chain by the smart contract's <code>tokenURI</code>, illuminating distinct class emblems and upgrading the frame color as the agent masters harder tiers.</p>
+        <h2 class="display" data-i18n="demo.rec.h2">A skill record that grows on-chain.</h2>
+        <p class="lede" data-i18n="demo.rec.lede">Each AI agent holds a non-transferable Soulbound Skill Token (ERC-5192) bound to its Agent ID. The artwork is dynamically generated on-chain by the smart contract's <code>tokenURI</code>, illuminating distinct class emblems and upgrading the frame color as the agent masters harder tiers.</p>
       </div>
 
       <div class="skill-stage-section">
@@ -608,9 +611,9 @@
             <!-- Dynamic SVG inserted here -->
           </div>
           <div class="stage-selector-buttons">
-            <button class="stage-btn" id="stage-btn-1" onclick="switchStage(1)">1 Class · BASIC</button>
-            <button class="stage-btn" id="stage-btn-2" onclick="switchStage(2)">2 Classes · ADV</button>
-            <button class="stage-btn active" id="stage-btn-3" onclick="switchStage(3)">3 Classes · LEGENDARY</button>
+            <button class="stage-btn" id="stage-btn-1" onclick="switchStage(1)" data-i18n="demo.stage.1">1 Class · BASIC</button>
+            <button class="stage-btn" id="stage-btn-2" onclick="switchStage(2)" data-i18n="demo.stage.2">2 Classes · ADV</button>
+            <button class="stage-btn active" id="stage-btn-3" onclick="switchStage(3)" data-i18n="demo.stage.3">3 Classes · LEGENDARY</button>
           </div>
         </div>
 
@@ -648,8 +651,8 @@
 
       <!-- Scarcity Ladder -->
       <div style="margin-top:3.5rem;">
-        <h3 style="font-family:var(--display);font-size:1.4rem;">Fixed Supply Collectibles · 7,777 Total</h3>
-        <p class="lede" style="font-size:0.95rem;margin-top:0.4rem;">Tradeable collectible tier distribution drawn without replacement:</p>
+        <h3 style="font-family:var(--display);font-size:1.4rem;" data-i18n="demo.scarcity.h3">Fixed Supply Collectibles · 7,777 Total</h3>
+        <p class="lede" style="font-size:0.95rem;margin-top:0.4rem;" data-i18n="demo.scarcity.lede">Tradeable collectible tier distribution drawn without replacement:</p>
         <div class="scarcity-track" id="scarcity-track">
           <!-- Rendered via JS -->
         </div>
@@ -664,7 +667,7 @@
 
       <!-- Verified Evidence on BSC Testnet -->
       <div style="margin-top:3.5rem;">
-        <h3 style="font-family:var(--display);font-size:1.4rem;">Live Verified Evidence · BSC Testnet (Chain 97)</h3>
+        <h3 style="font-family:var(--display);font-size:1.4rem;" data-i18n="demo.evid.h3">Live Verified Evidence · BSC Testnet (Chain 97)</h3>
         <div class="evidence-grid">
           <div class="evidence-card">
             <div class="sec-top" style="margin-bottom:0.75rem;">
@@ -720,8 +723,8 @@
       <div>
         <h2 data-i18n="foot.project">Project</h2>
         <ul>
-          <li><a href="https://github.com/Fu93/axvigil" data-i18n="cta.github">GitHub</a></li>
-          <li><a href="https://github.com/Fu93/axvigil/tree/main/docs" data-i18n="foot.docsLink">Docs</a></li>
+          <li><a href="https://github.com/Fu93/axvigil" target="_blank" rel="noopener" data-i18n="cta.github">GitHub</a></li>
+          <li><a href="https://github.com/Fu93/axvigil/tree/main/docs" target="_blank" rel="noopener" data-i18n="foot.docsLink">Docs</a></li>
           <li><a href="pitch.html" data-i18n="foot.pitch">Pitch</a></li>
           <li><a href="demo.html" data-i18n="cta.demo">Demo</a></li>
           <li><a href="leaderboard.html" data-i18n="foot.board">Leaderboard</a></li>
@@ -730,16 +733,16 @@
       <div>
         <h2 data-i18n="foot.docs">Whitepaper</h2>
         <ul>
-          <li><a href="https://github.com/Fu93/axvigil/blob/main/docs/whitepaper.md" data-i18n="foot.en">English</a></li>
-          <li><a href="https://github.com/Fu93/axvigil/blob/main/docs/whitepaper.zh-TW.md" data-i18n="foot.zh">繁體中文</a></li>
+          <li><a href="https://github.com/Fu93/axvigil/blob/main/docs/whitepaper.md" target="_blank" rel="noopener" data-i18n="foot.en">English</a></li>
+          <li><a href="https://github.com/Fu93/axvigil/blob/main/docs/whitepaper.zh-TW.md" target="_blank" rel="noopener" data-i18n="foot.zh">繁體中文</a></li>
         </ul>
       </div>
       <div>
         <h2 data-i18n="foot.chain">Chain 97</h2>
         <ul>
-          <li><a href="https://testnet.bscscan.com/address/0x0e8755245231b66FdcE3a625b764dc1Bb597C8eB">0x0e87…C8eB</a></li>
-          <li><a href="https://testnet.bscscan.com/address/0xE165C8B4826b6eF7aE84dfe3B1b27017aF1b5F59" data-i18n="foot.skill">Skill record</a></li>
-          <li><a href="https://testnet.bscscan.com/tx/0x8f135d51462a5a5ad98dc3af3df0838f5f3eabc1207210fc22041f876281c177" data-i18n="foot.mint">Mint #2</a></li>
+          <li><a href="https://testnet.bscscan.com/address/0x0e8755245231b66FdcE3a625b764dc1Bb597C8eB" target="_blank" rel="noopener">0x0e87…C8eB</a></li>
+          <li><a href="https://testnet.bscscan.com/address/0xE165C8B4826b6eF7aE84dfe3B1b27017aF1b5F59" target="_blank" rel="noopener" data-i18n="foot.skill">Skill record</a></li>
+          <li><a href="https://testnet.bscscan.com/tx/0x8f135d51462a5a5ad98dc3af3df0838f5f3eabc1207210fc22041f876281c177" target="_blank" rel="noopener" data-i18n="foot.mint">Mint #2</a></li>
         </ul>
       </div>
     </div>
@@ -751,11 +754,11 @@
 <script>
   // --- 1. Differential Grader Data & Logic ---
   const CHECKS = [
-    { id: "pocProvesBug", label: "01 · pocProvesBug", desc: "PoC triggers and exploits the target vulnerability" },
-    { id: "pocFailsAfterPatch", label: "02 · pocFailsAfterPatch", desc: "PoC exploit fails when executed against patched contract" },
-    { id: "hiddenTestsPass", label: "03 · hiddenTestsPass", desc: "Private regression tests continue to pass" },
-    { id: "patchWithinLimits", label: "04 · patchWithinLimits", desc: "AST diff and lines modified within strict size ceiling" },
-    { id: "invariantsHold", label: "05 · invariantsHold", desc: "Stateful invariant fuzzing holds at seed 0xA11CE" }
+    { id: "pocProvesBug", label: "01 · pocProvesBug", desc: "PoC triggers and exploits the target vulnerability", descZh: "PoC 觸發並重現目標漏洞" },
+    { id: "pocFailsAfterPatch", label: "02 · pocFailsAfterPatch", desc: "PoC exploit fails when executed against patched contract", descZh: "同一 PoC 在修復合約執行失敗，證明漏洞已排除" },
+    { id: "hiddenTestsPass", label: "03 · hiddenTestsPass", desc: "Private regression tests continue to pass", descZh: "未公開的私有回歸測試全數通過" },
+    { id: "patchWithinLimits", label: "04 · patchWithinLimits", desc: "AST diff and lines modified within strict size ceiling", descZh: "AST 差異與修改行數符合嚴格規模上限" },
+    { id: "invariantsHold", label: "05 · invariantsHold", desc: "Stateful invariant fuzzing holds at seed 0xA11CE", descZh: "以種子 0xA11CE 進行有狀態模糊不變量測試成立" }
   ];
 
   const ATTEMPTS = {
@@ -810,7 +813,11 @@
     }
   };
 
+  let currentIter = 0;
+
   function switchIter(idx) {
+    currentIter = idx;
+    const isZh = document.documentElement.lang === "zh-Hant" || (document.documentElement.lang && document.documentElement.lang.startsWith("zh"));
     const data = ATTEMPTS[idx];
     document.querySelectorAll(".tab-group [role='tab']").forEach(function(b, i) {
       b.classList.toggle("active", i === idx);
@@ -823,13 +830,14 @@
     const grid = document.getElementById("checks-grid");
     grid.innerHTML = CHECKS.map(c => {
       const ok = data.checks[c.id];
+      const descText = isZh ? (c.descZh || c.desc) : c.desc;
       return `
         <div class="check-box ${ok ? 'pass' : 'fail'}">
           <div class="c-name">${c.label}</div>
           <div class="c-badge">
             <span>${ok ? '● PASS' : '▲ FAIL'}</span>
           </div>
-          <div style="font-size:0.72rem;color:#718096;margin-top:0.35rem;line-height:1.3;">${c.desc}</div>
+          <div style="font-size:0.72rem;color:#718096;margin-top:0.35rem;line-height:1.3;">${descText}</div>
         </div>
       `;
     }).join("");
@@ -840,7 +848,7 @@
       if (data.zkJournal) {
         zkBlock = `
           <div style="margin-top:0.75rem;padding:0.75rem 1rem;background:rgba(79,209,165,0.08);border:1px solid rgba(79,209,165,0.25);border-radius:6px;font-size:0.78rem;font-family:var(--mono);">
-            <div style="color:var(--mint);font-weight:700;margin-bottom:0.35rem;">⚡ Attestation Journal (proof simulated · not SP1-verified)</div>
+            <div style="color:var(--mint);font-weight:700;margin-bottom:0.35rem;">⚡ ${isZh ? '證明紀錄（proof 為模擬預留 · 非 SP1 驗證）' : 'Attestation Journal (proof simulated · not SP1-verified)'}</div>
             <div>• Agent ID: <strong>#${data.zkJournal.agentId}</strong> · Challenge ID: <strong>${data.zkJournal.challengeId}</strong></div>
             <div>• Patch Commitment: <code>${data.zkJournal.patchCommitment}</code></div>
             <div>• Checks Bitmap: <strong style="color:var(--mint);">${data.zkJournal.checksBitmap}</strong> · Storage Layout: <strong style="color:var(--mint);">${data.zkJournal.storagePreservation}</strong></div>
@@ -849,23 +857,23 @@
       }
       banner.innerHTML = `
         <div class="verdict-line">
-          <span class="tag-pass">● VERIFIED SOLVED</span>
-          <span style="color:#d1d5db;">5/5 differential checks satisfied.</span>
+          <span class="tag-pass">● ${isZh ? '已驗證修復' : 'VERIFIED SOLVED'}</span>
+          <span style="color:#d1d5db;">${isZh ? '五項差分檢查全數通過。' : '5/5 differential checks satisfied.'}</span>
         </div>
         <div class="verdict-meta">
           <strong>submissionHash:</strong> ${data.hash}<br>
-          <strong>EIP-712 authDigest:</strong> ${data.authDigest} (signed by 2-of-3 validators for minting)
+          <strong>EIP-712 authDigest:</strong> ${data.authDigest} (${isZh ? '2-of-3 驗證者連署以供鑄造' : 'signed by 2-of-3 validators for minting'})
           ${zkBlock}
         </div>
       `;
     } else {
       banner.innerHTML = `
         <div class="verdict-line">
-          <span class="tag-fail">▲ REJECTED</span>
-          <span style="color:#d1d5db;">Failed check: <strong>pocFailsAfterPatch</strong> & <strong>invariantsHold</strong>.</span>
+          <span class="tag-fail">▲ ${isZh ? '已拒絕' : 'REJECTED'}</span>
+          <span style="color:#d1d5db;">${isZh ? '未通過檢查：' : 'Failed check: '}<strong>pocFailsAfterPatch</strong> & <strong>invariantsHold</strong>.</span>
         </div>
         <div class="verdict-meta">
-          Grader returns compiler & trace feedback to agent loop. Agent enters reflection stage and retries with new AST patch.
+          ${isZh ? '評分器向 Agent 迴圈返回編譯器與追蹤反饋。Agent 進入反思階段，並以全新 AST 補丁重試。' : 'Grader returns compiler & trace feedback to agent loop. Agent enters reflection stage and retries with new AST patch.'}
         </div>
       `;
     }
@@ -952,6 +960,43 @@
       "cta.demo": "Demo",
       "nav.pitch": "Pitch",
       "cta.records": "See live records",
+      "demo.stat1.lbl": "Vulnerability families × fresh rewrites (180 total)",
+      "demo.stat2.val": "5 Checks",
+      "demo.stat2.lbl": "Differential & invariant verification",
+      "demo.stat3.val": "315 Passed",
+      "demo.stat3.lbl": "Test suite (contracts 122 · Python 193, 1 skipped)",
+      "demo.stat4.lbl": "Live BSC testnet threshold deployment",
+      "demo.flow.1.num": "01 · MUTATE",
+      "demo.flow.1.title": "Family + Seed",
+      "demo.flow.1.desc": "Renamed, distractors injected, AST fingerprint checked.",
+      "demo.flow.2.num": "02 · SOLVE",
+      "demo.flow.2.title": "Agent Loop",
+      "demo.flow.2.desc": "Muse Spark proposes patch + PoC; retries on failure.",
+      "demo.flow.3.num": "03 · GRADE",
+      "demo.flow.3.title": "Verifier",
+      "demo.flow.3.desc": "5 deterministic checks in hardened Foundry sandbox.",
+      "demo.flow.4.num": "04 · ATTEST & SIGN",
+      "demo.flow.4.title": "Journal + Auth",
+      "demo.flow.4.desc": "288-byte attestation journal built (proof is a simulated placeholder; real SP1 prover is roadmap); 2-of-3 validators sign the EIP-712 bundle.",
+      "demo.flow.5.num": "05 · RECORD",
+      "demo.flow.5.title": "On-Chain",
+      "demo.flow.5.desc": "Mint collectible + dynamic ERC-5192 soulbound skill.",
+      "demo.crucible.bracket": "[:DIFFERENTIAL GRADER]",
+      "demo.crucible.h2": "Fail, learn, then pass.",
+      "demo.crucible.lede": "A live differential solve transcript on price-manipulation-42. The agent first submits the contract unchanged, failing the differential check. After receiving compiler and test trace feedback, it submits the true root fix.",
+      "demo.terminal.title": "agent solve session",
+      "demo.tab.0": "[ Attempt 0: Unchanged / Rejected ]",
+      "demo.tab.1": "[ Attempt 1: Patched / Solved ]",
+      "demo.tab.2": "[ Attempt 2: Meta AI · Nomad Bridge ]",
+      "demo.rec.bracket": "[:ON-CHAIN CAPABILITY]",
+      "demo.rec.h2": "A skill record that grows on-chain.",
+      "demo.rec.lede": "Each AI agent holds a non-transferable Soulbound Skill Token (ERC-5192) bound to its Agent ID. The artwork is dynamically generated on-chain by the smart contract's tokenURI, illuminating distinct class emblems and upgrading the frame color as the agent masters harder tiers.",
+      "demo.stage.1": "1 Class · BASIC",
+      "demo.stage.2": "2 Classes · ADV",
+      "demo.stage.3": "3 Classes · LEGENDARY",
+      "demo.scarcity.h3": "Fixed Supply Collectibles · 7,777 Total",
+      "demo.scarcity.lede": "Tradeable collectible tier distribution drawn without replacement:",
+      "demo.evid.h3": "Live Verified Evidence · BSC Testnet (Chain 97)",
       "foot.blurb": "A proving ground for AI agents that fix smart-contract bugs. Meta Global AI Developer Hackathon. BSC testnet. Sandbox only.",
       "foot.project": "Project",
       "cta.github": "GitHub",
@@ -978,6 +1023,43 @@
       "cta.demo": "體驗",
       "nav.pitch": "簡報",
       "cta.records": "看鏈上紀錄",
+      "demo.stat1.lbl": "漏洞類型 × 新變體（共 180 題）",
+      "demo.stat2.val": "五重檢查",
+      "demo.stat2.lbl": "差分與不變量沙箱驗證",
+      "demo.stat3.val": "315 項通過",
+      "demo.stat3.lbl": "測試套件（合約 122 · Python 193，1 項略過）",
+      "demo.stat4.lbl": "BSC 測試網上線門檻合約部署",
+      "demo.flow.1.num": "01 · 突變",
+      "demo.flow.1.title": "題型 ＋ 種子",
+      "demo.flow.1.desc": "識別字改名、插入干擾函式、檢查 AST 指紋。",
+      "demo.flow.2.num": "02 · 解題",
+      "demo.flow.2.title": "Agent 迴圈",
+      "demo.flow.2.desc": "Muse Spark 提出補丁與 PoC；失敗時自動反思重試。",
+      "demo.flow.3.num": "03 · 評分",
+      "demo.flow.3.title": "驗證器",
+      "demo.flow.3.desc": "在加固的 Foundry 沙箱中執行五重確定性檢查。",
+      "demo.flow.4.num": "04 · 認證與連署",
+      "demo.flow.4.title": "紀錄 ＋ 授權",
+      "demo.flow.4.desc": "構建 288 位元組證明紀錄（proof 為模擬預留，真正 SP1 為路線圖）；2-of-3 驗證者簽署 EIP-712 封包。",
+      "demo.flow.5.num": "05 · 上鏈",
+      "demo.flow.5.title": "鏈上記錄",
+      "demo.flow.5.desc": "鑄造紀念品 ＋ 動態演化 ERC-5192 靈魂綁定技能。",
+      "demo.crucible.bracket": "[:差分評分沙箱]",
+      "demo.crucible.h2": "失敗、學習、而後通過。",
+      "demo.crucible.lede": "在 price-manipulation-42 的實時差分求解記錄。Agent 最初提交未變更的合約，未通過差分檢查。收到編譯器與測試追蹤反饋後，提交真正的根因修復。",
+      "demo.terminal.title": "agent 求解紀錄",
+      "demo.tab.0": "[ 嘗試 0：未變更 / 拒絕 ]",
+      "demo.tab.1": "[ 嘗試 1：已修復 / 通過 ]",
+      "demo.tab.2": "[ 嘗試 2：Meta AI · Nomad 橋接 ]",
+      "demo.rec.bracket": "[:鏈上能力憑證]",
+      "demo.rec.h2": "在鏈上隨解題動態演化的技能憑證。",
+      "demo.rec.lede": "每位 AI Agent 擁有一枚與其 Agent ID 鎖定、不可轉讓的靈魂綁定技能憑證（ERC-5192）。徽章完全由合約 tokenURI 鏈上動態生成，隨難度晉級點亮各類漏洞徽記與外框色澤。",
+      "demo.stage.1": "1 個題型 · 基礎",
+      "demo.stage.2": "2 個題型 · 進階",
+      "demo.stage.3": "3 個題型 · 傳奇",
+      "demo.scarcity.h3": "固定總量紀念品 · 7,777 枚上限",
+      "demo.scarcity.lede": "不重複隨機抽選的可交易紀念品稀有度分布：",
+      "demo.evid.h3": "實時驗證鏈上證據 · BSC 測試網（鏈 97）",
       "foot.blurb": "給會修智能合約漏洞的 AI agent 的試煉場。Meta Global AI Developer Hackathon。BSC 測試網。僅沙箱。",
       "foot.project": "專案",
       "cta.github": "GitHub",
@@ -1004,6 +1086,7 @@
       const key = el.getAttribute("data-i18n");
       if (dict[key]) el.textContent = dict[key];
     });
+    switchIter(currentIter);
     try {
       localStorage.setItem("axvigil-lang", lang);
       localStorage.setItem("axv_lang", lang);

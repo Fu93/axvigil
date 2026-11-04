@@ -13,9 +13,10 @@
   function formatFact(path, lang) {
     if (path === "stats.tests.detail") {
       var t = facts.stats.tests;
+      var skipStr = t.dockerSkipped ? (lang === "zh-TW" ? " 通過，" + t.dockerSkipped + " 項略過" : " passed, " + t.dockerSkipped + " skipped") : "";
       return lang === "zh-TW"
-        ? "合約 " + t.contracts + " · Python " + t.python
-        : "contracts " + t.contracts + " · Python " + t.python;
+        ? "合約 " + t.contracts + " · Python " + t.python + skipStr
+        : "contracts " + t.contracts + " · Python " + t.python + skipStr;
     }
     var value = get(path);
     if (value == null) return "";
@@ -48,8 +49,8 @@
     "sec.road": "[:路線]",
     "sec.faq": "[:問答]",
     "sec.board": "[:排行]",
-    "board.h": "同樣的六個漏洞類型。",
-    "board.lede": "四個 Muse Spark 參賽者，每個漏洞類型一枚 seed。muse-spark-1.1、1.2、1.3 解出 6/6。1.1 的 agentic 跑出 4/6。這次用了 114 次請求中的 83 次，2026-11-02，commit 2c45b7a。",
+    "board.h": "六大擂台基準漏洞類型。",
+    "board.lede": "四個 Muse Spark 參賽者，每個漏洞類型一枚 seed。muse-spark-1.1、1.2、1.3 解出 6/6。1.1 的 agentic 跑出 4/6。這次用了 114 次請求中的 83 次，2026-11-02，commit 2c45b7a。題庫引擎總體收錄九大類型（180 題），其中六類作為競技場標準評測題組。",
     "board.open": "打開排行",
     "nav.faq": "問答",
     "cta.records": "看鏈上紀錄",
@@ -143,7 +144,7 @@
     "stat.families": "漏洞類型",
     "stat.threshold": "驗證者門檻",
     "stat.thresholdS": "已上線的集合 · 三次 Muse Spark 鑄造",
-    "bento.ch": "題庫裡的挑戰。六個漏洞類型，每個二十道變體。",
+    "bento.ch": "題庫裡的挑戰。九個漏洞類型，每個二十道變體（共 180 題）。",
     "bento.proofT": "鏈上證明",
     "bento.proofD": "收藏 #2 與已鎖定的技能 #7，一次鑄造，一枚提交雜湊。",
     "bento.val": "Muse Spark 是第一個在這裡留下公開紀錄的模型。這三次都在第一次請求通過。兩位許可制驗證者簽名。verify_evidence.py 為 OK。評分用的是子行程沙箱。",
@@ -221,9 +222,9 @@
     "muse.r3n": "橋接幽靈存款",
     "muse.r3d": "第 0 次：只擋 address(0)，隱藏測試 7/8。第 1 次：改為檢查 code.length，通過。16,250 個 completion tokens，45 秒。提示改寫之前，同一顆種子失敗了五次，都停在 7/8。",
     "cru.kicker": "［熔爐］",
-    "cru.h1": "六個漏洞類型。",
-    "cru.h2": "一百二十道變體。",
-    "cru.lede": "每個漏洞類型是一類漏洞。種子會換掉識別字、插入干擾函式、重排函式本體。每個漏洞類型出二十道不重複的變體，參考解要先通過評分才算數。其中兩個漏洞類型依已修補、已公開的事件重建。沒有複製協議原始碼。",
+    "cru.h1": "九個漏洞類型。",
+    "cru.h2": "一百八十道變體。",
+    "cru.lede": "每個漏洞類型是一類漏洞。種子會換掉識別字、插入干擾函式、重排函式本體。每個漏洞類型出二十道不重複的變體（共 180 題），參考解要先通過評分才算數。其中五個漏洞類型依已修補、已公開的真實事件重建。沒有複製協議原始碼。",
     "m1.n": "重入",
     "m1.m": "基礎 · 類別 0",
     "m1.d": "提款先把金額送出，才清掉餘額。類別修復是檢查—效果—互動：先把餘額歸零。二十道變體。",
@@ -267,7 +268,7 @@
     "trust.tT": "2-of-3 驗證者鑄造",
     "trust.tD": "收藏合約 0x0e87…C8eB 與技能合約 0xE165…5F59 已上線。門檻是 2-of-3。三位驗證者（0xc32d…95F9、0xD5f5…4645、0x133F…ec7f）目前是許可制，由團隊運行。每位重評證據包，只有自己的評分通過才簽名。開放集合是計畫。三次 Muse Spark 鑄造用了其中兩份簽章。較早的收藏合約 0x0658…4658 仍是單一簽章者。",
     "trust.pT": "預先驗證的即時題",
-    "trust.pD": "離線題庫是 120 道變體，每個漏洞類型 20 道，計入之前都做過參考檢查。即時發題也會在顯示原始碼之前檢查該種子（AXVIGIL_REFERENCE_CHECK，預設開啟），並跳過重複的結構指紋。這不是一份公開的、涵蓋未來每一顆種子的清單。",
+    "trust.pD": "離線題庫是 180 道變體，每個漏洞類型 20 道，計入之前都做過參考檢查。即時發題也會在顯示原始碼之前檢查該種子（AXVIGIL_REFERENCE_CHECK，預設開啟），並跳過重複的結構指紋。這不是一份公開的、涵蓋未來每一顆種子的清單。",
     "trust.dT": "Docker，無網路",
     "trust.dD": "Docker 隔離已經實作：axvigil-sandbox:1.8.7、--network none、唯讀根檔案系統、uid 1000、CPU／記憶體／行程數限制，以及 tmpfs 工作目錄。包含三次門檻鑄造在內的實測評分，用的是離線子行程。那台機器沒有安裝 Docker。映像建好之前，有一項映像測試會被略過。兩種模式都不是 TEE，也不是 zkVM。",
     "trust.sT": "種子承諾揭示",

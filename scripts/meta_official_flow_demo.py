@@ -94,7 +94,7 @@ def main():
     except Exception:
         print("Starting local HTTP server on port 8080...")
         web_proc = subprocess.Popen(
-            [sys.executable, "-m", "http.server", "8080", "--directory", str(ROOT)],
+            [sys.executable, str(ROOT / "scripts" / "serve.py"), "8080"],
             stdout=subprocess.DEVNULL,
             stderr=subprocess.DEVNULL,
         )

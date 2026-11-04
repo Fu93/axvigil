@@ -125,7 +125,7 @@ h1.display span:empty { display: none; }
 .sources { margin: 22px 0 0; padding: 0 0 0 1.2em; color: var(--faint); font-size: 0.86rem; max-width: 78ch; }
 .sources li { margin: 8px 0; }
 .sources a { color: var(--ink); }
-.display .ghost { color: #757572; }
+.display .ghost { color: #8e8e89; }
 .light .display .ghost { color: #6f6f6c; }
 
 .mono, .bracket, .nav-links a, .flag, .idx, .ruler-label {
@@ -1052,7 +1052,7 @@ html.motion .steps::before {
 /* v2 sections, drawn in the v1 type and yellow. */
 .zh-line { display: none; margin-top: 12px; color: var(--ink); }
 html[lang^="zh"] .zh-line { display: block; }
-html[lang^="zh"] .hero h1.display { display: none !important; }
+html[lang^="zh"] .hero h1.display:not(.zh-line) { display: none !important; }
 html[lang^="zh"] .close .wrap h2 { max-width: none; }
 .hero .zh-line.display {
   font-size: clamp(3.4rem, 6.4vw, 6.5rem);

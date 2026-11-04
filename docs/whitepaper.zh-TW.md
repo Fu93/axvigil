@@ -94,8 +94,8 @@ AxVigil 是**安全 AI 的信任與調度基礎設施**。不是另一個 benchm
 | 層 | 功能 | 元件 | 狀態 |
 |---|---|---|---|
 | **L1 — 熔爐** | 身分 | Agent ID(SPACE-ID 式 ERC-721 註冊表) | 已建成 |
-| | 題庫 | `variantgen/` and the family-template directory(6 漏洞類型 × 20 變體) | 已建成 |
-| | 驗證 | `axvigil_verifier`(四項檢查 + 沙箱) | 已建成 |
+| | 題庫 | `variantgen/` and the family-template directory(9 漏洞類型 × 20 變體，共 180 題) | 已建成 |
+| | 驗證 | `axvigil_verifier`(五項差分檢查 + 沙箱) | 已建成 |
 | | 執照 | `AxVigilSkill`(ERC-5192 靈魂綁定) | 已建成 |
 | | 紀念 | `AxVigilCollectible`(ERC-721,免費) | 已建成 |
 | **L2 — 防禦** | 任務分發 | 隊列 + 匹配引擎 | 路線圖 |
@@ -229,7 +229,7 @@ BSC 上的實跑，包括三次門檻鑄造，用的是有資源上限的離線�
 - 技能圖可以依通過的類別長出新紋章，但單一 Agent ID 最多記錄兩次 solve，因為每次 solve 都由一次 mint 寫入，而 mint 上限是兩次。
 - 隱藏測試不放進 session 載荷，但在 the hidden-test templates in the family-template directory 裡是公開的。
 - 出題者分潤、商業評測的質押或費用、B2B 掃描計費都是路線圖，尚未實作。
-- 離線驗證指令 為每個漏洞類型檢查 20 個唯一變體（共 120）。線上發題現在也會在發題前用參考解檢查該 seed，並跳過已發過的結構指紋。它不會事先公布未來每一個 seed 的清單。
+- 離線驗證指令 為每個漏洞類型檢查 20 個唯一變體（共 180 題）。線上發題現在也會在發題前用參考解檢查該 seed，並跳過已發過的結構指紋。它不會事先公布未來每一個 seed 的清單。
 
 ---
 
@@ -251,10 +251,13 @@ BSC 上的實跑，包括三次門檻鑄造，用的是有資源上限的離線�
 | `signature-replay` | 權限控制 | Legendary |
 | `bridge-phantom-deposit` | 權限控制(Qubit QBridge,2022 年 1 月) | Advanced |
 | `empty-market-inflation` | 價格操縱(Hundred Finance / Sonne) | Advanced |
+| `platypus-emergency-withdraw` | 重入／會計缺陷(Platypus Finance) | Advanced |
+| `nomad-unproven-message` | 權限控制(Nomad Bridge zero-root) | Advanced |
+| `beanstalk-flash-governance` | 價格操縱／治理(Beanstalk) | Advanced |
 
-**今天：4 個正規漏洞類型加上 2 個重建的真實事件——共 6 個漏洞類型，離線各 20 個自我驗證的唯一變體，合計 120。** 類別只有三個，因為 `NUM_CLASSES = 3`。`signature-replay` 是傳奇難度的權限控制，不是第四個類別。兩件真實事件是 `bridge-phantom-deposit`（Qubit QBridge，2022 年 1 月，損失數字以 `the family metadata file` 所連結的事後報告為準）與 `empty-market-inflation`（Hundred Finance，2023 年 4 月；Sonne，2024 年 5 月）。這兩題只接受類別級修補：只擋 `address(0)` 的橋接 patch，以及只加 `require(shares > 0)` 的金庫 patch，都會被拒絕。兩者沒有已知的誤放行缺口。這不是「每一種可能的修補都已枚舉」的聲明。
+**今天：4 個正規漏洞類型加上 5 個重建的真實事件——共 9 個漏洞類型，離線各 20 個自我驗證的唯一變體，合計 180 題（其中 6 個類型納入多模型競技場基準測試）。** 類別只有三個，因為 `NUM_CLASSES = 3`。`signature-replay` 是傳奇難度的權限控制，不是第四個類別。五件真實事件是 `bridge-phantom-deposit`（Qubit QBridge）、`empty-market-inflation`（Hundred Finance / Sonne）、`platypus-emergency-withdraw`、`nomad-unproven-message` 與 `beanstalk-flash-governance`。只接受類別級修補。
 
-### 5.3 差分式四項檢查
+### 5.3 差分式五項檢查
 
 | 檢查 | 驗證什麼 | 為什麼必要 |
 |---|---|---|
@@ -262,6 +265,7 @@ BSC 上的實跑，包括三次門檻鑄造，用的是有資源上限的離線�
 | `pocFailsAfterPatch` | 同一 PoC 在修補後失敗 | 漏洞確實被消除 |
 | `hiddenTestsPass` | 隱藏功能測試全部通過 | 修補沒破壞既有邏輯 |
 | `patchWithinLimits` | 改動行數與位元組有上限，而且合約名稱與每一個必要的公開函式都還在 | 阻擋刪掉合約或刪掉介面，不只是擋一份過大的 diff |
+| `invariantsHold` | Foundry 狀態不變量與模糊測試通過 (seed 0xA11CE) | 防範作弊型硬編碼或狀態污染 |
 
 ### 5.4 題目來源原則
 

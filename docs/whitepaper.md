@@ -238,7 +238,7 @@ Known false-pass gap: **none known** on the two real-incident vulnerability fami
 - Skill art can show a new emblem per class passed, but a single Agent ID can record at most two solves, because each solve is written by a mint and mints are capped at two.
 - Hidden tests are withheld from the session payload and are public in the hidden-test templates in the family-template directory.
 - Author revenue share, commercial eval stake or fee, and B2B scan billing are roadmap. They are not implemented.
-- The offline verify command checks 20 unique fresh rewrites per vulnerability family (120). Live dealing now also reference-checks the dealt seed and skips a repeated structural fingerprint. It does not pre-publish an exhaustive list of every future seed.
+- The offline verify command checks 20 unique fresh rewrites per vulnerability family (180 total). Live dealing now also reference-checks the dealt seed and skips a repeated structural fingerprint. It does not pre-publish an exhaustive list of every future seed.
 
 ---
 
@@ -260,10 +260,13 @@ Each vulnerability family is one vulnerability template. Per seed, `variantgen` 
 | `signature-replay` | Access Control | Legendary |
 | `bridge-phantom-deposit` | Access Control (Qubit QBridge, Jan 2022) | Advanced |
 | `empty-market-inflation` | Price Manipulation (Hundred Finance / Sonne) | Advanced |
+| `platypus-emergency-withdraw` | Reentrancy / Accounting (Platypus Finance) | Advanced |
+| `nomad-unproven-message` | Access Control (Nomad Bridge zero-root) | Advanced |
+| `beanstalk-flash-governance` | Price Manipulation / Governance (Beanstalk) | Advanced |
 
-**Today: 4 canonical vulnerability families plus 2 rebuilt incidents — 6 vulnerability families, 20 self-verified unique fresh rewrites each, 120 offline.** Classes are three because `NUM_CLASSES = 3`. `signature-replay` is legendary access-control, not a fourth class. The two incidents are `bridge-phantom-deposit` (Qubit QBridge, January 2022, loss figure as reported by the post-mortems linked from `the family metadata file`) and `empty-market-inflation` (Hundred Finance, April 2023, and Sonne, May 2024, same). Only the class fix passes those two: an `address(0)`-only bridge patch, and a vault patch that merely does `require(shares > 0)`, are rejected. There is no known false-pass gap on either. That is not a claim that every possible patch has been enumerated.
+**Today: 4 canonical vulnerability families plus 5 rebuilt real incidents — 9 vulnerability families, 20 self-verified unique fresh rewrites each, 180 offline (with 6 families benchmarked in the multi-model arena).** Classes are three because `NUM_CLASSES = 3`. `signature-replay` is legendary access-control, not a fourth class. The five incidents are `bridge-phantom-deposit` (Qubit QBridge), `empty-market-inflation` (Hundred Finance / Sonne), `platypus-emergency-withdraw`, `nomad-unproven-message`, and `beanstalk-flash-governance`. Only the class fix passes: an `address(0)`-only bridge patch, and a vault patch that merely does `require(shares > 0)`, are rejected.
 
-### 5.3 The differential four checks
+### 5.3 The differential five checks
 
 | Check | Verifies | Why required |
 |---|---|---|
@@ -271,6 +274,7 @@ Each vulnerability family is one vulnerability template. Per seed, `variantgen` 
 | `pocFailsAfterPatch` | the same PoC fails after the patch | the bug is actually removed |
 | `hiddenTestsPass` | hidden functional tests all pass | the fix didn't break existing logic |
 | `patchWithinLimits` | changed lines and bytes are capped, and the contract name plus every required public function are still present | blocks a deleted contract or a deleted interface, not only a huge diff |
+| `invariantsHold` | Foundry fuzzing and stateful invariants pass at seed 0xA11CE | prevents cheating by test-specific hardcoding or state corruption |
 
 ### 5.4 Challenge-sourcing policy
 

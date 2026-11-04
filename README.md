@@ -6,7 +6,7 @@ AxVigil points Web3's AI compute at smart-contract exploits instead of puzzles t
 
 **Meta Global AI Developer Hackathon · BSC testnet · sandbox/whitehat demo**
 
-**Pages.** The project website is in [`web/index.html`](web/index.html), a one-page submission pitch in [`web/pitch.html`](web/pitch.html), and the interactive pipeline demo in [`demo/index.html`](demo/index.html) — all self-contained static pages (no build step; open directly or serve the folder).
+**Pages.** The project website is in [`web/index.html`](web/index.html), a one-page submission pitch in [`web/pitch.html`](web/pitch.html), and the interactive pipeline demo in [`web/demo.html`](web/demo.html) (`demo/index.html`) — all self-contained static pages (no build step; open directly or serve the folder).
 
 **Docs.** [`docs/hackathon-pitch.md`](docs/hackathon-pitch.md) is the concise submission pitch (the built Crucible is the star); [`docs/whitepaper.md`](docs/whitepaper.md) is the full vision — the Crucible that exists today plus the defense network it is the trust root for. Traditional Chinese versions: [`docs/hackathon-pitch.zh-TW.md`](docs/hackathon-pitch.zh-TW.md), [`docs/whitepaper.zh-TW.md`](docs/whitepaper.zh-TW.md).
 
@@ -148,9 +148,11 @@ A separate 2-of-3 collectible is live: [`0x0e87…C8eB`](https://testnet.bscscan
 
 | Contract | Address | Explorer |
 |---|---|---|
-| MockAgentID (reused) | `0x7Aa441477f0246353bdAe504cF0F9B3027D6d45e` | [view](https://testnet.bscscan.com/address/0x7Aa441477f0246353bdAe504cF0F9B3027D6d45e) |
-| AxVigilSkill | `0x337743Da5894B58039743f46f689337991cECD18` | [view](https://testnet.bscscan.com/address/0x337743Da5894B58039743f46f689337991cECD18) |
-| AxVigilCollectible | `0x06580BFc1626f7DD3d7B841FD304e6f2B23e4658` | [view](https://testnet.bscscan.com/address/0x06580BFc1626f7DD3d7B841FD304e6f2B23e4658) |
+| Threshold Collectible (2-of-3) | `0x0e8755245231b66FdcE3a625b764dc1Bb597C8eB` | [view](https://testnet.bscscan.com/address/0x0e8755245231b66FdcE3a625b764dc1Bb597C8eB) |
+| Threshold Skill (ERC-5192) | `0xE165C8B4826b6eF7aE84dfe3B1b27017aF1b5F59` | [view](https://testnet.bscscan.com/address/0xE165C8B4826b6eF7aE84dfe3B1b27017aF1b5F59) |
+| MockAgentID Registry | `0x7Aa441477f0246353bdAe504cF0F9B3027D6d45e` | [view](https://testnet.bscscan.com/address/0x7Aa441477f0246353bdAe504cF0F9B3027D6d45e) |
+| V1 Collectible (token #1, #2) | `0x06580BFc1626f7DD3d7B841FD304e6f2B23e4658` | [view](https://testnet.bscscan.com/address/0x06580BFc1626f7DD3d7B841FD304e6f2B23e4658) |
+| V1 Skill Record | `0x337743Da5894B58039743f46f689337991cECD18` | [view](https://testnet.bscscan.com/address/0x337743Da5894B58039743f46f689337991cECD18) |
 
 Superseded deployments (PR #4 and the original) are kept in [`docs/deployment-history.md`](docs/deployment-history.md).
 
