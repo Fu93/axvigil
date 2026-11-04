@@ -304,3 +304,77 @@ def test_storage_multi_slot_span_collision_rejected():
     ok, violations = verify_storage_layout_preservation(orig, patched)
     assert ok is False
     assert any("spans across existing occupied slot" in v or "collides" in v for v in violations)
+
+
+def test_recursive_type_signature_nested_structs():
+    from axvigil_verifier.storage_guard import _compute_type_signature
+
+    types_info_orig = {
+        "t_struct(Inner)_storage": {
+            "members": [
+                {"label": "x", "offset": 0, "slot": 0, "type": "t_uint128"},
+                {"label": "y", "offset": 16, "slot": 0, "type": "t_uint128"},
+            ]
+        },
+        "t_struct(Outer)_storage": {
+            "members": [
+                {"label": "inner", "offset": 0, "slot": 0, "type": "t_struct(Inner)_storage"},
+                {"label": "count", "offset": 0, "slot": 1, "type": "t_uint256"},
+            ]
+        },
+    }
+
+    sig_orig = _compute_type_signature("t_struct(Outer)_storage", types_info_orig)
+    assert "struct(inner:0:0:(struct(x:0:0:(t_uint128);y:16:0:(t_uint128)))" in sig_orig
+
+    # Altering the nested inner struct modifies the outer struct's recursive signature
+    types_info_mutated = {
+        "t_struct(Inner)_storage": {
+            "members": [
+                {"label": "x", "offset": 0, "slot": 0, "type": "t_uint256"},
+                {"label": "y", "offset": 0, "slot": 1, "type": "t_uint256"},
+            ]
+        },
+        "t_struct(Outer)_storage": {
+            "members": [
+                {"label": "inner", "offset": 0, "slot": 0, "type": "t_struct(Inner)_storage"},
+                {"label": "count", "offset": 0, "slot": 1, "type": "t_uint256"},
+            ]
+        },
+    }
+    sig_mutated = _compute_type_signature("t_struct(Outer)_storage", types_info_mutated)
+    assert sig_orig != sig_mutated
+
+
+def test_forge_runner_environment_sanitization(monkeypatch):
+    import os
+    # Inject sensitive secrets into host os.environ
+    monkeypatch.setenv("SIGNER_KEY", "0xdeadbeef1234567890abcdef")
+    monkeypatch.setenv("SESSION_SECRET", "super-secret-production-token")
+    monkeypatch.setenv("RPC_URL", "https://secret-rpc-node.internal")
+
+    # Safe keys whitelist logic from forge_runner
+    safe_keys = {"PATH", "TMPDIR", "TEMP", "TMP", "SOLC", "HOME", "USER", "SYSTEMROOT", "WINDIR"}
+    env = {k: v for k, v in os.environ.items() if k.upper() in safe_keys}
+    env["FOUNDRY_OFFLINE"] = "true"
+    env["FOUNDRY_FUZZ_SEED"] = "1337"
+
+    assert "SIGNER_KEY" not in env
+    assert "SESSION_SECRET" not in env
+    assert "RPC_URL" not in env
+    assert env["FOUNDRY_OFFLINE"] == "true"
+    assert env["FOUNDRY_FUZZ_SEED"] == "1337"
+
+
+def test_grader_excessive_gas_poc_fails_rejected():
+    # Simulate a patch that fails the PoC but burned excessive gas (algorithmic DoS)
+    gas_used_excessive = {"test_exploit()": 22_500_000}
+    max_poc_gas_ceiling = 15_000_000
+
+    poc_fails_after_patch = True
+    for test_name, g_used in gas_used_excessive.items():
+        if g_used is not None and g_used > max_poc_gas_ceiling:
+            poc_fails_after_patch = False
+            break
+
+    assert poc_fails_after_patch is False

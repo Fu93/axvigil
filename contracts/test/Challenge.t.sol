@@ -771,6 +771,39 @@ contract ChallengeTest is AxVigilBase {
         _drain(treasury);
         _books();
     }
+
+    function test_upheldChallengeRevokesExactDifficultyPreservingHigherDifficulty() public {
+        // Mint 1: Legendary solve (class 0, difficulty 2, pool 2)
+        AxVigilCollectible.MintAuth memory authLegendary = _auth(agentA, alice, 0, 2, 2);
+        bytes[] memory sigsLegendary = _pair(authLegendary, signerPk, pk2);
+        vm.prank(alice);
+        uint256 idLegendary = nft.mint{value: OPERATOR_BOND}(authLegendary, sigsLegendary);
+        assertEq(skill.maxDifficulty(agentA), 2);
+        assertEq(skill.totalSolves(agentA), 1);
+
+        // Mint 2: Basic solve (class 0, difficulty 0, pool 0)
+        AxVigilCollectible.MintAuth memory authBasic = _auth(agentA, alice, 0, 0, 0);
+        bytes[] memory sigsBasic = _pair(authBasic, signerPk, pk2);
+        vm.prank(alice);
+        uint256 idBasic = nft.mint{value: OPERATOR_BOND}(authBasic, sigsBasic);
+        assertEq(skill.maxDifficulty(agentA), 2);
+        assertEq(skill.totalSolves(agentA), 2);
+
+        // Challenge Mint 2 (the Basic solve)
+        _challenge(idBasic, challenger);
+
+        // Verdict: Upheld (Basic solve was flawed)
+        bytes[] memory verdictSigs = _verdict(idBasic, true, REASON, signerPk, pk2);
+        book.resolveChallenge(idBasic, true, REASON, verdictSigs);
+
+        // Assert: Basic solve was revoked, but Legendary solve remains intact with maxDifficulty 2!
+        assertEq(skill.totalSolves(agentA), 1);
+        assertEq(skill.maxDifficulty(agentA), 2);
+        assertEq(skill.solvesOf(agentA, 0), 1);
+        assertTrue(nft.flagged(idBasic));
+        assertFalse(nft.flagged(idLegendary));
+        _books();
+    }
 }
 
 /// @dev A recipient that tries to reenter withdraw, finalize, and challenge from the payout.
