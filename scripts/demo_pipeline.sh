@@ -15,7 +15,7 @@ if [[ -z "${AXVIGIL_SIGNER_PRIVATE_KEY:-}" ]]; then
 fi
 
 TMP_DIR="$(mktemp -d)"
-trap 'rm -rf "$TMP_DIR"' EXIT
+trap 'rm -rf "$TMP_DIR"' EXIT INT TERM
 
 cd "$ROOT"
 PYTHONPATH="$ROOT/verifier" python3 -m axvigil_verifier grade \

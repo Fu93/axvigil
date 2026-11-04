@@ -27,9 +27,15 @@
   .demo-hero { padding-bottom: 3rem; }
   .demo-stats-strip {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    grid-template-columns: repeat(4, 1fr);
     gap: 1rem;
     margin-top: 2rem;
+  }
+  @media (max-width: 980px) {
+    .demo-stats-strip { grid-template-columns: repeat(2, 1fr); }
+  }
+  @media (max-width: 580px) {
+    .demo-stats-strip { grid-template-columns: 1fr; }
   }
   .stat-box {
     background: rgba(255, 255, 255, 0.03);
@@ -43,6 +49,7 @@
     font-size: 1.85rem;
     font-weight: 800;
     color: var(--yellow);
+    font-variant-numeric: tabular-nums;
     line-height: 1.1;
   }
   .stat-box .lbl {
@@ -131,6 +138,14 @@
   .tab-group {
     display: flex;
     gap: 0.5rem;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    max-width: 100%;
+    padding-bottom: 4px;
+    scrollbar-width: none;
+  }
+  .tab-group::-webkit-scrollbar {
+    display: none;
   }
   .tab-btn {
     font-family: var(--mono);
@@ -142,6 +157,8 @@
     padding: 0.4rem 0.85rem;
     cursor: pointer;
     transition: all 0.15s ease;
+    white-space: nowrap;
+    flex-shrink: 0;
   }
   .tab-btn:hover {
     background: rgba(255, 255, 255, 0.1);
@@ -383,7 +400,7 @@
 </style>
 </head>
 <body>
-<a class="skip" href="#content">Skip to content</a>
+<a class="skip" href="#content" data-i18n="skip">Skip to content</a>
 
 <header class="site-header">
   <div class="nav-bar">
@@ -411,7 +428,7 @@
         <button type="button" data-lang="en" aria-pressed="true">EN</button>
         <button type="button" data-lang="zh-TW" aria-pressed="false">繁體中文</button>
       </div>
-      <a class="btn yellow desktop-cta" href="index.html#proof">See live records</a>
+      <a class="btn yellow desktop-cta" href="index.html#proof" data-i18n="cta.records">See live records</a>
     </div>
   </div>
 </header>
@@ -502,10 +519,10 @@
             <span style="color:#9aa6b4;">·</span>
             <code style="color:#fff;" id="terminal-challenge-label">price-manipulation-42 (seed 42)</code>
           </div>
-          <div class="tab-group">
-            <button class="tab-btn active" id="btn-iter-0" onclick="switchIter(0)">[ Attempt 0: Unchanged / Rejected ]</button>
-            <button class="tab-btn" id="btn-iter-1" onclick="switchIter(1)">[ Attempt 1: Patched / Solved ]</button>
-            <button class="tab-btn" id="btn-iter-2" onclick="switchIter(2)">[ Attempt 2: Meta AI · Nomad Bridge ]</button>
+          <div class="tab-group" role="tablist" aria-label="Verification attempts">
+            <button role="tab" aria-selected="true" aria-controls="checks-grid" class="tab-btn active" id="btn-iter-0" onclick="switchIter(0)">[ Attempt 0: Unchanged / Rejected ]</button>
+            <button role="tab" aria-selected="false" aria-controls="checks-grid" class="tab-btn" id="btn-iter-1" onclick="switchIter(1)">[ Attempt 1: Patched / Solved ]</button>
+            <button role="tab" aria-selected="false" aria-controls="checks-grid" class="tab-btn" id="btn-iter-2" onclick="switchIter(2)">[ Attempt 2: Meta AI · Nomad Bridge ]</button>
           </div>
         </div>
 
@@ -795,10 +812,10 @@
 
   function switchIter(idx) {
     const data = ATTEMPTS[idx];
-    document.getElementById("btn-iter-0").classList.toggle("active", idx === 0);
-    document.getElementById("btn-iter-1").classList.toggle("active", idx === 1);
-    const btn2 = document.getElementById("btn-iter-2");
-    if (btn2) btn2.classList.toggle("active", idx === 2);
+    document.querySelectorAll(".tab-group [role='tab']").forEach(function(b, i) {
+      b.classList.toggle("active", i === idx);
+      b.setAttribute("aria-selected", String(i === idx));
+    });
 
     const lbl = document.getElementById("terminal-challenge-label");
     if (lbl && data.challengeLabel) lbl.textContent = data.challengeLabel;
@@ -883,6 +900,20 @@
     return `<div class="scarcity-segment" style="flex:${count};background:${color};" title="${name}: ${count.toLocaleString()} (${pct.toFixed(1)}%)">${label}</div>`;
   }).join("");
 
+  // Keyboard navigation for attempt tabs
+  const tabBtns = Array.from(document.querySelectorAll(".tab-group [role='tab']"));
+  tabBtns.forEach((btn, index) => {
+    btn.addEventListener("keydown", (e) => {
+      let next = index;
+      if (e.key === "ArrowRight") next = (index + 1) % tabBtns.length;
+      else if (e.key === "ArrowLeft") next = (index - 1 + tabBtns.length) % tabBtns.length;
+      else return;
+      e.preventDefault();
+      tabBtns[next].focus();
+      switchIter(next);
+    });
+  });
+
   // --- 4. Mobile Navigation Toggle ---
   const navToggle = document.querySelector(".nav-toggle");
   const siteNav = document.getElementById("site-nav");
@@ -892,11 +923,25 @@
       navToggle.setAttribute("aria-expanded", String(!open));
       siteNav.classList.toggle("open", !open);
     });
+    siteNav.querySelectorAll("a").forEach(link => {
+      link.addEventListener("click", () => {
+        navToggle.setAttribute("aria-expanded", "false");
+        siteNav.classList.remove("open");
+      });
+    });
+    document.addEventListener("keydown", e => {
+      if (e.key === "Escape" && siteNav.classList.contains("open")) {
+        navToggle.setAttribute("aria-expanded", "false");
+        siteNav.classList.remove("open");
+        navToggle.focus();
+      }
+    });
   }
 
   // --- 5. Language Switching Synchronization ---
   const demoI18n = {
     "en": {
+      "skip": "Skip to content",
       "demo-sub": "Experience the end-to-end AxVigil proving ground: from seed-rendered anti-memorization challenges to 5-check differential verification, EIP-712 validator signatures, and on-chain soulbound capability records.",
       "nav.problem": "Problem",
       "nav.how": "How",
@@ -922,6 +967,7 @@
       "foot.disc": "Sandbox and testnet only. Not audited. Do not use it with production funds. No token has been issued, and this page is not an offer to sell one. The skill record cannot be bought or transferred. A capability record is not a claim that an agent can find unknown bugs."
     },
     "zh-TW": {
+      "skip": "跳至主要內容",
       "demo-sub": "實時體驗 AxVigil 端到端防禦驗證管線：從種子渲染防記憶變體、五重確定性差分沙箱評分、2-of-3 驗證者 EIP-712 連署，到鏈上動態靈魂綁定技能憑證演化。",
       "nav.problem": "問題",
       "nav.how": "如何運作",

@@ -209,8 +209,10 @@ contract AxVigilChallenge is Ownable2Step, EIP712, ReentrancyGuard {
         r.agentId = agentId;
         r.vulnClass = vulnClass;
         try ICollectibleDifficulty(msg.sender).tokenData(tokenId) returns (ICollectibleDifficulty.TokenData memory td) {
-            r.difficulty = td.difficulty;
-        } catch {}
+            r.difficulty = td.difficulty > 0 ? td.difficulty : 1;
+        } catch {
+            r.difficulty = 1;
+        }
         r.submissionHash = submissionHash;
         r.operator = operator;
         r.escrow = due;
@@ -353,7 +355,7 @@ contract AxVigilChallenge is Ownable2Step, EIP712, ReentrancyGuard {
     function status(uint256 tokenId) public view returns (RecordStatus) {
         Record storage r = _records[tokenId];
         if (!r.known) return RecordStatus.None;
-        if (r.upheld) return RecordStatus.Revoked;
+        if (r.upheld || skill.isRevoked(r.agentId)) return RecordStatus.Revoked;
         if (r.challengeOpen) return RecordStatus.Challenged;
         if (r.finalized || block.timestamp >= r.readyAt) return RecordStatus.Final;
         return RecordStatus.Pending;

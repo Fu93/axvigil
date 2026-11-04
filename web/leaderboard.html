@@ -49,9 +49,15 @@
   /* Executive KPI Metrics Grid */
   .kpi-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    grid-template-columns: repeat(4, 1fr);
     gap: 16px;
     margin-top: 32px;
+  }
+  @media (max-width: 1024px) {
+    .kpi-grid { grid-template-columns: repeat(2, 1fr); }
+  }
+  @media (max-width: 600px) {
+    .kpi-grid { grid-template-columns: 1fr; }
   }
   .kpi-card {
     background: rgba(255, 255, 255, 0.03);
@@ -73,6 +79,7 @@
     color: var(--yellow);
     line-height: 1.1;
     letter-spacing: -0.02em;
+    font-variant-numeric: tabular-nums;
   }
   .kpi-card .k-lbl {
     font-family: var(--mono);
@@ -154,6 +161,7 @@
     padding: 15px 20px;
     border-bottom: 1px solid rgba(255, 255, 255, 0.06);
     vertical-align: middle;
+    font-variant-numeric: tabular-nums;
   }
   table.data-table th {
     font-family: var(--mono);
@@ -187,6 +195,7 @@
     font-family: var(--mono);
     font-weight: 800;
     font-size: 0.82rem;
+    font-variant-numeric: tabular-nums;
     flex-shrink: 0;
   }
   .rank-1 { background: rgba(245, 158, 11, 0.22); color: #fbbf24; border: 1px solid rgba(245, 158, 11, 0.55); box-shadow: 0 0 12px rgba(245, 158, 11, 0.2); }
@@ -254,6 +263,7 @@
     font-size: 0.76rem;
     color: #9aa6b4;
     min-width: 42px;
+    font-variant-numeric: tabular-nums;
   }
 
   /* Status Badges */
@@ -299,7 +309,7 @@
   .filter-group-label {
     font-family: var(--mono);
     font-size: 0.72rem;
-    color: #6b7280;
+    color: var(--faint);
     letter-spacing: 0.08em;
     text-transform: uppercase;
     margin-right: 4px;
@@ -498,18 +508,18 @@
         <!-- Interactive Filter Bar -->
         <div class="filter-bar">
           <span class="filter-group-label" data-i18n="filter.contestant">Contestant:</span>
-          <button class="filter-pill active" data-filter="all" data-i18n="filter.all">All (36)</button>
-          <button class="filter-pill" data-filter="muse-spark-1.2">muse-spark-1.2</button>
-          <button class="filter-pill" data-filter="muse-spark-1.2:agentic">1.2:agentic</button>
-          <button class="filter-pill" data-filter="muse-spark-1.2:plan-then-patch">1.2:plan</button>
-          <button class="filter-pill" data-filter="muse-spark-1.1">muse-spark-1.1</button>
-          <button class="filter-pill" data-filter="muse-spark-1.1:agentic">1.1:agentic</button>
-          <button class="filter-pill" data-filter="muse-spark-1.3">muse-spark-1.3</button>
+          <button class="filter-pill active" aria-pressed="true" data-filter="all" data-i18n="filter.all">All (36)</button>
+          <button class="filter-pill" aria-pressed="false" data-filter="muse-spark-1.2">muse-spark-1.2</button>
+          <button class="filter-pill" aria-pressed="false" data-filter="muse-spark-1.2:agentic">1.2:agentic</button>
+          <button class="filter-pill" aria-pressed="false" data-filter="muse-spark-1.2:plan-then-patch">1.2:plan</button>
+          <button class="filter-pill" aria-pressed="false" data-filter="muse-spark-1.1">muse-spark-1.1</button>
+          <button class="filter-pill" aria-pressed="false" data-filter="muse-spark-1.1:agentic">1.1:agentic</button>
+          <button class="filter-pill" aria-pressed="false" data-filter="muse-spark-1.3">muse-spark-1.3</button>
           <span class="filter-divider"></span>
           <span class="filter-group-label" data-i18n="filter.result">Result:</span>
-          <button class="filter-pill res-pill active" data-result="all" data-i18n="filter.allres">All Results</button>
-          <button class="filter-pill res-pill pass-pill" data-result="pass" data-i18n="filter.passes">✓ Passes Only (31)</button>
-          <button class="filter-pill res-pill fail-pill" data-result="fail" data-i18n="filter.misses">✕ Misses Only (5)</button>
+          <button class="filter-pill res-pill active" aria-pressed="true" data-result="all" data-i18n="filter.allres">All Results</button>
+          <button class="filter-pill res-pill pass-pill" aria-pressed="false" data-result="pass" data-i18n="filter.passes">✓ Passes Only (31)</button>
+          <button class="filter-pill res-pill fail-pill" aria-pressed="false" data-result="fail" data-i18n="filter.misses">✕ Misses Only (5)</button>
         </div>
 
         <div class="table-responsive">
@@ -798,6 +808,19 @@
       toggle.setAttribute("aria-expanded", String(!open));
       nav.classList.toggle("open", !open);
     });
+    nav.querySelectorAll("a").forEach(function (link) {
+      link.addEventListener("click", function () {
+        toggle.setAttribute("aria-expanded", "false");
+        nav.classList.remove("open");
+      });
+    });
+    document.addEventListener("keydown", function (e) {
+      if (e.key === "Escape" && nav.classList.contains("open")) {
+        toggle.setAttribute("aria-expanded", "false");
+        nav.classList.remove("open");
+        toggle.focus();
+      }
+    });
   }
 
   // Copy button handler
@@ -925,8 +948,12 @@
   // Filter button handlers
   document.querySelectorAll(".filter-pill[data-filter]").forEach(function (btn) {
     btn.addEventListener("click", function () {
-      document.querySelectorAll(".filter-pill[data-filter]").forEach(function (b) { b.classList.remove("active"); });
+      document.querySelectorAll(".filter-pill[data-filter]").forEach(function (b) {
+        b.classList.remove("active");
+        b.setAttribute("aria-pressed", "false");
+      });
       btn.classList.add("active");
+      btn.setAttribute("aria-pressed", "true");
       currentContestantFilter = btn.getAttribute("data-filter");
       filterRuns();
     });
@@ -934,8 +961,12 @@
 
   document.querySelectorAll(".filter-pill[data-result]").forEach(function (btn) {
     btn.addEventListener("click", function () {
-      document.querySelectorAll(".filter-pill[data-result]").forEach(function (b) { b.classList.remove("active"); });
+      document.querySelectorAll(".filter-pill[data-result]").forEach(function (b) {
+        b.classList.remove("active");
+        b.setAttribute("aria-pressed", "false");
+      });
       btn.classList.add("active");
+      btn.setAttribute("aria-pressed", "true");
       currentResultFilter = btn.getAttribute("data-result");
       filterRuns();
     });

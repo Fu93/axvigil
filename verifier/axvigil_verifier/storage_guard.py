@@ -68,6 +68,9 @@ def _compute_type_signature(type_key: str, types_info: dict, visited: set | None
     # Handle arrays
     if "base" in type_meta:
         b_sig = _compute_type_signature(type_meta["base"], types_info, visited.copy())
+        n_bytes = type_meta.get("numberOfBytes")
+        if n_bytes:
+            return f"array({b_sig},{n_bytes})"
         return f"array({b_sig})"
 
     return norm_key

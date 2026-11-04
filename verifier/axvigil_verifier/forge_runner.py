@@ -313,8 +313,11 @@ def run_test(
 
 def _kill_process_group(proc: subprocess.Popen) -> None:
     try:
-        os.killpg(proc.pid, signal.SIGKILL)
-    except (ProcessLookupError, PermissionError, OSError):
+        if hasattr(os, "killpg") and hasattr(signal, "SIGKILL"):
+            os.killpg(proc.pid, signal.SIGKILL)
+        else:
+            proc.kill()
+    except (ProcessLookupError, PermissionError, OSError, AttributeError):
         try:
             proc.kill()
         except OSError:

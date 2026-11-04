@@ -135,6 +135,15 @@ export function mount() {
   renderer.toneMapping = THREE.NoToneMapping;
   renderer.toneMappingExposure = 1.0;
   renderer.domElement.setAttribute("aria-hidden", "true");
+  renderer.domElement.addEventListener("webglcontextlost", function (e) {
+    e.preventDefault();
+    document.documentElement.classList.add("no-webgl");
+    if (typeof setActive === "function") setActive(false);
+  }, false);
+  renderer.domElement.addEventListener("webglcontextrestored", function () {
+    document.documentElement.classList.remove("no-webgl");
+    if (typeof setActive === "function") setActive(true);
+  }, false);
   stage.insertBefore(renderer.domElement, stage.querySelector(".stage-vignette"));
   const grain = stage.querySelector(".stage-grain");
   const vignette = stage.querySelector(".stage-vignette");
@@ -818,7 +827,7 @@ export function mount() {
       if (spec.motion === "podium") addPlinthStrip(root, show.mats);
       slot.add(root);
     }).catch(function () {
-      if (show.state !== "dead") show.state = "idle";
+      if (show.state !== "dead") show.state = "error";
     });
   }
 

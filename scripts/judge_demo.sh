@@ -37,7 +37,7 @@ cleanup() {
   if [[ -n "$ANVIL_PID" ]]; then kill "$ANVIL_PID" 2>/dev/null || true; fi
   rm -rf "$TMP_DIR"
 }
-trap cleanup EXIT
+trap cleanup EXIT INT TERM
 
 echo ""
 echo "== 1/4 oracle agent (offline, no API key) =="

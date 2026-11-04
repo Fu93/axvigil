@@ -15,7 +15,7 @@ PORT="${RPC_URL##*:}"
 export PRIVATE_KEY="${PRIVATE_KEY:-0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80}"
 TMP_DIR="$(mktemp -d)"
 ANVIL_PID=""
-trap 'if [[ -n "$ANVIL_PID" ]]; then kill "$ANVIL_PID" 2>/dev/null || true; fi; rm -rf "$TMP_DIR"' EXIT
+trap 'if [[ -n "$ANVIL_PID" ]]; then kill "$ANVIL_PID" 2>/dev/null || true; fi; rm -rf "$TMP_DIR"' EXIT INT TERM
 
 anvil --silent --port "$PORT" >"$TMP_DIR/anvil.log" 2>&1 &
 ANVIL_PID=$!

@@ -46,7 +46,7 @@ cleanup() {
     kill "$ANVIL_PID" 2>/dev/null || true
   fi
 }
-trap cleanup EXIT
+trap cleanup EXIT INT TERM
 
 if [[ "$DEMO_TARGET" == "anvil" ]]; then
   export CHAIN_ID="${CHAIN_ID:-31337}"

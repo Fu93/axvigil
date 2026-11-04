@@ -27,6 +27,32 @@ import {IAxVigilSkill} from "../src/interfaces/IAxVigilSkill.sol";
 contract Deploy is Script {
     uint256 internal constant BSC_TESTNET = 97;
 
+    function _configureUris(AxVigilCollectible nft) internal {
+        string memory baseURI = vm.envOr("BASE_URI", string(""));
+        string memory unrevealedURI = vm.envOr("UNREVEALED_URI", string(""));
+        if (bytes(baseURI).length > 0 || bytes(unrevealedURI).length > 0) nft.setBaseURI(baseURI, unrevealedURI);
+
+        bytes32 provenanceHash = vm.envOr("PROVENANCE_HASH", bytes32(0));
+        if (provenanceHash != bytes32(0)) nft.setProvenanceHash(provenanceHash);
+
+        if (vm.envOr("FREEZE_METADATA", false)) nft.freezeMetadata();
+
+        bytes32 seedHash = vm.envOr("SEED_HASH", bytes32(0));
+        if (seedHash != bytes32(0)) nft.commitSeed(seedHash);
+    }
+
+    function _wireRoles(AxVigilSkill skill, AxVigilCollectible nft) internal {
+        address challengeAddr = vm.envOr("CHALLENGE_ADDR", address(0));
+        if (challengeAddr != address(0)) {
+            skill.grantRole(skill.MINTER_ROLE(), challengeAddr);
+            nft.setChallengeBook(challengeAddr);
+        }
+        address zkVerifierAddr = vm.envOr("ZK_VERIFIER_ADDR", address(0));
+        if (zkVerifierAddr != address(0)) {
+            skill.grantRole(skill.MINTER_ROLE(), zkVerifierAddr);
+        }
+    }
+
     function run() external {
         require(block.chainid == BSC_TESTNET, "Deploy: BSC testnet (97) only");
 
@@ -36,11 +62,6 @@ contract Deploy is Script {
         address owner = vm.envOr("OWNER", deployer);
         address registryAddr = vm.envOr("AGENT_REGISTRY", address(0));
         uint256 hourlyCap = vm.envOr("HOURLY_CAP", uint256(50));
-        string memory baseURI = vm.envOr("BASE_URI", string(""));
-        string memory unrevealedURI = vm.envOr("UNREVEALED_URI", string(""));
-        bytes32 provenanceHash = vm.envOr("PROVENANCE_HASH", bytes32(0));
-        bool freezeMetadata = vm.envOr("FREEZE_METADATA", false);
-        bytes32 seedHash = vm.envOr("SEED_HASH", bytes32(0));
 
         uint256[5] memory tiers = [uint256(5444), 1555, 622, 152, 4]; // 7,777
 
@@ -58,20 +79,8 @@ contract Deploy is Script {
         );
         skill.grantRole(skill.MINTER_ROLE(), address(nft));
 
-        address challengeAddr = vm.envOr("CHALLENGE_ADDR", address(0));
-        if (challengeAddr != address(0)) {
-            skill.grantRole(skill.MINTER_ROLE(), challengeAddr);
-            nft.setChallengeBook(challengeAddr);
-        }
-        address zkVerifierAddr = vm.envOr("ZK_VERIFIER_ADDR", address(0));
-        if (zkVerifierAddr != address(0)) {
-            skill.grantRole(skill.MINTER_ROLE(), zkVerifierAddr);
-        }
-
-        if (bytes(baseURI).length > 0 || bytes(unrevealedURI).length > 0) nft.setBaseURI(baseURI, unrevealedURI);
-        if (provenanceHash != bytes32(0)) nft.setProvenanceHash(provenanceHash);
-        if (freezeMetadata) nft.freezeMetadata();
-        if (seedHash != bytes32(0)) nft.commitSeed(seedHash);
+        _wireRoles(skill, nft);
+        _configureUris(nft);
 
         if (owner != deployer) {
             skill.grantRole(skill.DEFAULT_ADMIN_ROLE(), owner);

@@ -30,5 +30,5 @@ start "$VALIDATOR_KEY_1" 9101
 start "$VALIDATOR_KEY_2" 9102
 start "$VALIDATOR_KEY_3" 9103
 echo "Ctrl-C stops all three."
-trap 'kill "${pids[@]}" 2>/dev/null || true' INT TERM
+trap 'kill "${pids[@]}" 2>/dev/null || true' EXIT INT TERM
 wait

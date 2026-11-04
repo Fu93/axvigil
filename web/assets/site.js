@@ -196,7 +196,7 @@
     "how.k4": "改動的行數與位元組停在上限內，公開介面必須留下來。",
     "flag.now": "本版本（測試網）",
     "flag.pending": "尚未廣播",
-    "flag.live": "已在鏈上合約",
+    "flag.onchain": "已在鏈上合約",
     "flag.liveBadge": "已上線",
     "flag.plan": "計畫中",
     "flag.road": "路線圖",
@@ -392,6 +392,14 @@
   });
   apply(lang);
 
+  window.addEventListener("storage", function (e) {
+    if (e.key === "axvigil-lang" || e.key === "axv_lang" || e.key === "axv-lang") {
+      if (e.newValue && e.newValue !== lang) {
+        apply(e.newValue);
+      }
+    }
+  });
+
   var toggle = document.querySelector(".nav-toggle");
   var nav = document.getElementById("site-nav");
   if (toggle && nav) {
@@ -471,27 +479,26 @@
       var value = String(get(button.getAttribute("data-copy")) || "");
       var done = lang === "zh-TW" ? "已複製到剪貼簿。" : "Copied to clipboard.";
       var fail = lang === "zh-TW" ? "無法複製。" : "Could not copy.";
-      if (navigator.clipboard && navigator.clipboard.writeText) {
-        navigator.clipboard.writeText(value).then(function () {
-          if (live) {
-            live.textContent = "✓ " + done;
-            live.classList.add("toast-active");
-            clearTimeout(copyTimer);
-            copyTimer = setTimeout(function () { live.classList.remove("toast-active"); }, 2200);
-          }
-        }).catch(function () {
-          if (live) {
-            live.textContent = "✕ " + fail;
-            live.classList.add("toast-active");
-            clearTimeout(copyTimer);
-            copyTimer = setTimeout(function () { live.classList.remove("toast-active"); }, 2200);
-          }
-        });
-      } else if (live) {
-        live.textContent = "✕ " + fail;
+      function showStatus(text) {
+        if (!live) return;
+        live.textContent = "";
+        void live.offsetHeight;
+        live.textContent = text;
         live.classList.add("toast-active");
         clearTimeout(copyTimer);
-        copyTimer = setTimeout(function () { live.classList.remove("toast-active"); }, 2200);
+        copyTimer = setTimeout(function () {
+          live.classList.remove("toast-active");
+          live.textContent = "";
+        }, 2200);
+      }
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(value).then(function () {
+          showStatus("✓ " + done);
+        }).catch(function () {
+          showStatus("✕ " + fail);
+        });
+      } else {
+        showStatus("✕ " + fail);
       }
     });
   });

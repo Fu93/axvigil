@@ -85,7 +85,7 @@ PORT="${PORT:-8012}"
   exec python3 -m uvicorn axvigil_backend.app:app --host 127.0.0.1 --port "$PORT" --app-dir "$ROOT/backend" ) > "$OUT/backend.log" 2>&1 &
 APID=$!
 cleanup(){ set +e; kill "$APID" 2>/dev/null; pkill -P "$VPID" 2>/dev/null; kill "$VPID" 2>/dev/null; pkill -f "scripts/run_validators.py" 2>/dev/null; true; }
-trap cleanup EXIT
+trap cleanup EXIT INT TERM
 for _i in $(seq 1 60); do curl -sf "http://127.0.0.1:$PORT/health" >/dev/null && break; sleep 0.5; done
 say "backend health: $(curl -sf "http://127.0.0.1:$PORT/health" || true)"
 say "== 3. Muse Spark solve, then validator co-signing =="

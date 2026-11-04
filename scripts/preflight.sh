@@ -1,10 +1,19 @@
 # Shared checks for the demo scripts. Source this; do not execute it.
 # Expects ROOT to be the repository root.
 
+export PATH="${HOME}/.foundry/bin:${HOME}/.local/bin:/opt/homebrew/bin:/usr/local/bin:${PATH}"
+
+PY="${PY:-python3}"
+if [ -x "${ROOT:-}/.venv/bin/python" ]; then
+    PY="${ROOT}/.venv/bin/python"
+elif [ -x "${ROOT:-}/.venv/Scripts/python.exe" ]; then
+    PY="${ROOT}/.venv/Scripts/python.exe"
+fi
+
 preflight_python() {
-  python3 -c "import eth_account, fastapi" >/dev/null 2>&1 || {
+  "$PY" -c "import eth_account, fastapi" >/dev/null 2>&1 || {
     echo "Python packages are missing. From the repo root run:" >&2
-    echo "  python3 -m pip install -r backend/requirements.txt" >&2
+    echo "  $PY -m pip install -r backend/requirements.txt" >&2
     exit 2
   }
 }
@@ -19,6 +28,6 @@ preflight_forge() {
   # Offline grading cannot download solc. One online build fills Foundry's cache.
   if [[ "${SKIP_FORGE_BUILD:-}" != 1 ]]; then
     echo "Warming the Solidity compiler cache (forge build)..." >&2
-    (cd "$ROOT/contracts" && forge build >/dev/null)
+    (cd "$ROOT/contracts" && forge build --skip script >/dev/null)
   fi
 }

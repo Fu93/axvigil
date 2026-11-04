@@ -240,7 +240,18 @@
     });
     revealNodes.forEach(function (node) { seen.observe(node); });
     sweep();
-    window.addEventListener("scroll", function () { sweep(); armIdle(); }, { passive: true });
+    var sweepScheduled = false;
+    function scheduleSweep() {
+      if (!sweepScheduled) {
+        sweepScheduled = true;
+        requestAnimationFrame(function () {
+          sweep();
+          sweepScheduled = false;
+        });
+      }
+      armIdle();
+    }
+    window.addEventListener("scroll", scheduleSweep, { passive: true });
     armIdle();
   } else {
     document.documentElement.classList.add("intro-go");

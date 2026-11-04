@@ -74,9 +74,15 @@
   /* Metric KPI Chips */
   .chips-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    grid-template-columns: repeat(4, 1fr);
     gap: 1rem;
     margin-top: 2.5rem;
+  }
+  @media (max-width: 980px) {
+    .chips-grid { grid-template-columns: repeat(2, 1fr); }
+  }
+  @media (max-width: 580px) {
+    .chips-grid { grid-template-columns: 1fr; }
   }
   .metric-chip {
     background: #111317;
@@ -142,6 +148,11 @@
     line-height: 1.05;
     letter-spacing: -0.02em;
   }
+  html[lang^="zh"] .section-h2 {
+    text-transform: none;
+    letter-spacing: 0;
+    line-height: 1.15;
+  }
   .section-sub {
     color: var(--grey);
     font-size: 1.05rem;
@@ -181,6 +192,9 @@
     text-transform: uppercase;
     color: var(--mint);
     margin-bottom: 0.6rem;
+    min-height: 2.4em;
+    display: flex;
+    align-items: flex-end;
   }
   .card-box h3 {
     font-family: var(--display);
@@ -632,6 +646,19 @@
       const open = navToggle.getAttribute("aria-expanded") === "true";
       navToggle.setAttribute("aria-expanded", String(!open));
       siteNav.classList.toggle("open", !open);
+    });
+    siteNav.querySelectorAll("a").forEach(link => {
+      link.addEventListener("click", () => {
+        navToggle.setAttribute("aria-expanded", "false");
+        siteNav.classList.remove("open");
+      });
+    });
+    document.addEventListener("keydown", e => {
+      if (e.key === "Escape" && siteNav.classList.contains("open")) {
+        navToggle.setAttribute("aria-expanded", "false");
+        siteNav.classList.remove("open");
+        navToggle.focus();
+      }
     });
   }
 
