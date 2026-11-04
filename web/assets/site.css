@@ -456,6 +456,7 @@ html.no-webgl .sec-still {
   font-size: clamp(1.8rem, 3vw, 2.6rem);
   letter-spacing: -0.04em;
   font-variant-numeric: tabular-nums;
+  line-height: 1;
 }
 .stat .l {
   margin-top: 4px;
@@ -1012,12 +1013,12 @@ html[lang^="zh"] .zh-line { display: block; }
   text-transform: none;
 }
 .hero-copy { position: relative; z-index: 2; }
-.stats.stat-strip { grid-template-columns: repeat(4, minmax(0, 1fr)) auto; align-items: end; }
+.stats.stat-strip { grid-template-columns: repeat(4, minmax(0, 1fr)) auto; align-items: start; }
 .board-stats { margin-top: 28px; border-top: 1px solid var(--line); }
 .board-stats .l { text-transform: none; letter-spacing: 0; }
 .stat-strip .chip {
-  align-self: center;
-  margin: 0 0 8px auto;
+  align-self: start;
+  margin: 18px 0 0 auto;
 }
 .chip {
   display: inline-flex;
