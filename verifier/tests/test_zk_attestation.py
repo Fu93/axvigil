@@ -70,3 +70,23 @@ def test_generate_zk_attestation_bundle_failing():
     )
     assert bundle.passed is False
     assert bundle.checksBitmap == 29  # 31 - 2
+
+
+def test_generate_zk_attestation_bundle_core_checks_bitmap15():
+    bundle = generate_zk_attestation_bundle(
+        agent_id=102,
+        challenge_id="reentrancy-001",
+        original_code="contract Bank { ... }",
+        patched_code="contract Bank { ... }",
+        vuln_class=0,
+        difficulty=1,
+        poc_proves_bug=True,
+        poc_fails_after_patch=True,
+        hidden_tests_pass=True,
+        patch_within_limits=True,
+        invariants_hold=False,  # Unconfigured invariant suite -> 15 (0x0F)
+        timestamp=1700000000,
+    )
+    assert bundle.passed is True
+    assert bundle.checksBitmap == 15
+    assert len(bundle.encode_public_values()) == 288

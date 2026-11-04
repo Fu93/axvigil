@@ -92,19 +92,19 @@ contract AxVigilZKVerifier {
         // 31 (0x1F = all 5 checks with invariant suite) or 15 (0x0F = 4 core checks when invariants unconfigured)
         if (pv.checksBitmap != 31 && pv.checksBitmap != 15) revert IncompleteChecks(pv.checksBitmap);
 
-        // 5. Ensure caller is the legitimate owner of the SPACE ID Agent ID
+        // 5. Anti-replay protection: prevent reusing the same challenge solve for this agent (CEI pattern)
+        bytes32 nullifier = keccak256(abi.encodePacked(pv.agentId, pv.challengeId));
+        if (nullifiers[nullifier]) revert AlreadySubmitted();
+        nullifiers[nullifier] = true;
+
+        // 6. Ensure caller is the legitimate owner of the SPACE ID Agent ID
         if (agentRegistry.ownerOf(pv.agentId) != msg.sender) revert NotAgentOwner();
 
-        // 6. Enforce protocol-wide lifetime quota: max 2 solves per Agent ID
+        // 7. Enforce protocol-wide lifetime quota: max 2 solves per Agent ID
         uint32 currentSolves = skill.totalSolves(pv.agentId);
         if (currentSolves >= MAX_SOLVES_PER_AGENT) {
             revert MaxSolvesReached(pv.agentId, currentSolves);
         }
-
-        // 7. Anti-replay protection: prevent reusing the same challenge solve for this agent
-        bytes32 nullifier = keccak256(abi.encodePacked(pv.agentId, pv.challengeId));
-        if (nullifiers[nullifier]) revert AlreadySubmitted();
-        nullifiers[nullifier] = true;
 
         // 8. Trustlessly record and confirm the skill solve on the ERC-5192 Soulbound Token
         // using the authenticated vulnClass and difficulty from the zkVM journal

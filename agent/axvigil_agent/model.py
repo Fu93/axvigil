@@ -16,6 +16,8 @@ from __future__ import annotations
 
 import json
 import os
+import time
+import urllib.error
 import urllib.request
 from dataclasses import dataclass, field
 from typing import Protocol
@@ -129,14 +131,36 @@ class MetaModelClient:
             },
             method="POST",
         )
-        with urllib.request.urlopen(req, timeout=self.timeout_s) as resp:
-            data = json.loads(resp.read().decode("utf-8"))
-        # Reasoning models can return content=null when the reply is cut off.
-        # Hand the solver an empty string so it takes the unparseable-retry path
-        # instead of crashing on None.strip(). Token counts stay on `last_usage`
-        # (zero when the provider omits `usage`). The API key is not logged.
-        self.last_usage = usage_from_response(data)
-        return message_text(data["choices"][0]["message"])
+        max_attempts = 3
+        backoff = 2.0
+        last_exc: Exception | None = None
+        for attempt in range(max_attempts):
+            try:
+                with urllib.request.urlopen(req, timeout=self.timeout_s) as resp:
+                    data = json.loads(resp.read().decode("utf-8"))
+                # Reasoning models can return content=null when the reply is cut off.
+                # Hand the solver an empty string so it takes the unparseable-retry path
+                # instead of crashing on None.strip(). Token counts stay on `last_usage`
+                # (zero when the provider omits `usage`). The API key is not logged.
+                self.last_usage = usage_from_response(data)
+                return message_text(data["choices"][0]["message"])
+            except urllib.error.HTTPError as exc:
+                last_exc = exc
+                if exc.code in (429, 500, 502, 503, 504) and attempt < max_attempts - 1:
+                    time.sleep(backoff)
+                    backoff *= 2.0
+                    continue
+                raise
+            except (urllib.error.URLError, TimeoutError) as exc:
+                last_exc = exc
+                if attempt < max_attempts - 1:
+                    time.sleep(backoff)
+                    backoff *= 2.0
+                    continue
+                raise
+        if last_exc:
+            raise last_exc
+        return ""
 
     def complete_turn(self, messages: list[dict], *, tools: list[dict] | None = None) -> ModelTurn:
         """One chat completion, optionally with OpenAI `tools`.

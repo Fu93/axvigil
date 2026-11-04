@@ -41,7 +41,7 @@ contract AxVigilChallenge is Ownable2Step, EIP712, ReentrancyGuard {
     // ---------------------------------------------------------------------
 
     bytes32 public constant CHALLENGE_VERDICT_TYPEHASH =
-        keccak256("ChallengeVerdict(uint256 tokenId,bool upheld,bytes32 reasonHash)");
+        keccak256("ChallengeVerdict(uint256 tokenId,uint256 round,address challenger,bytes32 evidenceHash,bool upheld,bytes32 reasonHash)");
 
     /// @dev Numeric values are part of the public ABI (cast / indexers).
     enum RecordStatus {
@@ -61,6 +61,7 @@ contract AxVigilChallenge is Ownable2Step, EIP712, ReentrancyGuard {
         uint256 escrow;
         uint256 challengerBond;
         bytes32 evidenceHash;
+        uint256 round;
         uint64 mintedAt;
         uint64 readyAt;
         uint64 respondBy;
@@ -226,6 +227,7 @@ contract AxVigilChallenge is Ownable2Step, EIP712, ReentrancyGuard {
         if (msg.value != challengeBond) revert BadBond(msg.value, challengeBond);
 
         r.challengeOpen = true;
+        r.round += 1;
         r.challenger = msg.sender;
         r.challengerBond = msg.value;
         r.evidenceHash = keccak256(evidence);
@@ -338,8 +340,33 @@ contract AxVigilChallenge is Ownable2Step, EIP712, ReentrancyGuard {
         return _records[tokenId].submissionHash;
     }
 
+    function hashChallengeVerdict(
+        uint256 tokenId,
+        uint256 round,
+        address challenger,
+        bytes32 evidenceHash,
+        bool upheld,
+        bytes32 reasonHash
+    ) public view returns (bytes32) {
+        return _hashTypedDataV4(
+            keccak256(
+                abi.encode(
+                    CHALLENGE_VERDICT_TYPEHASH,
+                    tokenId,
+                    round,
+                    challenger,
+                    evidenceHash,
+                    upheld,
+                    reasonHash
+                )
+            )
+        );
+    }
+
+    /// @notice Overload hashing the verdict against the currently active challenge state
     function hashChallengeVerdict(uint256 tokenId, bool upheld, bytes32 reasonHash) public view returns (bytes32) {
-        return _hashTypedDataV4(keccak256(abi.encode(CHALLENGE_VERDICT_TYPEHASH, tokenId, upheld, reasonHash)));
+        Record storage r = _records[tokenId];
+        return hashChallengeVerdict(tokenId, r.round, r.challenger, r.evidenceHash, upheld, reasonHash);
     }
 
     function domainSeparator() external view returns (bytes32) {

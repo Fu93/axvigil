@@ -109,3 +109,20 @@ def test_solve_cli_emit_zk_bundle(tmp_path):
     assert data["challengeId"] == "reentrancy-vault"
     assert data["passed"] is True
     assert data["checksBitmap"] in (15, 31)
+
+
+def test_extract_json_trailing_commas_and_fences():
+    from axvigil_agent.solver import _clean_code_snippet, extract_json
+
+    raw = """
+    Here is the response:
+    {
+        "analysis": "Identified reentrancy bug",
+        "patched_contract": "```solidity\\ncontract Fixed {}\\n```",
+        "poc_test": "contract Poc {}",
+    }
+    """
+    obj = extract_json(raw)
+    assert obj["analysis"] == "Identified reentrancy bug"
+    assert _clean_code_snippet(obj["patched_contract"]) == "contract Fixed {}"
+    assert _clean_code_snippet(obj["poc_test"]) == "contract Poc {}"

@@ -25,6 +25,11 @@ class StorageSlot:
     number_of_bytes: int = 32
 
 
+def normalize_type_key(k: str) -> str:
+    """Normalize solc AST node IDs from struct/enum/type names (e.g. t_struct(Foo)1234_storage -> t_struct(Foo)_storage)."""
+    return re.sub(r"(\))(\d+)(_storage)?$", r"\1\3", k)
+
+
 def parse_storage_layout_json(raw: str | dict) -> List[StorageSlot]:
     """Parse JSON output from `forge inspect <Contract> storage-layout --json`."""
     if isinstance(raw, str):
@@ -100,30 +105,33 @@ def verify_storage_layout_preservation(
     """
     violations: List[str] = []
 
-    orig_map: Dict[str, StorageSlot] = {s.label: s for s in original_slots}
-    patched_map: Dict[str, StorageSlot] = {s.label: s for s in patched_slots}
+    def slot_key(s: StorageSlot) -> str:
+        return f"{s.contract}:{s.label}" if s.contract else s.label
+
+    orig_map: Dict[str, StorageSlot] = {slot_key(s): s for s in original_slots}
+    patched_map: Dict[str, StorageSlot] = {slot_key(s): s for s in patched_slots}
 
     # 1. Check all original variables are preserved exactly
-    for label, orig_s in orig_map.items():
-        if label not in patched_map:
+    for key, orig_s in orig_map.items():
+        if key not in patched_map:
             violations.append(
-                f"Storage variable '{label}' was removed in patch (expected slot {orig_s.slot}, offset {orig_s.offset})"
+                f"Storage variable '{orig_s.label}' was removed in patch (expected slot {orig_s.slot}, offset {orig_s.offset})"
             )
             continue
 
-        patched_s = patched_map[label]
+        patched_s = patched_map[key]
         if orig_s.slot != patched_s.slot:
             violations.append(
-                f"Storage collision on '{label}': slot changed from {orig_s.slot} to {patched_s.slot}"
+                f"Storage collision on '{orig_s.label}': slot changed from {orig_s.slot} to {patched_s.slot}"
             )
         elif orig_s.offset != patched_s.offset:
             violations.append(
-                f"Storage byte-offset corrupted on '{label}': offset changed from {orig_s.offset} to {patched_s.offset}"
+                f"Storage byte-offset corrupted on '{orig_s.label}': offset changed from {orig_s.offset} to {patched_s.offset}"
             )
 
-        if orig_s.type_name != patched_s.type_name:
+        if normalize_type_key(orig_s.type_name) != normalize_type_key(patched_s.type_name):
             violations.append(
-                f"Storage type mutation on '{label}': type changed from {orig_s.type_name} to {patched_s.type_name}"
+                f"Storage type mutation on '{orig_s.label}': type changed from {orig_s.type_name} to {patched_s.type_name}"
             )
 
     # 2. Check that any newly added variables do not overwrite or collide into original slots
@@ -131,15 +139,15 @@ def verify_storage_layout_preservation(
         max_orig_slot = max(s.slot for s in original_slots)
         occupied_locations = {(s.slot, s.offset) for s in original_slots}
 
-        for label, patched_s in patched_map.items():
-            if label not in orig_map:
+        for key, patched_s in patched_map.items():
+            if key not in orig_map:
                 if (patched_s.slot, patched_s.offset) in occupied_locations:
                     violations.append(
-                        f"New variable '{label}' collides into existing slot {patched_s.slot}:{patched_s.offset}"
+                        f"New variable '{patched_s.label}' collides into existing slot {patched_s.slot}:{patched_s.offset}"
                     )
                 elif patched_s.slot < max_orig_slot:
                     violations.append(
-                        f"New variable '{label}' inserted before existing slot {max_orig_slot} (at slot {patched_s.slot})"
+                        f"New variable '{patched_s.label}' inserted before existing slot {max_orig_slot} (at slot {patched_s.slot})"
                     )
 
     passed = len(violations) == 0

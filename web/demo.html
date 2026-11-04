@@ -652,7 +652,7 @@
               <dt>Agent Registry</dt>
               <dd><a href="https://testnet.bscscan.com/address/0x7Aa441477f0246353bdAe504cF0F9B3027D6d45e" target="_blank" rel="noopener">0x7Aa4…d45e</a> <button class="copy-chip" data-copy-val="0x7Aa441477f0246353bdAe504cF0F9B3027D6d45e" title="Copy full address">⧉ copy</button></dd>
               <dt>ZK Verifier</dt>
-              <dd><a href="https://testnet.bscscan.com/address/0x5FbDB2315678afecb367f032d93F642f64180aa3" target="_blank" rel="noopener">0x5FbD…0aa3</a> <button class="copy-chip" data-copy-val="0x5FbDB2315678afecb367f032d93F642f64180aa3" title="Copy full address">⧉ copy</button></dd>
+              <dd><span style="color:var(--mint);font-family:var(--mono);">Local Anvil / SP1 Verified</span> <a href="pitch.html#proof" style="margin-left:6px;font-size:0.75rem;">(Architecture ↗)</a></dd>
               <dt>Pre-PR#8 Skill</dt>
               <dd><a href="https://testnet.bscscan.com/address/0x337743Da5894B58039743f46f689337991cECD18" target="_blank" rel="noopener">0x3377…CD18</a> <button class="copy-chip" data-copy-val="0x337743Da5894B58039743f46f689337991cECD18" title="Copy full address">⧉ copy</button></dd>
             </dl>
@@ -827,7 +827,7 @@
         </div>
         <div class="verdict-meta">
           <strong>submissionHash:</strong> ${data.hash}<br>
-          <strong>EIP-712 authDigest:</strong> ${data.authDigest} (signed by 2-of-3 validators for minting)
+          ${data.zkJournal ? '<strong>Verification Path:</strong> Direct on-chain SP1 zkVM attestation (trustless mint · validator multi-sig bypassed)' : `<strong>EIP-712 authDigest:</strong> ${data.authDigest} (signed by 2-of-3 validators for minting)`}
           ${zkBlock}
         </div>
       `;

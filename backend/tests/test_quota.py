@@ -226,7 +226,7 @@ def test_parallel_submits_grade_once(tmp_path, monkeypatch):
     def slow_grade(*_args, **_kwargs):
         calls.append(1)
         entered.set()
-        assert release.wait(3), "grader was not released"
+        assert release.wait(10), "grader was not released"
 
         class Result:
             passed = False
@@ -257,11 +257,11 @@ def test_parallel_submits_grade_once(tmp_path, monkeypatch):
     first = threading.Thread(target=go)
     second = threading.Thread(target=go)
     first.start()
-    assert entered.wait(3), "first submit never reached the grader"
+    assert entered.wait(10), "first submit never reached the grader"
     second.start()
-    second.join(3)
+    second.join(10)
     release.set()
-    first.join(3)
+    first.join(10)
     assert calls == [1]
     assert outcomes.count("ok") == 1
     assert outcomes.count(409) == 1

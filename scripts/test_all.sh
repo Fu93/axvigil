@@ -6,11 +6,16 @@ set -euo pipefail
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 export PATH="${HOME}/.foundry/bin:${PATH}"
 
+PY="python3"
+if [ -x "$ROOT/.venv/bin/python" ]; then
+    PY="$ROOT/.venv/bin/python"
+fi
+
 echo "== forge build (src + script) ==" && (cd "$ROOT/contracts" && forge build && forge build script)
 echo "== contracts =="            && (cd "$ROOT/contracts" && forge test)
-echo "== verifier =="             && (cd "$ROOT/verifier"  && python3 -m pytest -q)
-echo "== variantgen =="           && (cd "$ROOT/variantgen" && PYTHONPATH=. python3 -m pytest -q)
-echo "== backend protocol =="     && (cd "$ROOT/backend"   && PYTHONPATH=. python3 -m pytest tests/ -q)
-echo "== mint-auth bridge =="     && (cd "$ROOT"           && python3 -m pytest backend/test_mint_auth.py -q)
-echo "== agent protocol client ==" && (cd "$ROOT/agent"     && PYTHONPATH=. python3 -m pytest tests/ -q)
+echo "== verifier =="             && (cd "$ROOT/verifier"  && "$PY" -m pytest -q)
+echo "== variantgen =="           && (cd "$ROOT/variantgen" && PYTHONPATH=. "$PY" -m pytest -q)
+echo "== backend protocol =="     && (cd "$ROOT/backend"   && PYTHONPATH=. "$PY" -m pytest tests/ -q)
+echo "== mint-auth bridge =="     && (cd "$ROOT"           && "$PY" -m pytest backend/test_mint_auth.py -q)
+echo "== agent protocol client ==" && (cd "$ROOT/agent"     && PYTHONPATH=. "$PY" -m pytest tests/ -q)
 echo "ALL GREEN"

@@ -158,7 +158,7 @@ Agent ID owner submits mint
 | Agent | automated solve loop with an offline oracle so judges can reproduce runs |
 | Contracts | EIP-712 authorization; `mintedPerAgent` ceiling of 2; hourly cap; pausable; `setSigner` (owner rotates the signer; the signer key only authorizes mints); fixed supply |
 | Deployment | BSC testnet (chain 97): Skill `0x3377…CD18`, Collectible `0x0658…4658`, registry `0x7Aa4…d45e` (`MockAgentID`, open mint, not a production Agent ID) |
-| Tests | Foundry unit / fuzz / rarity-distribution / invariant / verify→mint integration; Python backend and verifier suites; 275 tests passed, 1 skipped (contracts 110 · Python 165; the Docker image is built and graded in sandbox CI) |
+| Tests | Foundry unit / fuzz / rarity-distribution / invariant / verify→mint integration; Python backend and verifier suites; 288 tests passed, 1 skipped (contracts 118 · Python 170; the Docker image is built and graded in sandbox CI) |
 
 ### 4.4 Live proof (Muse Spark mint)
 

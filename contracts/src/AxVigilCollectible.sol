@@ -428,6 +428,7 @@ contract AxVigilCollectible is ERC721, Ownable2Step, Pausable, EIP712 {
     /// @dev Per-agent quota, supply cap, hourly cap, open batch. Returns the open batch id.
     function _checkLimits(uint256 agentId) internal view returns (uint32 batchId) {
         if (mintedPerAgent[agentId] >= MAX_PER_AGENT) revert AgentQuotaReached();
+        if (skill.totalSolves(agentId) >= MAX_PER_AGENT) revert AgentQuotaReached();
         // Hidden draws do not use up a public piece. Unrevealed mints still reserve one,
         // because they might reveal as a public tier.
         if (totalMinted >= maxSupply) revert SoldOut();

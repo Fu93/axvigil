@@ -23,11 +23,21 @@ class CircuitBreaker:
     def __init__(self, store: Store, config: BreakerConfig | None = None):
         self.store = store
         self.cfg = config or BreakerConfig()
+        self._latched_open: set[str] = set()
+
+    def reset(self, mother_id: str | None = None) -> None:
+        """Reset the breaker latch for a specific mother (e.g. after operator rotation) or all mothers."""
+        if mother_id is not None:
+            self._latched_open.discard(mother_id)
+        else:
+            self._latched_open.clear()
 
     def state(self, mother_id: str) -> dict:
         passed, total = self.store.recent_outcomes(mother_id, self.cfg.window_s)
         rate = (passed / total) if total else 0.0
-        tripped = total >= self.cfg.min_samples and rate >= self.cfg.pass_rate_trip
+        tripped = (total >= self.cfg.min_samples and rate >= self.cfg.pass_rate_trip) or (mother_id in self._latched_open)
+        if tripped:
+            self._latched_open.add(mother_id)
         return {
             "motherId": mother_id,
             "windowSeconds": self.cfg.window_s,

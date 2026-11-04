@@ -51,6 +51,10 @@ def test_circuit_breaker_trips_on_leak_spike():
     _record(store, "price-manipulation", 0, 20)
     assert cb.is_open("price-manipulation") is False
 
+    # Breaker latches open
+    assert cb.is_open("reentrancy") is True
+    cb.reset("reentrancy")
+
 
 def test_session_token_roundtrip_and_tamper():
     t = SessionTokens("secret", ttl_s=60)

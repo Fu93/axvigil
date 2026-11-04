@@ -251,6 +251,9 @@ def test_check_poc_decoy_probes_patterns():
         "assembly { let h := extcodehash(target) }",
         "bytes memory b = type(Vault).runtimeCode;",
         "bytes memory b = type(Vault).creationCode;",
+        "assembly { extcodecopy(target, 0, 0, 32) }",
+        "bytes memory c = vm.getCode('Vault.sol:Vault');",
+        "bytes memory d = vm.getDeployedCode('Vault.sol:Vault');",
     ]
     for sample in bad_samples:
         detected, reason = check_poc_decoy_probes(sample)

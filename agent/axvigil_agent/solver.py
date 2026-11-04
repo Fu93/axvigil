@@ -24,6 +24,15 @@ def _ensure_verifier_on_path() -> None:
         sys.path.insert(0, p)
 
 
+def _clean_code_snippet(s: str) -> str:
+    """Strip extraneous markdown code fences (```solidity ... ```) from extracted string."""
+    stripped = s.strip()
+    m = re.match(r"^```(?:solidity|sol)?\s*\n?(.*?)\n?```$", stripped, re.DOTALL | re.IGNORECASE)
+    if m:
+        return m.group(1).strip()
+    return s
+
+
 def extract_json(text: str) -> dict:
     """Pull the JSON object out of a model response (handles ``` fences and prose)."""
     text = text.strip()
@@ -38,12 +47,13 @@ def extract_json(text: str) -> dict:
     if i != -1 and j != -1 and j > i:
         candidates.append(text[i : j + 1])
     for c in candidates:
-        try:
-            obj = json.loads(c)
-            if isinstance(obj, dict):
-                return obj
-        except json.JSONDecodeError:
-            continue
+        for attempt in (c, re.sub(r",\s*([}\]])", r"\1", c)):
+            try:
+                obj = json.loads(attempt, strict=False)
+                if isinstance(obj, dict):
+                    return obj
+            except json.JSONDecodeError:
+                continue
     raise ValueError("no JSON object found in model response")
 
 
@@ -134,8 +144,8 @@ def solve(
             raw = ""
         try:
             obj = extract_json(raw)
-            patch = obj["patched_contract"]
-            poc = obj["poc_test"]
+            patch = _clean_code_snippet(obj["patched_contract"])
+            poc = _clean_code_snippet(obj["poc_test"])
             analysis = obj.get("analysis", "")
             outcome.last_patch = patch
         except (ValueError, KeyError, TypeError) as e:

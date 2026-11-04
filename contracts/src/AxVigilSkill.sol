@@ -149,6 +149,9 @@ contract AxVigilSkill is IERC5192, IERC165, IAxVigilSkill, AccessControl {
         r.pendingPerClass[vulnClass] -= 1;
         r.solvesPerClass[vulnClass] -= 1;
         r.totalSolves -= 1;
+        if (r.totalSolves == 0) {
+            r.maxDifficulty = 0;
+        }
         if (r.solvesPerClass[vulnClass] == 0) {
             r.classMask = uint8(r.classMask & ~uint8(1 << vulnClass));
         }

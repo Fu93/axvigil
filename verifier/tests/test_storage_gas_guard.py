@@ -122,6 +122,33 @@ def test_storage_preservation_identical_layout():
     assert len(violations) == 0
 
 
+def test_storage_ast_id_normalization():
+    # Solc ast node id shift between compilation runs: t_struct(Info)120_storage vs t_struct(Info)135_storage
+    orig = [
+        StorageSlot("Vault", "info", 0, 0, "t_struct(Info)120_storage", 32),
+    ]
+    patched = [
+        StorageSlot("Vault", "info", 0, 0, "t_struct(Info)135_storage", 32),
+    ]
+    ok, violations = verify_storage_layout_preservation(orig, patched)
+    assert ok is True
+    assert len(violations) == 0
+
+
+def test_storage_inheritance_shadowing_not_colliding():
+    orig = [
+        StorageSlot("Base", "owner", 0, 0, "t_address", 20),
+        StorageSlot("Vault", "owner", 0, 1, "t_address", 20),
+    ]
+    patched = [
+        StorageSlot("Base", "owner", 0, 0, "t_address", 20),
+        StorageSlot("Vault", "owner", 0, 1, "t_address", 20),
+    ]
+    ok, violations = verify_storage_layout_preservation(orig, patched)
+    assert ok is True
+    assert len(violations) == 0
+
+
 def test_storage_rejection_on_variable_deletion():
     orig = [
         StorageSlot("Vault", "owner", 0, 0, "t_address", 20),
@@ -176,6 +203,33 @@ def test_storage_safe_append_allowed():
         StorageSlot("Vault", "owner", 0, 0, "t_address", 20),
         StorageSlot("Vault", "totalAssets", 0, 1, "t_uint256", 32),
         StorageSlot("Vault", "_locked", 0, 2, "t_bool", 1),
+    ]
+    ok, violations = verify_storage_layout_preservation(orig, patched)
+    assert ok is True
+    assert len(violations) == 0
+
+
+def test_storage_ast_id_normalization():
+    # Solc ast node id shift between compilation runs: t_struct(Info)120_storage vs t_struct(Info)135_storage
+    orig = [
+        StorageSlot("Vault", "info", 0, 0, "t_struct(Info)120_storage", 32),
+    ]
+    patched = [
+        StorageSlot("Vault", "info", 0, 0, "t_struct(Info)135_storage", 32),
+    ]
+    ok, violations = verify_storage_layout_preservation(orig, patched)
+    assert ok is True
+    assert len(violations) == 0
+
+
+def test_storage_inheritance_shadowing_not_colliding():
+    orig = [
+        StorageSlot("Base", "owner", 0, 0, "t_address", 20),
+        StorageSlot("Vault", "owner", 0, 1, "t_address", 20),
+    ]
+    patched = [
+        StorageSlot("Base", "owner", 0, 0, "t_address", 20),
+        StorageSlot("Vault", "owner", 0, 1, "t_address", 20),
     ]
     ok, violations = verify_storage_layout_preservation(orig, patched)
     assert ok is True

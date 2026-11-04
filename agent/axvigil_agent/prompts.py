@@ -19,8 +19,7 @@ Return ONLY a single JSON object, no prose outside it, with exactly these keys:
   "patched_contract": the FULL patched source of the target file
   "poc_test":         the FULL source of a Foundry test file
 
-The PoC test file must import the target via "../src/<TargetFile>" and compile under \
-the challenge's pragma. Keep the patch as small as possible."""
+The PoC test file must import {Test} from "forge-std/Test.sol", import the target via "../src/<TargetFile>", include setUp() and a test function starting with "test" demonstrating the exploit, and compile cleanly under the challenge's pragma. Keep the patch as small as possible."""
 
 
 def _budget(limits: dict | None) -> str:
