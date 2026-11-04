@@ -222,6 +222,39 @@ contract ChallengeTest is AxVigilBase {
         _books();
     }
 
+    function test_resolveRejectedExtendsWindowIfPastReadyAt() public {
+        uint256 id = _mint(agentA, alice);
+        uint64 originalReadyAt = book.record(id).readyAt;
+        vm.warp(originalReadyAt - 10);
+        _challenge(id, challenger);
+
+        vm.warp(originalReadyAt + 100);
+        book.resolveChallenge(id, false, REASON, _verdict(id, false, REASON, signerPk, pk2));
+
+        uint64 newReadyAt = book.record(id).readyAt;
+        assertEq(newReadyAt, uint64(block.timestamp + WINDOW));
+        assertTrue(newReadyAt > block.timestamp);
+
+        _challenge(id, challenger);
+        assertEq(uint8(book.status(id)), uint8(AxVigilChallenge.RecordStatus.Challenged));
+        _books();
+    }
+
+    function test_finalizeForfeitsEscrowIfAgentRevokedByAdmin() public {
+        uint256 id = _mint(agentA, alice);
+        vm.prank(owner);
+        skill.revoke(agentA, "detected cheating");
+
+        vm.warp(book.record(id).readyAt + 1);
+        book.finalize(id);
+
+        assertTrue(book.flagged(id));
+        assertEq(uint8(book.status(id)), uint8(AxVigilChallenge.RecordStatus.Revoked));
+        assertEq(book.withdrawable(alice), 0);
+        assertEq(book.withdrawable(treasury), OPERATOR_BOND);
+        _books();
+    }
+
     function test_revert_doubleChallengeWhileOpen() public {
         uint256 id = _mint(agentA, alice);
         _challenge(id, challenger);

@@ -23,11 +23,26 @@ class StorageSlot:
     slot: int
     type_name: str
     number_of_bytes: int = 32
+    members_signature: str = ""
 
 
 def normalize_type_key(k: str) -> str:
     """Normalize solc AST node IDs from struct/enum/type names (e.g. t_struct(Foo)1234_storage -> t_struct(Foo)_storage)."""
     return re.sub(r"((?:t_)?(?:struct|enum|contract|userDefinedValueType)\([^)]+\))(\d+)(_storage)?", r"\1\3", k)
+
+
+def _compute_members_sig(type_meta: dict) -> str:
+    members = type_meta.get("members", [])
+    if not members:
+        return ""
+    parts = []
+    for m in members:
+        lbl = m.get("label", "")
+        off = m.get("offset", 0)
+        slot = m.get("slot", 0)
+        tkey = normalize_type_key(m.get("type", ""))
+        parts.append(f"{lbl}:{off}:{slot}:{tkey}")
+    return ";".join(parts)
 
 
 def parse_storage_layout_json(raw: str | dict) -> List[StorageSlot]:
@@ -45,6 +60,7 @@ def parse_storage_layout_json(raw: str | dict) -> List[StorageSlot]:
         type_key = item.get("type", "")
         type_meta = types_info.get(type_key, {})
         n_bytes = int(type_meta.get("numberOfBytes", 32)) if type_meta else 32
+        m_sig = _compute_members_sig(type_meta) if type_meta else ""
 
         slots.append(
             StorageSlot(
@@ -54,6 +70,7 @@ def parse_storage_layout_json(raw: str | dict) -> List[StorageSlot]:
                 slot=int(item.get("slot", 0)),
                 type_name=type_key,
                 number_of_bytes=n_bytes,
+                members_signature=m_sig,
             )
         )
     return slots
@@ -133,17 +150,33 @@ def verify_storage_layout_preservation(
             violations.append(
                 f"Storage type mutation on '{orig_s.label}': type changed from {orig_s.type_name} to {patched_s.type_name}"
             )
+        elif orig_s.members_signature and patched_s.members_signature and orig_s.members_signature != patched_s.members_signature:
+            violations.append(
+                f"Storage struct member mutation on '{orig_s.label}': members changed from {orig_s.members_signature} to {patched_s.members_signature}"
+            )
 
     # 2. Check that any newly added variables do not overwrite or collide into original slots
     if original_slots:
-        max_orig_slot = max(s.slot for s in original_slots)
         occupied_locations = {(s.slot, s.offset) for s in original_slots}
+        occupied_slots: set[int] = set()
+        for s in original_slots:
+            n_slots = max(1, (s.number_of_bytes + 31) // 32)
+            for i in range(s.slot, s.slot + n_slots):
+                occupied_slots.add(i)
+        max_orig_slot = max(occupied_slots) if occupied_slots else 0
 
         for key, patched_s in patched_map.items():
             if key not in orig_map:
+                n_slots = max(1, (patched_s.number_of_bytes + 31) // 32)
+                new_slots = set(range(patched_s.slot, patched_s.slot + n_slots))
+                colliding = new_slots.intersection(occupied_slots)
                 if (patched_s.slot, patched_s.offset) in occupied_locations:
                     violations.append(
                         f"New variable '{patched_s.label}' collides into existing slot {patched_s.slot}:{patched_s.offset}"
+                    )
+                elif colliding:
+                    violations.append(
+                        f"New variable '{patched_s.label}' spans across existing occupied slot(s) {sorted(colliding)}"
                     )
                 elif patched_s.slot < max_orig_slot:
                     violations.append(

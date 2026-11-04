@@ -171,12 +171,6 @@ class LoginRequest(BaseModel):
 @app.post("/v1/auth/login")
 def v1_auth_login(req: LoginRequest, request: Request) -> dict:
     _rl(_login_bucket, _client_ip(request))
-    if not store.consume_nonce(req.nonce, req.address):
-        raise HTTPException(
-            401,
-            "That login nonce is invalid, expired, or already used. "
-            "Request a new one with GET /v1/auth/challenge. Each nonce works once.",
-        )
     msg = authmod.login_message(req.address, req.agentId, req.nonce, settings.chain_id)
     try:
         recovered = authmod.recover_login(msg, req.signature)
@@ -184,6 +178,12 @@ def v1_auth_login(req: LoginRequest, request: Request) -> dict:
         raise HTTPException(401, "bad signature")
     if recovered.lower() != req.address.lower():
         raise HTTPException(401, "signature does not match address")
+    if not store.consume_nonce(req.nonce, req.address):
+        raise HTTPException(
+            401,
+            "That login nonce is invalid, expired, or already used. "
+            "Request a new one with GET /v1/auth/challenge. Each nonce works once.",
+        )
     try:
         platform.require_owner(req.agentId, recovered)
     except ProtocolError as e:
@@ -250,6 +250,8 @@ class AuthorizeRequest(BaseModel):
 
 @app.post("/v1/authorize")
 def v1_authorize(req: AuthorizeRequest, agent: dict = Depends(require_agent)) -> dict:
+    if req.to and req.to.lower() in ("0x0", "0x0000000000000000000000000000000000000000"):
+        raise HTTPException(400, "Recipient cannot be zero address")
     try:
         return platform.authorize(session_id=req.sessionId, address=agent["addr"],
                                   to=req.to, action=req.action)

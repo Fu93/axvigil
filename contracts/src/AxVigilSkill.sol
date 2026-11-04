@@ -62,6 +62,7 @@ contract AxVigilSkill is IERC5192, IERC165, IAxVigilSkill, AccessControl {
     IAgentRegistry public immutable agentRegistry;
 
     mapping(uint256 agentId => Record) private _records;
+    mapping(uint256 agentId => uint8[3][3]) private _diffCounts;
     mapping(uint256 agentId => string) public revokeReason;
 
     /// @notice Number of live (non-revoked) records.
@@ -119,6 +120,7 @@ contract AxVigilSkill is IERC5192, IERC165, IAxVigilSkill, AccessControl {
         r.solvesPerClass[vulnClass] += 1;
         r.pendingPerClass[vulnClass] += 1;
         r.totalSolves += 1;
+        _diffCounts[agentId][vulnClass][difficulty] += 1;
         r.classMask |= uint8(1 << vulnClass);
         if (difficulty > r.difficultyPerClass[vulnClass]) {
             r.difficultyPerClass[vulnClass] = difficulty;
@@ -142,33 +144,53 @@ contract AxVigilSkill is IERC5192, IERC165, IAxVigilSkill, AccessControl {
         emit SolveConfirmed(agentId, vulnClass, r.finalizedSolves);
     }
 
-    /// @notice Drop one pending solve after an upheld challenge. Does not set the admin
-    ///         `revoked` flag, so a later honest mint for this Agent ID can still record.
-    ///         No-ops if an admin already wiped the record, so a bond payout cannot stick.
-    function revokeSolve(uint256 agentId, uint8 vulnClass) external override onlyRole(MINTER_ROLE) {
+    /// @notice Drop one pending solve after an upheld challenge.
+    function revokeSolve(uint256 agentId, uint8 vulnClass, uint8 difficulty) public override onlyRole(MINTER_ROLE) {
         if (vulnClass >= NUM_CLASSES) revert InvalidVulnClass(vulnClass);
         Record storage r = _records[agentId];
         if (!r.exists || r.revoked) return;
         if (r.pendingPerClass[vulnClass] == 0) revert NoPending(agentId);
+
+        if (difficulty < NUM_DIFFICULTIES && _diffCounts[agentId][vulnClass][difficulty] > 0) {
+            _diffCounts[agentId][vulnClass][difficulty] -= 1;
+        }
         r.pendingPerClass[vulnClass] -= 1;
         r.solvesPerClass[vulnClass] -= 1;
         r.totalSolves -= 1;
-        if (r.totalSolves == 0) {
-            r.maxDifficulty = 0;
-        }
+
+        // Recompute difficultyPerClass for this class from remaining counts
+        uint8 maxClassDiff = 0;
         if (r.solvesPerClass[vulnClass] == 0) {
             r.classMask = uint8(r.classMask & ~uint8(1 << vulnClass));
             r.difficultyPerClass[vulnClass] = 0;
-            // Dynamically recompute maxDifficulty across remaining solved classes
-            uint8 newMax = 0;
+        } else {
+            for (uint8 d = NUM_DIFFICULTIES; d > 0; --d) {
+                if (_diffCounts[agentId][vulnClass][d - 1] > 0) {
+                    maxClassDiff = d - 1;
+                    break;
+                }
+            }
+            r.difficultyPerClass[vulnClass] = maxClassDiff;
+        }
+
+        // Dynamically recompute maxDifficulty across all remaining solved classes
+        uint8 newMax = 0;
+        if (r.totalSolves > 0) {
             for (uint8 c = 0; c < NUM_CLASSES; ++c) {
                 if (r.solvesPerClass[c] > 0 && r.difficultyPerClass[c] > newMax) {
                     newMax = r.difficultyPerClass[c];
                 }
             }
-            r.maxDifficulty = newMax;
         }
+        r.maxDifficulty = newMax;
+
         emit SolveRevoked(agentId, vulnClass, r.totalSolves);
+    }
+
+    /// @notice Drop one pending solve after an upheld challenge defaulting to highest difficulty.
+    function revokeSolve(uint256 agentId, uint8 vulnClass) external override onlyRole(MINTER_ROLE) {
+        uint8 diff = _records[agentId].difficultyPerClass[vulnClass];
+        revokeSolve(agentId, vulnClass, diff);
     }
 
     /// @notice Revoke an agent's skill record, with a public reason. Permanent for this contract:
@@ -183,6 +205,7 @@ contract AxVigilSkill is IERC5192, IERC165, IAxVigilSkill, AccessControl {
         } catch {}
 
         delete _records[agentId];
+        delete _diffCounts[agentId];
         _records[agentId].revoked = true;
         revokeReason[agentId] = reason;
         totalRecords -= 1;

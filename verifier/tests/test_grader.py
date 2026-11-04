@@ -244,6 +244,10 @@ def test_check_poc_decoy_probes_patterns():
     ok, _ = check_poc_decoy_probes("contract T { function test_ok() public {} }")
     assert ok is True
 
+    # Valid code with string containing slashes or struct field .code should NOT be rejected
+    valid_with_strings, _ = check_poc_decoy_probes('contract T { string s = "// not a comment"; uint256 c = err.code; }')
+    assert valid_with_strings is True
+
     bad_samples = [
         "address(target).code.length",
         "assembly { let sz := extcodesize(target) }",

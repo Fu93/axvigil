@@ -263,6 +263,9 @@ contract AxVigilChallenge is Ownable2Step, EIP712, ReentrancyGuard {
             _credit(challenger, bond + reward);
         } else {
             _credit(treasury, bond);
+            if (r.readyAt <= block.timestamp) {
+                r.readyAt = uint64(block.timestamp + challengeWindow);
+            }
         }
     }
 
@@ -295,6 +298,17 @@ contract AxVigilChallenge is Ownable2Step, EIP712, ReentrancyGuard {
         if (r.finalized) revert AlreadyFinal();
         if (r.challengeOpen) revert ChallengeStillOpen();
         if (block.timestamp < r.readyAt) revert ChallengeWindowOpen();
+
+        if (skill.isRevoked(r.agentId)) {
+            r.upheld = true;
+            uint256 penalty = _releaseEscrow(r);
+            if (penalty != 0) {
+                _credit(treasury, penalty);
+            }
+            emit ChallengeResolved(tokenId, true, bytes32(0));
+            emit Revoked(tokenId, bytes32(0));
+            return;
+        }
 
         r.finalized = true;
         uint256 escrow = _releaseEscrow(r);

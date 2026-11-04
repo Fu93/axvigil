@@ -66,7 +66,7 @@ def main() -> int:
     if not isinstance(submission_hash, str) or len(submission_hash) != 66 or not submission_hash.startswith("0x"):
         print("verifier result has no valid submissionHash", file=sys.stderr)
         return 2
-    if not (0 <= args.difficulty <= 2 and args.pool in (0, 1)):
+    if not (0 <= args.difficulty <= 2 and args.pool in (0, 1, 2)):
         print("difficulty or pool is out of range", file=sys.stderr)
         return 2
 

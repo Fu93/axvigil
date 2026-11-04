@@ -29,7 +29,7 @@ import re
 from pathlib import Path
 
 from .forge_runner import compile_failure_note, run_test, RunResult
-from .gas_guard import check_poc_failure_is_valid_remediation
+from .gas_guard import check_poc_failure_is_valid_remediation, check_gas_regression
 from .invariant_profile import (
     FUZZ_RUNS,
     FUZZ_SEED,
@@ -106,20 +106,21 @@ def check_poc_decoy_probes(poc_text: str) -> tuple[bool, str | None]:
     low-level bytecode size/hash inspections (.code.length, extcodesize, extcodehash, .codehash)
     that artificially pass or fail depending on whether bytecode changed.
     """
-    clean_poc = re.sub(r"//.*$", "", poc_text, flags=re.MULTILINE)
+    clean_poc = re.sub(r'("(?:\\[\s\S]|[^"\\])*"|\'(?:\\[\s\S]|[^\'\\])*\')', '""', poc_text)
+    clean_poc = re.sub(r"//.*$", "", clean_poc, flags=re.MULTILINE)
     clean_poc = re.sub(r"/\*.*?\*/", "", clean_poc, flags=re.DOTALL)
 
     suspicious_patterns = [
         (r"\.\s*code\s*\.\s*length\b", "bytecode length inspection (.code.length)"),
-        (r"\.\s*code\b", "bytecode inspection (.code)"),
+        (r"(?:\baddress\s*\([^)]+\)|\bthis|\btarget|\bvictim|\bvuln)\s*\.\s*code\b", "bytecode inspection (.code)"),
         (r"\bextcodesize\b", "assembly extcodesize inspection"),
         (r"\bextcodehash\b", "assembly extcodehash inspection"),
         (r"\bextcodecopy\b", "assembly extcodecopy inspection"),
         (r"\.\s*codehash\b", "bytecode hash inspection (.codehash)"),
-        (r"type\s*\([^)]+\)\.runtimeCode", "runtimeCode bytecode introspection"),
-        (r"type\s*\([^)]+\)\.creationCode", "creationCode bytecode introspection"),
-        (r"\bvm\.getCode\b", "cheatcode vm.getCode bytecode inspection"),
-        (r"\bvm\.getDeployedCode\b", "cheatcode vm.getDeployedCode inspection"),
+        (r"type\s*\([^)]+\)\s*\.\s*runtimeCode", "runtimeCode bytecode introspection"),
+        (r"type\s*\([^)]+\)\s*\.\s*creationCode", "creationCode bytecode introspection"),
+        (r"\bvm\s*\.\s*getCode\b", "cheatcode vm.getCode bytecode inspection"),
+        (r"\bvm\s*\.\s*getDeployedCode\b", "cheatcode vm.getDeployedCode inspection"),
         (r"\bdeployCode\b", "Foundry deployCode inspection"),
     ]
     for pattern, desc in suspicious_patterns:
@@ -268,6 +269,12 @@ def grade(
     # 3. Hidden functional tests pass on the PATCHED contract.
     r3 = _run("hiddenTestsPass", patched_sources, {hidden_name: hidden_test}, f"test/{hidden_name}")
     hidden_tests_pass = r3.all_passed
+    if hidden_tests_pass and r3.gas_used:
+        base_gas = meta.get("baselineGas") or {}
+        gas_ok, gas_violations = check_gas_regression(base_gas, r3.gas_used, min_absolute_delta=25_000)
+        if not gas_ok:
+            hidden_tests_pass = False
+            log.append("hiddenTestsPass: gas regression detected: " + "; ".join(gas_violations))
 
     # 4. Patch is a bounded, honest fix.
     changed = _changed_lines(original_sources[target_file], patched_target)

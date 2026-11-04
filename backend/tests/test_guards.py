@@ -56,6 +56,13 @@ def test_circuit_breaker_trips_on_leak_spike():
     cb.reset("reentrancy")
     assert cb.is_open("reentrancy") is False
 
+    # Tripped again
+    _record(store, "reentrancy", 1, 25)
+    assert cb.is_open("reentrancy") is True
+    # Global reset (None) resets all mothers and prevents immediate re-trip on past samples
+    cb.reset(None)
+    assert cb.is_open("reentrancy") is False
+
 
 def test_session_token_roundtrip_and_tamper():
     t = SessionTokens("secret", ttl_s=60)

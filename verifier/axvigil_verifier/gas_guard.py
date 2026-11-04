@@ -39,6 +39,10 @@ def is_out_of_gas_failure(reason: Optional[str]) -> bool:
         "intrinsic gas too low",
         "invalidfeopcode",
         "memorylimitexceeded",
+        "memoryoog",
+        "memorylimitoog",
+        "precompileoog",
+        "callgascostmorethangaslimit",
         "stack overflow",
         "max call depth exceeded",
         "execution reverted: out of gas",
@@ -68,7 +72,7 @@ def check_gas_regression(
     patched_gas: Dict[str, Optional[int]],
     *,
     max_increase_pct: float = 40.0,
-    min_absolute_delta: int = 15_000,
+    min_absolute_delta: int = 25_000,
     block_limit_cap: int = 30_000_000,
 ) -> Tuple[bool, List[str]]:
     """Check for unacceptable gas regression between baseline and patched contract runs.

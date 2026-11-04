@@ -149,6 +149,41 @@ def test_storage_inheritance_shadowing_not_colliding():
     assert len(violations) == 0
 
 
+def test_revm_oog_markers():
+    assert is_out_of_gas_failure("memoryoog") is True
+    assert is_out_of_gas_failure("memorylimitoog") is True
+    assert is_out_of_gas_failure("precompileoog") is True
+    assert is_out_of_gas_failure("callgascostmorethangaslimit") is True
+
+
+def test_storage_struct_member_mutation_rejected():
+    orig = [
+        StorageSlot("Vault", "cfg", 0, 0, "t_struct(Config)_storage", 64, members_signature="a:0:0:t_uint128;b:16:0:t_uint128"),
+    ]
+    # Altered struct member types/offsets
+    patched = [
+        StorageSlot("Vault", "cfg", 0, 0, "t_struct(Config)_storage", 64, members_signature="a:0:0:t_uint256;b:0:1:t_uint256"),
+    ]
+    ok, violations = verify_storage_layout_preservation(orig, patched)
+    assert ok is False
+    assert any("Storage struct member mutation" in v for v in violations)
+
+
+def test_storage_multi_slot_span_collision_rejected():
+    # orig has a 64-byte struct at slot 0 (occupies slots 0 and 1)
+    orig = [
+        StorageSlot("Vault", "pair", 0, 0, "t_struct(Pair)_storage", 64),
+    ]
+    # Patched attempts to place a new variable at slot 1
+    patched = [
+        StorageSlot("Vault", "pair", 0, 0, "t_struct(Pair)_storage", 64),
+        StorageSlot("Vault", "collidingVar", 0, 1, "t_uint256", 32),
+    ]
+    ok, violations = verify_storage_layout_preservation(orig, patched)
+    assert ok is False
+    assert any("spans across existing occupied slot" in v or "collides" in v for v in violations)
+
+
 def test_storage_rejection_on_variable_deletion():
     orig = [
         StorageSlot("Vault", "owner", 0, 0, "t_address", 20),
@@ -234,3 +269,38 @@ def test_storage_inheritance_shadowing_not_colliding():
     ok, violations = verify_storage_layout_preservation(orig, patched)
     assert ok is True
     assert len(violations) == 0
+
+
+def test_revm_oog_markers():
+    assert is_out_of_gas_failure("memoryoog") is True
+    assert is_out_of_gas_failure("memorylimitoog") is True
+    assert is_out_of_gas_failure("precompileoog") is True
+    assert is_out_of_gas_failure("callgascostmorethangaslimit") is True
+
+
+def test_storage_struct_member_mutation_rejected():
+    orig = [
+        StorageSlot("Vault", "cfg", 0, 0, "t_struct(Config)_storage", 64, members_signature="a:0:0:t_uint128;b:16:0:t_uint128"),
+    ]
+    # Altered struct member types/offsets
+    patched = [
+        StorageSlot("Vault", "cfg", 0, 0, "t_struct(Config)_storage", 64, members_signature="a:0:0:t_uint256;b:0:1:t_uint256"),
+    ]
+    ok, violations = verify_storage_layout_preservation(orig, patched)
+    assert ok is False
+    assert any("Storage struct member mutation" in v for v in violations)
+
+
+def test_storage_multi_slot_span_collision_rejected():
+    # orig has a 64-byte struct at slot 0 (occupies slots 0 and 1)
+    orig = [
+        StorageSlot("Vault", "pair", 0, 0, "t_struct(Pair)_storage", 64),
+    ]
+    # Patched attempts to place a new variable at slot 1
+    patched = [
+        StorageSlot("Vault", "pair", 0, 0, "t_struct(Pair)_storage", 64),
+        StorageSlot("Vault", "collidingVar", 0, 1, "t_uint256", 32),
+    ]
+    ok, violations = verify_storage_layout_preservation(orig, patched)
+    assert ok is False
+    assert any("spans across existing occupied slot" in v or "collides" in v for v in violations)

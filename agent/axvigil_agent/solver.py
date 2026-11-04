@@ -37,23 +37,30 @@ def extract_json(text: str) -> dict:
     """Pull the JSON object out of a model response (handles ``` fences and prose)."""
     text = text.strip()
     # fenced ```json ... ``` or ``` ... ```
-    fence = re.search(r"```(?:json)?\s*(\{.*?\})\s*```", text, re.DOTALL)
+    fence = re.search(r"```(?:json)?\s*(\{[\s\S]*\})\s*```", text)
     candidates = []
     if fence:
         candidates.append(fence.group(1))
-    candidates.append(text)
     # first '{' to last '}'
     i, j = text.find("{"), text.rfind("}")
     if i != -1 and j != -1 and j > i:
         candidates.append(text[i : j + 1])
+    candidates.append(text)
     for c in candidates:
-        for attempt in (c, re.sub(r",\s*([}\]])", r"\1", c)):
-            try:
-                obj = json.loads(attempt, strict=False)
-                if isinstance(obj, dict):
-                    return obj
-            except json.JSONDecodeError:
-                continue
+        try:
+            obj = json.loads(c, strict=False)
+            if isinstance(obj, dict):
+                return obj
+        except json.JSONDecodeError:
+            pass
+        # Fallback with trailing comma removal
+        try:
+            cleaned = re.sub(r",\s*([}\]])", r"\1", c)
+            obj = json.loads(cleaned, strict=False)
+            if isinstance(obj, dict):
+                return obj
+        except json.JSONDecodeError:
+            continue
     raise ValueError("no JSON object found in model response")
 
 
@@ -111,6 +118,8 @@ def solve(
     challenge_dir = Path(challenge_dir)
     meta = json.loads((challenge_dir / "challenge.json").read_text())
     target_file = meta["targetFile"]
+    contract_name = meta["contractName"]
+    required_functions = meta.get("requiredFunctions", [])
     source = (challenge_dir / "src" / target_file).read_text()
 
     def emit(msg: str) -> None:
@@ -119,10 +128,10 @@ def solve(
 
     user = build_user_prompt(
         challenge_id=meta["challengeId"], target_file=target_file,
-        contract_name=meta["contractName"],
+        contract_name=contract_name,
         vuln_class_name=VULN_CLASS_NAMES.get(int(meta["vulnClass"]), "unknown"),
         pragma=meta.get("pragma", "0.8.28"), source=source,
-        required_functions=meta.get("requiredFunctions", []),
+        required_functions=required_functions,
         limits=meta.get("limits") or {},
     )
 
@@ -182,7 +191,8 @@ def solve(
 
         user = build_retry_prompt(
             prev_patch=patch, prev_poc=poc, result_log=res.log, checks=checks,
-            source=source, limits=limits,
+            source=source, limits=limits, target_file=target_file,
+            contract_name=contract_name, required_functions=required_functions,
         )
 
     outcome.solve_seconds = int(time.time() - start)

@@ -395,6 +395,7 @@ contract AxVigilCollectible is ERC721, Ownable2Step, Pausable, EIP712 {
 
         (address recovered, ECDSA.RecoverError err,) = ECDSA.tryRecover(hashMintAuth(auth), signature);
         if (err != ECDSA.RecoverError.NoError || recovered != signer) revert InvalidSignature();
+        if (!isValidator[signer]) revert NotValidator(signer);
 
         // A mutated pool fails the signature check above. This catches a signer
         // who actually signed a pool that is not the difficulty.
@@ -618,6 +619,7 @@ contract AxVigilCollectible is ERC721, Ownable2Step, Pausable, EIP712 {
             emit ValidatorRemoved(oldSigner);
             emit ValidatorAdded(newSigner);
         } else if (!isValidator[newSigner]) {
+            if (validatorCount >= MAX_VALIDATORS) revert InvalidParams();
             isValidator[newSigner] = true;
             unchecked {
                 ++validatorCount;

@@ -427,10 +427,14 @@ class Platform:
         if self.signer is None:
             raise ProtocolError(503, "signing not configured")
 
+        recipient = to or address
+        if not recipient or recipient.lower() in ("0x0", "0x0000000000000000000000000000000000000000"):
+            raise ProtocolError(400, "Recipient cannot be zero address")
+
         sub = sess["submission_hash"]
         pool = pool_for_difficulty(sess["difficulty"])
         signed = self.signer.sign_mint(
-            agent_id=sess["agent_id"], to=to or address, vuln_class=sess["vuln_class"],
+            agent_id=sess["agent_id"], to=recipient, vuln_class=sess["vuln_class"],
             difficulty=sess["difficulty"], pool=pool,
             submission_hash=sub, ttl_s=self.s.auth_ttl_s,
         )

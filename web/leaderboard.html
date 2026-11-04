@@ -798,6 +798,7 @@
       var val = btn.getAttribute("data-copy-val");
       var live = document.getElementById("copied");
       var done = currentLang === "zh-TW" ? "已複製到剪貼簿。" : "Copied to clipboard.";
+      var fail = currentLang === "zh-TW" ? "複製失敗。" : "Failed to copy.";
       function showCopied() {
         if (live) {
           live.textContent = "✓ " + done;
@@ -806,17 +807,25 @@
           copyTimer = setTimeout(function () { live.classList.remove("toast-active"); }, 2200);
         }
       }
+      function showFailed() {
+        if (live) {
+          live.textContent = "⚠ " + fail;
+          live.classList.add("toast-active");
+          clearTimeout(copyTimer);
+          copyTimer = setTimeout(function () { live.classList.remove("toast-active"); }, 2200);
+        }
+      }
       if (navigator.clipboard && navigator.clipboard.writeText) {
-        navigator.clipboard.writeText(val).then(showCopied).catch(showCopied);
+        navigator.clipboard.writeText(val).then(showCopied).catch(showFailed);
       } else {
-        showCopied();
+        showFailed();
       }
     });
   });
 
   function esc(value) {
-    return String(value == null ? "" : value).replace(/[&<>"]/g, function (ch) {
-      return ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", "\"": "&quot;" })[ch];
+    return String(value == null ? "" : value).replace(/[&<>'"]/g, function (ch) {
+      return ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", "\"": "&quot;", "'": "&#39;" })[ch];
     });
   }
   function tokensOf(tokens) {
@@ -938,7 +947,7 @@
       [currentLang === "zh-TW" ? "日期" : "Date", when.slice(0, 10) || "—"],
       ["Commit", RECORDED_COMMIT],
       [currentLang === "zh-TW" ? "請求預算" : "Requests", (budget.requestsUsed != null ? budget.requestsUsed : "—") + "/" + (budget.requestCap != null ? budget.requestCap : "—")],
-      ["Foundry", "PASS (118/118)"],
+      ["Foundry", "PASS (121/121)"],
       [currentLang === "zh-TW" ? "ZK 證明" : "ZK proof", currentLang === "zh-TW" ? "模擬（路線圖）" : "Simulated (roadmap)"]
     ].map(function (pair) {
       return "<span class=\"chip\"><span>" + esc(pair[0]) + " " + esc(pair[1]) + "</span></span>";

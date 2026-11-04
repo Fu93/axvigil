@@ -99,7 +99,7 @@ The full production-supply distribution test mints and reveals all 7,777 tokens 
 forge test --match-test test_publicQuotasFillWhenHiddenHits
 ```
 
-`scripts/test_all.sh` runs the Foundry suite (including that full-supply test) plus the Python packages. Last green run: 288 tests passed, 1 skipped (contracts 118 · Python 170 passed, 1 skipped). Docker image build and grading run in `.github/workflows/sandbox.yml`. The live server reference-checks a dealt seed before showing it (`AXVIGIL_REFERENCE_CHECK`, default on) and writes an evidence bundle with a local CIDv1 on each grade. The mined signer rotation, batch-2 reveal, and 2-of-3 mint are recorded in [`docs/operator-runbook.md`](docs/operator-runbook.md). Repeating them still needs keys that stay out of git.
+`scripts/test_all.sh` runs the Foundry suite (including that full-supply test) plus the Python packages. Last green run: 311 tests passed, 1 skipped (contracts 121 · Python 190 passed, 1 skipped). Docker image build and grading run in `.github/workflows/sandbox.yml`. The live server reference-checks a dealt seed before showing it (`AXVIGIL_REFERENCE_CHECK`, default on) and writes an evidence bundle with a local CIDv1 on each grade. The mined signer rotation, batch-2 reveal, and 2-of-3 mint are recorded in [`docs/operator-runbook.md`](docs/operator-runbook.md). Repeating them still needs keys that stay out of git.
 
 See [`contracts/README.md`](contracts/README.md) for the contract interface, deployment parameters, rarity rules, limitations and BSC testnet deployment instructions.
 

@@ -26,6 +26,7 @@ class CircuitBreaker:
         self.cfg = config or BreakerConfig()
         self._latched_open: set[str] = set()
         self._reset_at: dict[str, float] = {}
+        self._global_reset_at: float = 0.0
 
     def reset(self, mother_id: str | None = None) -> None:
         """Reset the breaker latch for a specific mother (e.g. after operator rotation) or all mothers."""
@@ -36,10 +37,12 @@ class CircuitBreaker:
         else:
             self._latched_open.clear()
             self._reset_at.clear()
+            self._global_reset_at = now
 
     def state(self, mother_id: str) -> dict:
-        reset_time = self._reset_at.get(mother_id)
-        passed, total = self.store.recent_outcomes(mother_id, self.cfg.window_s, since_override=reset_time)
+        reset_time = max(self._reset_at.get(mother_id, 0.0), self._global_reset_at)
+        since = reset_time if reset_time > 0 else None
+        passed, total = self.store.recent_outcomes(mother_id, self.cfg.window_s, since_override=since)
         rate = (passed / total) if total else 0.0
         tripped = (total >= self.cfg.min_samples and rate >= self.cfg.pass_rate_trip) or (mother_id in self._latched_open)
         if tripped:

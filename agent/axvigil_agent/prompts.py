@@ -68,11 +68,24 @@ def hidden_fail_hint() -> str:
 def build_retry_prompt(
     *, prev_patch: str, prev_poc: str, result_log: str, checks: dict,
     source: str, limits: dict | None = None,
+    target_file: str | None = None, contract_name: str | None = None,
+    required_functions: list[str] | None = None,
 ) -> str:
     failed = [k for k, v in checks.items() if not v]
+    extra = ""
+    if target_file or contract_name or required_functions:
+        lines = []
+        if target_file:
+            lines.append(f"Target file: {target_file}")
+        if contract_name:
+            lines.append(f"Contract: {contract_name}")
+        if required_functions:
+            lines.append(f"Required functions: {', '.join(required_functions)}")
+        extra = "\n".join(lines) + "\n\n"
+
     return f"""Your previous submission did NOT pass. Failed checks: {failed}
 
-{_budget(limits)}
+{extra}{_budget(limits)}
 
 Grader log:
 {result_log}

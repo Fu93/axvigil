@@ -82,6 +82,21 @@ contract AxVigilSkillTest is AxVigilBase {
         assertEq(skill.maxDifficulty(agentA), 2);
     }
 
+    function test_difficultyRollsBackWhenHigherDifficultyInSameClassRevoked() public {
+        bytes32 role = skill.MINTER_ROLE();
+        vm.prank(owner);
+        skill.grantRole(role, address(this));
+        skill.recordSolve(agentA, 0, 2); // Class 0, Legendary (2)
+        skill.recordSolve(agentA, 0, 0); // Class 0, Basic (0)
+        assertEq(skill.maxDifficulty(agentA), 2);
+        assertEq(skill.solvesOf(agentA, 0), 2);
+
+        // Revoke the Legendary solve
+        skill.revokeSolve(agentA, 0, 2);
+        assertEq(skill.solvesOf(agentA, 0), 1);
+        assertEq(skill.maxDifficulty(agentA), 0, "maxDifficulty should roll back to Basic (0)");
+    }
+
     function test_revert_onlyMinterRecords() public {
         bytes32 role = skill.MINTER_ROLE();
         vm.prank(alice);
