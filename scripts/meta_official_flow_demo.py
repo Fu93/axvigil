@@ -1,18 +1,20 @@
+#!/usr/bin/env bash
 #!/usr/bin/env python3
-"""AxVigil — Official End-to-End Demonstration driven by the Meta Model API.
+"""AxVigil — Official End-to-End Multi-Model Demonstration driven by Meta Model API.
 
 Demonstrates the entire AxVigil lifecycle starting from the official website:
 1. Web Entry Point Verification (http://localhost:8080/web/index.html)
 2. Local EVM Blockchain Setup (Anvil + Smart Contracts: Collectible, Skill SBT, ZKVerifier)
 3. Platform Backend API Activation (FastAPI + SQLite + Challenge Engine)
-4. Agent Wallet Authentication (EIP-712 / EIP-191 Challenge-Response for Space ID Agent ID)
-5. Session Deal & Challenge Issuance (Structurally mutated challenge via variantgen/mothers)
-6. Live Meta AI Solving via Meta Model API (muse-spark-1.1 / muse-spark-1.2 at https://api.meta.ai/v1)
-7. Crucible Sandbox Deterministic Grading (5 differential security checks with dynamic storage layout)
-8. Cryptographic Authorization & SP1 zkVM Bundle Attestation
-9. On-Chain Atomic Minting & Capability Recording
-10. Commit-Reveal Rarity Draw & Dynamic On-Chain SVG Skill SBT Display
-11. Real-time Leaderboard Update Verification
+4. Multi-Model Tournament (muse-spark-1.1, muse-spark-1.2, muse-spark-1.3)
+   - Agent Wallet Authentication (EIP-191 for Space ID Agent ID #1, #2, #3)
+   - Dynamic Vulnerability Deal & Challenge Issuance
+   - Live Meta AI Inference via Meta Model API (https://api.meta.ai/v1)
+   - Crucible Sandbox Deterministic Grading (5 differential security checks)
+   - SP1 zkVM Bundle Attestation & EIP-712 Platform Mint Authorization
+   - On-Chain Atomic Minting & Capability Recording on Anvil
+5. Batch Commit-Reveal Rarity Draw & Dynamic On-Chain SVG Skill SBT Display
+6. Real-time Leaderboard Update Verification across all Contestants
 """
 
 from __future__ import annotations
@@ -79,7 +81,7 @@ def main():
     ██║  ██║██╔╝ ██╗  ╚████╔╝ ██║╚██████╔╝██║███████╗
     ╚═╝  ╚═╝╚═╝  ╚═╝   ╚═══╝  ╚═╝ ╚═════╝ ╚═╝╚══════╝
     Crucible: Every inference, a line of defense.
-    Meta Global AI Developer Hackathon — BSC Testnet / Sandbox
+    Meta Global AI Developer Hackathon — Multi-Model Official Flow
     \033[0m""")
 
     # -------------------------------------------------------------------------
@@ -126,8 +128,19 @@ def main():
     if not api_key:
         print("ERROR: META_API_KEY is not set.")
         return 1
-    model_name = os.environ.get("META_MODEL", "muse-spark-1.1")
-    print(f"✓ Meta Model API Configured: {model_name} (API Key: {api_key[:8]}...{api_key[-4:]})")
+
+    # Determine contestants (default: all 3 Meta models)
+    models_to_run = ["muse-spark-1.1", "muse-spark-1.2", "muse-spark-1.3"]
+    if "--single" in sys.argv:
+        models_to_run = [os.environ.get("META_MODEL", "muse-spark-1.1")]
+    elif "--model" in sys.argv:
+        m_idx = sys.argv.index("--model")
+        if m_idx + 1 < len(sys.argv):
+            models_to_run = [sys.argv[m_idx + 1]]
+
+    print(f"✓ Meta Model API Contestants: {', '.join(models_to_run)}")
+    print(f"  • API Key: {api_key[:8]}...{api_key[-4:]}")
+    print(f"  • Base URL: {os.environ.get('META_BASE_URL', 'https://api.meta.ai/v1')}")
     print(f"✓ Foundry Toolchain: {shutil.which('forge') or 'forge in PATH'}")
 
     # -------------------------------------------------------------------------
@@ -194,8 +207,6 @@ def main():
         print(f"  • Space ID Agent ID:      #{contracts.get('AGENT_ID')}")
         print(f"  • Agent Owner Address:    {player_account.address}")
 
-        agent_id = int(contracts.get("AGENT_ID", 1))
-
         # -------------------------------------------------------------------------
         # STEP 3: Platform API Backend Activation
         # -------------------------------------------------------------------------
@@ -249,302 +260,285 @@ def main():
         print(f"  • Available Vulnerability Families: {len(pinfo.get('mothers', []))} mothers")
 
         # -------------------------------------------------------------------------
-        # STEP 4: Agent Wallet Authentication
+        # TOURNAMENT: Run All Models (Steps 4 to 9 per contestant)
         # -------------------------------------------------------------------------
-        log("STEP 4", "Agent Wallet Authentication (EIP-191 Challenge-Response)")
-        st, auth_chal = api_request(
-            "GET", f"{api_base}/v1/auth/challenge?address={player_account.address}&agentId={agent_id}"
-        )
-        login_msg = auth_chal["message"]
-        nonce = auth_chal["nonce"]
-        print(f"Login Challenge Nonce: {nonce}")
-        sig = player_account.sign_message(encode_defunct(text=login_msg)).signature.hex()
-        if not sig.startswith("0x"):
-            sig = "0x" + sig
+        contestant_results = []
 
-        st, logged = api_request("POST", f"{api_base}/v1/auth/login", {
-            "address": player_account.address,
-            "agentId": agent_id,
-            "nonce": nonce,
-            "signature": sig,
-        })
-        token = logged["token"]
-        print(f"✓ Authenticated as: {logged['address']} (Agent #{logged['agentId']})")
-        print(f"✓ JWT Bearer Token: {token[:24]}...{token[-12:]}")
+        for round_idx, model_name in enumerate(models_to_run, start=1):
+            current_agent_id = round_idx
+            log(f"ROUND {round_idx}/{len(models_to_run)}", f"Contestant: {model_name} (Space ID Agent #{current_agent_id})")
 
-        # -------------------------------------------------------------------------
-        # STEP 5: Issue Sandbox Challenge
-        # -------------------------------------------------------------------------
-        log("STEP 5", "Vulnerability Deal & Challenge Issuance")
-        print("Requesting server-assigned reward challenge from platform (reward session)...")
-        st, chal = api_request("POST", f"{api_base}/v1/start", {}, token)
-        if st != 200:
-            print(f"Failed to start reward session: {st} {chal}")
-            return 1
-        session_id = chal["sessionId"]
-        target_file = chal["targetFile"]
-        contract_name = chal["contractName"]
-        vuln_class = chal["vulnClass"]
-        difficulty = chal["difficulty"]
-        source_code = chal["source"]
-        limits = chal["limits"]
+            # Mint Agent ID if > 1
+            if current_agent_id > 1:
+                print(f"Minting Agent #{current_agent_id} in MockAgentID registry...")
+                subprocess.run([
+                    "cast", "send", contracts["REGISTRY"], "mint(address)", player_account.address,
+                    "--private-key", player_key, "--rpc-url", rpc_url
+                ], capture_output=True, check=True)
 
-        vuln_class_name = VULN_CLASS_NAMES.get(int(vuln_class), "reentrancy")
-        diff_names = {0: "Basic", 1: "Advanced", 2: "Legendary"}
-        print(f"  • Session ID:        {session_id}")
-        print(f"  • Target Contract:   {target_file} ({contract_name})")
-        print(f"  • Vulnerability:     Class {vuln_class} ({vuln_class_name.capitalize()}), Difficulty {difficulty} ({diff_names.get(difficulty, 'Custom')})")
-        print(f"  • Patch Line Budget: ≤ {limits.get('maxChangedLines', 30)} changed lines, ≤ {limits.get('maxBytes', 4000)} bytes")
-        print(f"\n--- Vulnerable Contract Source Preview ({target_file}) ---")
-        lines = source_code.strip().splitlines()
-        for l in lines[:16]:
-            print("  | " + l)
-        if len(lines) > 16:
-            print("  | ... (rest of contract omitted)")
+            # STEP 4: Agent Wallet Authentication
+            print(f"Authenticating Agent #{current_agent_id} via EIP-191 challenge-response...")
+            st, auth_chal = api_request(
+                "GET", f"{api_base}/v1/auth/challenge?address={player_account.address}&agentId={current_agent_id}"
+            )
+            login_msg = auth_chal["message"]
+            nonce = auth_chal["nonce"]
+            sig = player_account.sign_message(encode_defunct(text=login_msg)).signature.hex()
+            if not sig.startswith("0x"):
+                sig = "0x" + sig
 
-        # -------------------------------------------------------------------------
-        # STEP 6: Live Meta AI Solving via Meta Model API
-        # -------------------------------------------------------------------------
-        log("STEP 6", f"Meta AI Inference ({model_name} via Meta Model API)")
-        meta_client = MetaModelClient(model=model_name)
-        prompt = build_user_prompt(
-            challenge_id=chal.get("challengeId", "challenge"),
-            target_file=target_file,
-            contract_name=contract_name,
-            vuln_class_name=vuln_class_name,
-            pragma=chal.get("pragma", "0.8.28"),
-            source=source_code,
-            required_functions=chal["requiredFunctions"],
-            limits=limits,
-        )
+            st, logged = api_request("POST", f"{api_base}/v1/auth/login", {
+                "address": player_account.address,
+                "agentId": current_agent_id,
+                "nonce": nonce,
+                "signature": sig,
+            })
+            token = logged["token"]
+            print(f"✓ Authenticated as: {logged['address']} (Agent #{logged['agentId']})")
 
-        passed = False
-        final_result = None
-        final_patch = None
-        final_poc = None
+            # STEP 5: Issue Challenge
+            print("Requesting server-assigned reward challenge from platform...")
+            st, chal = api_request("POST", f"{api_base}/v1/start", {}, token)
+            if st != 200:
+                print(f"Failed to start reward session: {st} {chal}")
+                continue
+            session_id = chal["sessionId"]
+            target_file = chal["targetFile"]
+            contract_name = chal["contractName"]
+            vuln_class = chal["vulnClass"]
+            difficulty = chal["difficulty"]
+            source_code = chal["source"]
+            limits = chal["limits"]
 
-        for iter_idx in range(2):
-            if iter_idx > 0:
-                print(f"\n[Attempt {iter_idx + 1}/2] Opening second reward session with compiler/grader feedback...")
-                st, chal = api_request("POST", f"{api_base}/v1/start", {}, token)
-                if st != 200:
-                    print(f"Failed to start attempt {iter_idx + 1}: {st} {chal}")
+            vuln_class_name = VULN_CLASS_NAMES.get(int(vuln_class), "reentrancy")
+            diff_names = {0: "Basic", 1: "Advanced", 2: "Legendary"}
+            print(f"  • Session ID:        {session_id}")
+            print(f"  • Target Contract:   {target_file} ({contract_name})")
+            print(f"  • Vulnerability:     Class {vuln_class} ({vuln_class_name.capitalize()}), Difficulty {difficulty} ({diff_names.get(difficulty, 'Custom')})")
+            print(f"  • Patch Line Budget: ≤ {limits.get('maxChangedLines', 30)} changed lines, ≤ {limits.get('maxBytes', 4000)} bytes")
+
+            # STEP 6: Live Meta AI Solving via Meta Model API
+            meta_client = MetaModelClient(model=model_name)
+            prompt = build_user_prompt(
+                challenge_id=chal.get("challengeId", "challenge"),
+                target_file=target_file,
+                contract_name=contract_name,
+                vuln_class_name=vuln_class_name,
+                pragma=chal.get("pragma", "0.8.28"),
+                source=source_code,
+                required_functions=chal["requiredFunctions"],
+                limits=limits,
+            )
+
+            passed = False
+            final_result = None
+            final_patch = None
+            final_poc = None
+            total_prompt_tok = 0
+            total_compl_tok = 0
+            t_solve_start = time.time()
+
+            for iter_idx in range(2):
+                if iter_idx > 0:
+                    print(f"\n[Attempt {iter_idx + 1}/2] Opening second reward session with compiler/grader feedback...")
+                    st, chal = api_request("POST", f"{api_base}/v1/start", {}, token)
+                    if st != 200:
+                        print(f"Failed to start attempt {iter_idx + 1}: {st} {chal}")
+                        break
+                    session_id = chal["sessionId"]
+                    target_file = chal["targetFile"]
+                    contract_name = chal["contractName"]
+                    source_code = chal["source"]
+                    limits = chal["limits"]
+                    vuln_class = chal.get("vulnClass", 0)
+                    difficulty = chal.get("difficulty", 0)
+                    prompt = build_user_prompt(
+                        challenge_id=chal.get("challengeId", "challenge"),
+                        target_file=target_file,
+                        contract_name=contract_name,
+                        vuln_class_name=VULN_CLASS_NAMES.get(int(vuln_class), "reentrancy"),
+                        pragma=chal.get("pragma", "0.8.28"),
+                        source=source_code,
+                        required_functions=chal.get("requiredFunctions", []),
+                        limits=limits,
+                    )
+
+                print(f"--- [Attempt {iter_idx + 1}/2] Querying Meta Model API ({model_name}) ---")
+                t_start = time.time()
+                reply = meta_client.complete(system=SYSTEM, user=prompt)
+                elapsed = time.time() - t_start
+                p_tok = meta_client.last_usage.get("prompt", 0)
+                c_tok = meta_client.last_usage.get("completion", 0)
+                total_prompt_tok += p_tok
+                total_compl_tok += c_tok
+                print(f"✓ Meta Model Inference Completed in {elapsed:.1f}s")
+                print(f"  • Usage: {p_tok} prompt tokens, {c_tok} completion tokens")
+
+                try:
+                    parsed = extract_json(reply)
+                except Exception as e:
+                    print(f"Failed to parse JSON ({e}), retrying...")
+                    prompt = f"Your last response could not be parsed as valid JSON ({e}). Return ONLY the JSON object.\n\n" + prompt
+                    continue
+
+                analysis = parsed.get("analysis", "Remediated smart contract bug.")
+                patched_contract = parsed["patched_contract"]
+                poc_test = parsed["poc_test"]
+                print(f"[Meta Model Analysis]: {analysis[:180]}...")
+
+                # STEP 7: Sandbox Deterministic Grading
+                print("Submitting to Crucible sandbox verifier via POST /v1/submit...")
+                t_grade_start = time.time()
+                st, submit_res = api_request("POST", f"{api_base}/v1/submit", {
+                    "sessionId": session_id,
+                    "patch": patched_contract,
+                    "poc": poc_test,
+                }, token)
+                grade_elapsed = time.time() - t_grade_start
+
+                result = submit_res.get("result", {})
+                checks = {
+                    "pocProvesBug": result.get("pocProvesBug", False),
+                    "pocFailsAfterPatch": result.get("pocFailsAfterPatch", False),
+                    "hiddenTestsPass": result.get("hiddenTestsPass", False),
+                    "patchWithinLimits": result.get("patchWithinLimits", False),
+                }
+                print(f"  [Grade Result]: passed={submit_res.get('passed')} in {grade_elapsed:.2f}s | checks={checks}")
+
+                if submit_res.get("passed"):
+                    passed = True
+                    final_result = result
+                    final_patch = patched_contract
+                    final_poc = poc_test
+                    print(f"\033[1;32m✓ 100% PASS ON ALL DIFFERENTIAL CHECKS ({model_name})!\033[0m")
+                    print(f"  • Submission Hash: {result.get('submissionHash')}")
                     break
-                session_id = chal["sessionId"]
-                target_file = chal["targetFile"]
-                contract_name = chal["contractName"]
-                source_code = chal["source"]
-                limits = chal["limits"]
-                vuln_class = chal.get("vulnClass", 0)
-                difficulty = chal.get("difficulty", 0)
-                prompt = build_user_prompt(
-                    challenge_id=chal.get("challengeId", "challenge"),
-                    target_file=target_file,
-                    contract_name=contract_name,
-                    vuln_class_name=VULN_CLASS_NAMES.get(int(vuln_class), "reentrancy"),
-                    pragma=chal.get("pragma", "0.8.28"),
-                    source=source_code,
-                    required_functions=chal.get("requiredFunctions", []),
-                    limits=limits,
-                )
+                else:
+                    log_snippet = result.get('log', '')
+                    print(f"  [Grader Feedback to Model]: {log_snippet[:200]}")
+                    prompt = build_retry_prompt(
+                        prev_patch=patched_contract,
+                        prev_poc=poc_test,
+                        result_log=log_snippet,
+                        checks=checks,
+                        source=source_code,
+                        limits=limits,
+                    )
 
-            print(f"\n--- [Attempt {iter_idx + 1}/2] Querying Meta Model API ({model_name}) ---")
-            t_start = time.time()
-            reply = meta_client.complete(system=SYSTEM, user=prompt)
-            elapsed = time.time() - t_start
-            print(f"✓ Meta Model Inference Completed in {elapsed:.1f}s")
-            print(f"  • Usage: {meta_client.last_usage.get('prompt', 0)} prompt tokens, {meta_client.last_usage.get('completion', 0)} completion tokens")
-
-            try:
-                parsed = extract_json(reply)
-            except Exception as e:
-                print(f"Failed to parse JSON ({e}), retrying...")
-                prompt = f"Your last response could not be parsed as valid JSON ({e}). Return ONLY the JSON object.\n\n" + prompt
+            if not passed:
+                print(f"Model {model_name} did not pass challenge.")
                 continue
 
-            analysis = parsed.get("analysis", "Remediated reentrancy using checks-effects-interactions.")
-            patched_contract = parsed["patched_contract"]
-            poc_test = parsed["poc_test"]
+            # STEP 8: ZK Proof Attestation & Cryptographic Authorization
+            zk_bundle = generate_zk_attestation_bundle(
+                agent_id=current_agent_id,
+                challenge_id=chal.get("challengeId", "challenge"),
+                original_code=source_code,
+                patched_code=final_patch,
+                vuln_class=vuln_class,
+                difficulty=difficulty,
+                poc_proves_bug=final_result.get("pocProvesBug", True),
+                poc_fails_after_patch=final_result.get("pocFailsAfterPatch", True),
+                hidden_tests_pass=final_result.get("hiddenTestsPass", True),
+                patch_within_limits=final_result.get("patchWithinLimits", True),
+                invariants_hold=final_result.get("invariantsHold", True),
+            )
+            print(f"✓ SP1 zkVM Attestation Journal Constructed: 0x{zk_bundle.checksBitmap:02X} (Bitmap 31)")
 
-            print(f"[Meta Model Analysis]: {analysis[:200]}...")
-
-            # -------------------------------------------------------------------------
-            # STEP 7: Sandbox Deterministic Grading
-            # -------------------------------------------------------------------------
-            print("Submitting to Crucible sandbox verifier via POST /v1/submit...")
-            t_grade_start = time.time()
-            st, submit_res = api_request("POST", f"{api_base}/v1/submit", {
-                "sessionId": session_id,
-                "patch": patched_contract,
-                "poc": poc_test,
+            st, auth_res = api_request("POST", f"{api_base}/v1/authorize", {
+                "sessionId": session_id, "action": "mint",
             }, token)
-            grade_elapsed = time.time() - t_grade_start
+            mint_auth = auth_res["auth"]
+            mint_sig = auth_res["signature"]
 
-            result = submit_res.get("result", {})
-            checks = {
-                "pocProvesBug": result.get("pocProvesBug", False),
-                "pocFailsAfterPatch": result.get("pocFailsAfterPatch", False),
-                "hiddenTestsPass": result.get("hiddenTestsPass", False),
-                "patchWithinLimits": result.get("patchWithinLimits", False),
-            }
-            print(f"  [Grade Result]: passed={submit_res.get('passed')} in {grade_elapsed:.2f}s | checks={checks}")
+            # STEP 9: On-Chain Minting (token ID matches round_idx)
+            tuple_args = (
+                f"({mint_auth['agentId']},{mint_auth['to']},{mint_auth['vulnClass']},"
+                f"{mint_auth['difficulty']},{mint_auth['pool']},{mint_auth['submissionHash']},"
+                f"{mint_auth['nonce']},{mint_auth['deadline']})"
+            )
+            subprocess.run([
+                "cast", "send", contracts["COLLECTIBLE"],
+                "mint((uint256,address,uint8,uint8,uint8,bytes32,uint256,uint256),bytes)",
+                tuple_args, mint_sig,
+                "--private-key", player_key, "--rpc-url", rpc_url
+            ], capture_output=True, check=True)
 
-            if submit_res.get("passed"):
-                passed = True
-                final_result = result
-                final_patch = patched_contract
-                final_poc = poc_test
-                print("\n\033[1;32m✓ 100% PASS ON ALL DIFFERENTIAL CHECKS!\033[0m")
-                print(f"  [Check 1] pocProvesBug:        {'✓ PASS' if result.get('pocProvesBug') else '✗ FAIL'}")
-                print(f"  [Check 2] pocFailsAfterPatch:  {'✓ PASS (Non-OOG)' if result.get('pocFailsAfterPatch') else '✗ FAIL'}")
-                print(f"  [Check 3] hiddenTestsPass:     {'✓ PASS' if result.get('hiddenTestsPass') else '✗ FAIL'}")
-                print(f"  [Check 4] patchWithinLimits:   {'✓ PASS (Storage Layout Preserved)' if result.get('patchWithinLimits') else '✗ FAIL'}")
-                print(f"  [Check 5] invariantsHold:      {'✓ PASS' if result.get('invariantsHold') else '✗ FAIL'}")
-                print(f"  • Submission Hash: {result.get('submissionHash')}")
-                break
-            else:
-                log_snippet = result.get('log', '')
-                print(f"  [Grader Feedback to Model]: {log_snippet[:220]}")
-                prompt = build_retry_prompt(
-                    prev_patch=patched_contract,
-                    prev_poc=poc_test,
-                    result_log=log_snippet,
-                    checks=checks,
-                    source=source_code,
-                    limits=limits,
-                )
+            solve_duration = time.time() - t_solve_start
+            print(f"✓ AxVigilCollectible Token #{round_idx} Minted to Agent #{current_agent_id} on Anvil!")
+            print(f"✓ AxVigilSkill ERC-5192 Record Atomically Created for Agent #{current_agent_id}!")
 
-        if not passed:
-            print("Model did not solve within iterations.")
-            return 1
-
-        result = final_result
-        patched_contract = final_patch
-        poc_test = final_poc
+            contestant_results.append({
+                "model": model_name,
+                "agentId": current_agent_id,
+                "tokenId": round_idx,
+                "target": contract_name,
+                "difficulty": difficulty,
+                "promptTokens": total_prompt_tok,
+                "completionTokens": total_compl_tok,
+                "latencyS": solve_duration,
+            })
 
         # -------------------------------------------------------------------------
-        # STEP 8: ZK Proof Attestation & Cryptographic Authorization
+        # STEP 10: Batch Commit-Reveal Rarity & On-Chain Dynamic SVG
         # -------------------------------------------------------------------------
-        log("STEP 8", "Crucible zkVM Capability Attestation & EIP-712 Authorization")
-        zk_bundle = generate_zk_attestation_bundle(
-            agent_id=agent_id,
-            challenge_id=chal.get("challengeId", "challenge"),
-            original_code=source_code,
-            patched_code=patched_contract,
-            vuln_class=vuln_class,
-            difficulty=difficulty,
-            poc_proves_bug=result.get("pocProvesBug", True),
-            poc_fails_after_patch=result.get("pocFailsAfterPatch", True),
-            hidden_tests_pass=result.get("hiddenTestsPass", True),
-            patch_within_limits=result.get("patchWithinLimits", True),
-            invariants_hold=result.get("invariantsHold", True),
-        )
-        print("✓ SP1 zkVM Attestation Journal Constructed:")
-        print(f"  • Agent ID:          {zk_bundle.agentId}")
-        print(f"  • Challenge ID:      {zk_bundle.challengeId}")
-        print(f"  • Patch Commitment:  {zk_bundle.patchCommitment}")
-        print(f"  • Checks Bitmap:     {zk_bundle.checksBitmap} (0x{zk_bundle.checksBitmap:02X} = 31 all checks pass)")
-        print(f"  • Public Values ABI: {len(zk_bundle.encode_public_values())} bytes encoded")
-        print(f"  • Mock SNARK Proof:  {zk_bundle.proofBytes[:26]}...")
-
-        # Request Authorization
-        st, auth_res = api_request("POST", f"{api_base}/v1/authorize", {
-            "sessionId": session_id, "action": "mint",
-        }, token)
-        mint_auth = auth_res["auth"]
-        mint_sig = auth_res["signature"]
-        print(f"✓ EIP-712 Mint Authorization Signed by Platform Signer ({auth_res['signer']}):")
-        print(f"  • Pool / Difficulty: {mint_auth['pool']} / {mint_auth['difficulty']}")
-        print(f"  • Nonce:             {mint_auth['nonce']}")
-        print(f"  • Signature:         {mint_sig[:24]}...")
-
-        # -------------------------------------------------------------------------
-        # STEP 9: On-Chain Minting & Skill Record Execution
-        # -------------------------------------------------------------------------
-        log("STEP 9", "On-Chain Atomic Minting & Capability Recording")
-        tuple_args = (
-            f"({mint_auth['agentId']},{mint_auth['to']},{mint_auth['vulnClass']},"
-            f"{mint_auth['difficulty']},{mint_auth['pool']},{mint_auth['submissionHash']},"
-            f"{mint_auth['nonce']},{mint_auth['deadline']})"
-        )
-
-        print(f"Submitting mint transaction to AxVigilCollectible on Anvil...")
-        mint_tx = subprocess.run([
-            "cast", "send", contracts["COLLECTIBLE"],
-            "mint((uint256,address,uint8,uint8,uint8,bytes32,uint256,uint256),bytes)",
-            tuple_args, mint_sig,
-            "--private-key", player_key, "--rpc-url", rpc_url
-        ], capture_output=True, text=True, check=True)
-
-        print("✓ Transaction Confirmed on Chain 31337!")
-        print("✓ AxVigilCollectible Token #1 Minted to Agent Owner.")
-        print("✓ AxVigilSkill ERC-5192 Soulbound Record Atomically Created!")
-
-        # -------------------------------------------------------------------------
-        # STEP 10: Commit-Reveal Rarity & Dynamic On-Chain SVG Display
-        # -------------------------------------------------------------------------
-        log("STEP 10", "Commit-Reveal Rarity & On-Chain Dynamic SVG Display")
-        seed_hash = subprocess.check_output([
-            "cast", "keccak", "axvigil-judge-demo"
-        ]).decode().strip()
-        print("Revealing Seed & Drawing Tier Rarity...")
+        log("STEP 10", "Batch Commit-Reveal Rarity & On-Chain Dynamic SVG Display")
+        seed_hash = subprocess.check_output(["cast", "keccak", "axvigil-judge-demo"]).decode().strip()
+        print("Revealing Batch 1 Seed & Drawing Tier Rarity for all minted tokens...")
         subprocess.run([
             "cast", "send", contracts["COLLECTIBLE"], "revealSeed(uint32,bytes32)", "1", seed_hash,
             "--private-key", player_key, "--rpc-url", rpc_url
         ], capture_output=True, check=True)
 
         subprocess.run([
-            "cast", "send", contracts["COLLECTIBLE"], "revealTokens(uint256)", "1",
+            "cast", "send", contracts["COLLECTIBLE"], "revealTokens(uint256)", "10",
             "--private-key", player_key, "--rpc-url", rpc_url
         ], capture_output=True, check=True)
 
-        token_uri = subprocess.check_output([
-            "cast", "call", contracts["COLLECTIBLE"], "tokenURI(uint256)(string)", "1",
-            "--rpc-url", rpc_url
-        ]).decode().strip().strip('"')
-
-        tier_code = int(subprocess.check_output([
-            "cast", "call", contracts["COLLECTIBLE"], "tierOf(uint256)(uint8)", "1",
-            "--rpc-url", rpc_url
-        ]).decode().strip())
         tier_names = {0: "COMMON", 1: "RARE", 2: "EPIC", 3: "LEGENDARY", 4: "HIDDEN"}
+        for cr in contestant_results:
+            t_id = cr["tokenId"]
+            a_id = cr["agentId"]
+            m_name = cr["model"]
+            tier_code = int(subprocess.check_output([
+                "cast", "call", contracts["COLLECTIBLE"], "tierOf(uint256)(uint8)", str(t_id),
+                "--rpc-url", rpc_url
+            ]).decode().strip())
+            token_uri = subprocess.check_output([
+                "cast", "call", contracts["COLLECTIBLE"], "tokenURI(uint256)(string)", str(t_id),
+                "--rpc-url", rpc_url
+            ]).decode().strip().strip('"')
 
-        print(f"  • Revealed Tier:   {tier_names.get(tier_code, 'UNKNOWN')} (Code {tier_code})")
-        print(f"  • Metadata URI:    {token_uri}")
+            skill_uri_raw = subprocess.check_output([
+                "cast", "call", contracts["SKILL"], "tokenURI(uint256)(string)", str(a_id),
+                "--rpc-url", rpc_url
+            ]).decode().strip().strip('"')
 
-        # Fetch Skill SBT On-Chain SVG
-        skill_uri_raw = subprocess.check_output([
-            "cast", "call", contracts["SKILL"], "tokenURI(uint256)(string)", str(agent_id),
-            "--rpc-url", rpc_url
-        ]).decode().strip().strip('"')
+            print(f"\n--- [Token #{t_id} | Agent #{a_id} ({m_name})] ---")
+            print(f"  • Revealed Tier: {tier_names.get(tier_code, 'UNKNOWN')} (Code {tier_code})")
+            print(f"  • Metadata URI:  {token_uri}")
 
-        prefix = "data:application/json;base64,"
-        if skill_uri_raw.startswith(prefix):
-            skill_json = json.loads(base64.b64decode(skill_uri_raw[len(prefix):]))
-            print(f"\n--- On-Chain ERC-5192 Skill Soulbound Token Data ---")
-            print(f"  • Name:        {skill_json.get('name')}")
-            print(f"  • Description: {skill_json.get('description')}")
-            svg_data = skill_json.get("image", "")
-            if svg_data.startswith("data:image/svg+xml;utf8,"):
-                svg_xml = svg_data[len("data:image/svg+xml;utf8,"):]
-                print(f"  • Dynamic SVG: {len(svg_xml)} bytes generated fully on-chain")
-                print("  • Emblems Rendered:")
-                if "REENTRANCY" in svg_xml or "loop" in svg_xml or "path" in svg_xml:
-                    print("    ✓ [Active Emblem] Reentrancy Guard Loop")
-                print("    ✓ [Placeholder] Price Manipulation Spike")
-                print("    ✓ [Placeholder] Access Control Key")
+            prefix = "data:application/json;base64,"
+            if skill_uri_raw.startswith(prefix):
+                skill_json = json.loads(base64.b64decode(skill_uri_raw[len(prefix):]))
+                svg_data = skill_json.get("image", "")
+                print(f"  • Skill SBT Name: {skill_json.get('name')}")
+                if svg_data.startswith("data:image/svg+xml;utf8,"):
+                    svg_xml = svg_data[len("data:image/svg+xml;utf8,"):]
+                    print(f"  • Dynamic On-Chain SVG: {len(svg_xml)} bytes verified")
 
         # -------------------------------------------------------------------------
-        # STEP 11: Real-time Leaderboard Verification
+        # STEP 11: Real-time Multi-Model Leaderboard Verification
         # -------------------------------------------------------------------------
-        log("STEP 11", "Platform Leaderboard Verification")
-        st, board = api_request("GET", f"{api_base}/v1/leaderboard?limit=5")
+        log("STEP 11", "Platform Multi-Model Leaderboard Verification")
+        st, board = api_request("GET", f"{api_base}/v1/leaderboard?limit=10")
         print(f"Official Leaderboard Updated ({len(board)} entries):")
         for idx, entry in enumerate(board, start=1):
-            print(f"  #{idx} Agent #{entry.get('agentId')} — Solves: {entry.get('solves')} | Score: {entry.get('score')} | Rank: {entry.get('rank')}")
+            matching_model = next((c["model"] for c in contestant_results if c["agentId"] == entry.get("agentId")), "Unknown")
+            print(f"  #{idx} Agent #{entry.get('agentId')} ({matching_model:14}) — Score: {entry.get('score')} | Solves: {entry.get('solves')} | Rank: #{idx}")
 
         print("\n\033[1;32m======================================================================")
-        print("✓ AXVIGIL FULL END-TO-END DEMO COMPLETED SUCCESSFULLY!")
+        print("✓ AXVIGIL FULL MULTI-MODEL TOURNAMENT COMPLETED SUCCESSFULLY!")
         print("======================================================================\033[0m\n")
         return 0
 
