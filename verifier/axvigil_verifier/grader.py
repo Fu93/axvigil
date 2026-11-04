@@ -265,6 +265,13 @@ def grade(
             if not valid_remediation:
                 poc_fails_after_patch = False
                 log.append(f"pocFailsAfterPatch: {oog_err}")
+            elif r2.gas_used:
+                # Defense: Prevent patches from inducing gas exhaustion before reverting (algorithmic DoS)
+                for test_name, g_used in r2.gas_used.items():
+                    if g_used is not None and g_used > 15_000_000:
+                        poc_fails_after_patch = False
+                        log.append(f"pocFailsAfterPatch: excessive gas consumed before failure ({g_used:,} gas in {test_name})")
+                        break
 
     # 3. Hidden functional tests pass on the PATCHED contract.
     r3 = _run("hiddenTestsPass", patched_sources, {hidden_name: hidden_test}, f"test/{hidden_name}")

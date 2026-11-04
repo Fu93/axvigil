@@ -31,7 +31,53 @@ def normalize_type_key(k: str) -> str:
     return re.sub(r"((?:t_)?(?:struct|enum|contract|userDefinedValueType)\([^)]+\))(\d+)(_storage)?", r"\1\3", k)
 
 
-def _compute_members_sig(type_meta: dict) -> str:
+def _compute_type_signature(type_key: str, types_info: dict, visited: set | None = None) -> str:
+    """Recursively computes canonical signature for any Solc storage type.
+    Handles nested structs, mappings, arrays, and elementary types.
+    """
+    if visited is None:
+        visited = set()
+    norm_key = normalize_type_key(type_key)
+    if norm_key in visited:
+        return norm_key
+    visited.add(norm_key)
+
+    type_meta = types_info.get(type_key, {})
+    if not type_meta:
+        return norm_key
+
+    # Handle structs
+    members = type_meta.get("members")
+    if members:
+        member_sigs = []
+        for m in members:
+            lbl = m.get("label", "")
+            off = m.get("offset", 0)
+            slot = m.get("slot", 0)
+            m_type = m.get("type", "")
+            m_sig = _compute_type_signature(m_type, types_info, visited.copy())
+            member_sigs.append(f"{lbl}:{off}:{slot}:({m_sig})")
+        return f"struct({';'.join(member_sigs)})"
+
+    # Handle mappings
+    if "key" in type_meta and "value" in type_meta:
+        k_sig = _compute_type_signature(type_meta["key"], types_info, visited.copy())
+        v_sig = _compute_type_signature(type_meta["value"], types_info, visited.copy())
+        return f"mapping({k_sig}=>{v_sig})"
+
+    # Handle arrays
+    if "base" in type_meta:
+        b_sig = _compute_type_signature(type_meta["base"], types_info, visited.copy())
+        return f"array({b_sig})"
+
+    return norm_key
+
+
+def _compute_members_sig(type_meta: dict, types_info: dict | None = None) -> str:
+    if types_info:
+        t_key = next((k for k, v in types_info.items() if v == type_meta), "")
+        if t_key:
+            return _compute_type_signature(t_key, types_info)
     members = type_meta.get("members", [])
     if not members:
         return ""
@@ -60,7 +106,7 @@ def parse_storage_layout_json(raw: str | dict) -> List[StorageSlot]:
         type_key = item.get("type", "")
         type_meta = types_info.get(type_key, {})
         n_bytes = int(type_meta.get("numberOfBytes", 32)) if type_meta else 32
-        m_sig = _compute_members_sig(type_meta) if type_meta else ""
+        m_sig = _compute_type_signature(type_key, types_info) if type_meta else ""
 
         slots.append(
             StorageSlot(

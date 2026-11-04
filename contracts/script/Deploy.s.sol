@@ -58,6 +58,16 @@ contract Deploy is Script {
         );
         skill.grantRole(skill.MINTER_ROLE(), address(nft));
 
+        address challengeAddr = vm.envOr("CHALLENGE_ADDR", address(0));
+        if (challengeAddr != address(0)) {
+            skill.grantRole(skill.MINTER_ROLE(), challengeAddr);
+            nft.setChallengeBook(challengeAddr);
+        }
+        address zkVerifierAddr = vm.envOr("ZK_VERIFIER_ADDR", address(0));
+        if (zkVerifierAddr != address(0)) {
+            skill.grantRole(skill.MINTER_ROLE(), zkVerifierAddr);
+        }
+
         if (bytes(baseURI).length > 0 || bytes(unrevealedURI).length > 0) nft.setBaseURI(baseURI, unrevealedURI);
         if (provenanceHash != bytes32(0)) nft.setProvenanceHash(provenanceHash);
         if (freezeMetadata) nft.freezeMetadata();

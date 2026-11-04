@@ -15,6 +15,20 @@ interface IValidatorSet {
     function threshold() external view returns (uint256);
 }
 
+interface ICollectibleDifficulty {
+    struct TokenData {
+        uint8 vulnClass;
+        uint8 difficulty;
+        uint8 pool;
+        uint8 tier;
+        bool revealed;
+        uint32 batchId;
+        uint32 artId;
+        bytes32 entropy;
+    }
+    function tokenData(uint256 tokenId) external view returns (TokenData memory);
+}
+
 /// @title AxVigilChallenge
 /// @notice Optimistic challenge window for an AxVigil mint.
 ///
@@ -55,6 +69,7 @@ contract AxVigilChallenge is Ownable2Step, EIP712, ReentrancyGuard {
     struct Record {
         uint256 agentId;
         uint8 vulnClass;
+        uint8 difficulty;
         bytes32 submissionHash;
         address operator;
         address challenger;
@@ -193,6 +208,9 @@ contract AxVigilChallenge is Ownable2Step, EIP712, ReentrancyGuard {
         r.known = true;
         r.agentId = agentId;
         r.vulnClass = vulnClass;
+        try ICollectibleDifficulty(msg.sender).tokenData(tokenId) returns (ICollectibleDifficulty.TokenData memory td) {
+            r.difficulty = td.difficulty;
+        } catch {}
         r.submissionHash = submissionHash;
         r.operator = operator;
         r.escrow = due;
@@ -258,7 +276,7 @@ contract AxVigilChallenge is Ownable2Step, EIP712, ReentrancyGuard {
         if (upheld) {
             r.upheld = true;
             uint256 reward = _takeEscrow(r);
-            skill.revokeSolve(r.agentId, r.vulnClass);
+            skill.revokeSolve(r.agentId, r.vulnClass, r.difficulty);
             emit Revoked(tokenId, reasonHash);
             _credit(challenger, bond + reward);
         } else {

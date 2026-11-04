@@ -257,7 +257,10 @@ def run_test(
 
         cmd = forge_test_command(forge_bin, match_path, solc, fuzz_seed)
 
-        env = dict(os.environ)
+        # Security: Strip application secrets (SIGNER_KEY, SESSION_SECRET, RPC URLs)
+        # to prevent untrusted Solidity/PoC exfiltration via vm.env* cheatcodes.
+        safe_keys = {"PATH", "TMPDIR", "TEMP", "TMP", "SOLC", "HOME", "USER", "SYSTEMROOT", "WINDIR"}
+        env = {k: v for k, v in os.environ.items() if k.upper() in safe_keys}
         env["FOUNDRY_OFFLINE"] = "true"
         env["FOUNDRY_FUZZ_SEED"] = str(fuzz_seed)
 
