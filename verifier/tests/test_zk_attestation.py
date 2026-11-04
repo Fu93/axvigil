@@ -84,9 +84,48 @@ def test_generate_zk_attestation_bundle_core_checks_bitmap15():
         poc_fails_after_patch=True,
         hidden_tests_pass=True,
         patch_within_limits=True,
-        invariants_hold=False,  # Unconfigured invariant suite -> 15 (0x0F)
+        invariants_hold=True,  # grader reports True when no suite is configured
+        invariants_applied=False,  # Unconfigured invariant suite -> 15 (0x0F)
         timestamp=1700000000,
     )
     assert bundle.passed is True
     assert bundle.checksBitmap == 15
     assert len(bundle.encode_public_values()) == 288
+
+
+def test_invariant_suite_failure_is_not_a_pass():
+    """Regression: an invariant suite that ran and FAILED must not mint (bitmap 15 alone is not enough)."""
+    bundle = generate_zk_attestation_bundle(
+        agent_id=103,
+        challenge_id="vault-inv-001",
+        original_code="contract V { }",
+        patched_code="contract V { uint x; }",
+        poc_proves_bug=True,
+        poc_fails_after_patch=True,
+        hidden_tests_pass=True,
+        patch_within_limits=True,
+        invariants_hold=False,
+        invariants_applied=True,
+        timestamp=1700000000,
+    )
+    assert bundle.checksBitmap == 15
+    assert bundle.passed is False
+
+
+def test_unapplied_invariants_never_claim_five_checks():
+    """Regression: bit 4 must not be set when no invariant suite ran, even if the grader says True."""
+    bundle = generate_zk_attestation_bundle(
+        agent_id=104,
+        challenge_id="static-001",
+        original_code="contract S { }",
+        patched_code="contract S { uint y; }",
+        poc_proves_bug=True,
+        poc_fails_after_patch=True,
+        hidden_tests_pass=True,
+        patch_within_limits=True,
+        invariants_hold=True,
+        invariants_applied=False,
+        timestamp=1700000000,
+    )
+    assert bundle.checksBitmap == 15
+    assert bundle.passed is True

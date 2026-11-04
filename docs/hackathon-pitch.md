@@ -59,7 +59,7 @@ A FastAPI server issues challenges (the agent never sees the vulnerability famil
 
 - **`AxVigilSkill`** — an **ERC-5192 soulbound** capability record bound to the Agent ID (not a wallet), recording per-class counts and max difficulty. `locked()` is always true: it can't be sold or transferred, and it follows the agent.
 - **`AxVigilCollectible`** — a free, cosmetic ERC-721 commemorating a real verification event (its metadata carries the `submissionHash`).
-- **`AxVigilZKVerifier`** — a trustless **SP1 zkVM capability verifier** on-chain. Decodes the 288-byte cryptographic journal (`agentId`, `challengeId`, `patchCommitment`, `vulnClass`, `difficulty`, `checksBitmap`), checks the Groth16 zk-SNARK proof, verifies Agent ID ownership, and directly mints the soulbound skill record with replay protection (`keccak256(agentId, challengeId)`) and lifetime solve quotas (`MAX_SOLVES_PER_AGENT = 2`).
+- **`AxVigilZKVerifier`** — the on-chain half of a planned **SP1 zkVM** path. Decodes the 288-byte journal (`agentId`, `challengeId`, `patchCommitment`, `vulnClass`, `difficulty`, `checksBitmap`), calls an `ISP1Verifier`, verifies Agent ID ownership, and records the soulbound skill with a domain-bound nullifier (`keccak256(chainid, address(this), agentId, challengeId)`) and lifetime solve quota (`MAX_SOLVES_PER_AGENT = 2`). **Status:** tested against a mock verifier only. There is no SP1 prover program yet, and the off-chain bundle carries a simulated placeholder proof, so live mints use the 2-of-3 EIP-712 path.
 
 **Production reward rule:** the server deals the challenge — the caller can't pick the vulnerability family or difficulty, can't reroll, and opening a session spends one of **two lifetime attempts** whether it passes or not. Solves and mints stay strictly 1:1.
 
@@ -70,20 +70,20 @@ A FastAPI server issues challenges (the agent never sees the vulnerability famil
 > [!NOTE]
 > **Deployment & Verification Note:**
 > - **Public Testnet (BSC Chain ID 97)**: The deployed addresses below represent our **PR #8 snapshot** deployment.
-> - **Latest Features**: The newly integrated `AxVigilChallenge` (Optimistic Challenge Window), `AxVigilZKVerifier` (SP1 zkVM capability attestation), and Foundry Invariant fuzzing test suites (`invariantsHold`) are fully integrated and verified locally.
+> - **Latest Features**: The newly integrated `AxVigilChallenge` (Optimistic Challenge Window), `AxVigilZKVerifier` (verifier contract for a planned SP1 path; tested with a mock verifier, no real prover yet), and Foundry Invariant fuzzing test suites (`invariantsHold`) are fully integrated and verified locally.
 > - **Judge Reproduction**: To review and verify the complete, bleeding-edge architecture with zero network dependencies, judges can run a single command locally:
 >   `./scripts/judge_demo.sh`
 >   *(Runs local Anvil, offline oracle agent, verifier checks, EIP-712 signing, and dynamic SVG metadata output).*
-> - **Live Meta Model API End-to-End Demo**: To watch the complete official pipeline driven live by the Meta Model API (`muse-spark-1.1`), judges can run:
+> - **Live Meta Model API End-to-End Demo**: To watch the complete official pipeline driven live by the Meta Model API (`muse-spark-1.1`, `1.2`, `1.3`; each model is dealt its own server-chosen challenge, so scores are not a like-for-like comparison), judges can run:
 >   `python scripts/meta_official_flow_demo.py`
->   *(Performs web entry check, Anvil deployment with ZK verifier, EIP-191 auth, live Meta AI inference, 5-check differential grading with storage layout verification, SP1 zkVM attestation, EIP-712 co-signing, on-chain minting, commit-reveal art draw, and leaderboard ranking update).*
+>   *(Performs web entry check, Anvil deployment with ZK verifier, EIP-191 auth, live Meta AI inference, differential grading (4 core checks, plus `invariantsHold` when the challenge has a suite), attestation journal with a simulated proof, EIP-712 co-signing, on-chain minting, commit-reveal art draw, and leaderboard ranking update).*
 
 - **Deployed and exercised on-chain.** Original skill `0x3377…CD18`, collectible `0x0658…4658` (signer rotated to `0x91Ae…e081`; token #2 revealed LEGENDARY, artId 320000). Threshold 2-of-3 collectible `0x0e87…C8eB`, skill `0xE165…5F59`, validators `0xc32d…95F9` / `0xD5f5…4645` / `0x133F…ec7f`. Registry `0x7Aa4…d45e` is still MockAgentID.
 - **Muse Spark (`muse-spark-1.1`) on the threshold contract:** three server-dealt sessions, each solved on the first request, each evidence bundle re-checked (`verify_evidence.py` OK), each mint using 2 of 3 validator signatures. Grading used the subprocess sandbox, not Docker. The earlier signature-replay mint on `0x0658…4658` is token #2. The reference smoke test is token #1, tier COMMON. `submissionHash` of that smoke test is `0x8083…64df`.
-- **Live Meta Model API Nomad Bridge Solve:** `muse-spark-1.1` diagnosed the Nomad Bridge zero-root authorization bypass in 13.7s, completed 5/5 differential checks (`0x1F` bitmap) with dynamic storage layout preservation in 17.16s, generated the SP1 zkVM journal, and minted Token #1 on-chain.
-- **Offline bank: 180 fresh rewrites (9 vulnerability families × 20), each fingerprint-checked as distinct; live deals reference-check the seed before it is shown.** Live deals also reference-check the seed and skip a repeated structural fingerprint before the source is shown. CI (Foundry + Python) is green: 283 tests passed, 1 skipped (contracts 118 · Python 165).
+- **Live Meta Model API Nomad Bridge Solve:** `muse-spark-1.1` diagnosed the Nomad Bridge zero-root authorization bypass in 13.7s, completed 5/5 differential checks (`0x1F` bitmap) with dynamic storage layout preservation in 17.16s, built the attestation journal (simulated proof), and minted Token #1 on local Anvil via the EIP-712 path.
+- **Offline bank: 180 fresh rewrites (9 vulnerability families × 20), each fingerprint-checked as distinct; live deals reference-check the seed before it is shown.** Live deals also reference-check the seed and skip a repeated structural fingerprint before the source is shown. CI (Foundry + Python) is green: 305 tests passed, 1 skipped (contracts 118 · Python 187).
 
-Nothing here is a mock: the challenge an agent sees, the grade it gets, and the on-chain record are the same pipeline.
+The challenge an agent sees, the grade it gets, and the on-chain record are the same pipeline. Two parts are still stand-ins and are labelled as such: the Agent ID registry (`MockAgentID`) and the ZK proof (simulated placeholder).
 
 ---
 

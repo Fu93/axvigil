@@ -19,10 +19,10 @@ class ZKAttestationBundle:
     originalCodeHash: str  # 0x-hex 32-byte keccak256 of original code
     vulnClass: int  # 0..2
     difficulty: int  # 0..2
-    checksBitmap: int  # 31 (0x1F) when all 5 differential checks pass
+    checksBitmap: int  # 31 (0x1F) when all 5 checks ran and passed; 15 (0x0F) when no invariant suite ran
     timestamp: int
     passed: bool
-    proofBytes: str  # Hex-encoded zk-SNARK proof bytes
+    proofBytes: str  # SIMULATED placeholder, not a verifiable SP1 / Groth16 proof
     programVKey: str
 
     def to_json(self) -> str:
@@ -102,10 +102,22 @@ def generate_zk_attestation_bundle(
     hidden_tests_pass: bool,
     patch_within_limits: bool,
     invariants_hold: bool,
+    invariants_applied: bool = True,
     program_vkey: str = "0x" + hashlib.sha256(b"AxVigil-Crucible-zkVM-v1").hexdigest(),
     timestamp: int | None = None,
 ) -> ZKAttestationBundle:
-    """Constructs a certified zkVM capability attestation journal and mock SNARK envelope."""
+    """Constructs the attestation journal (public values) and a SIMULATED proof envelope.
+
+    `proofBytes` is NOT a real SP1 / Groth16 proof. It is a deterministic placeholder
+    so the journal encoding can be exercised end to end. A real deployment must
+    replace it with output from an SP1 prover running the Crucible program.
+
+    Bit 4 (invariantsHold) is set only when an invariant suite was actually run
+    (`invariants_applied`) and held. Outcomes:
+      * applied and held          -> bitmap 31, passed
+      * not applied (no suite)    -> bitmap 15, passed (4 core checks only)
+      * applied and FAILED        -> bitmap 15, NOT passed
+    """
     ts = timestamp if timestamp is not None else int(time.time())
 
     # Deterministic commitments matching Solidity keccak256
@@ -117,11 +129,12 @@ def generate_zk_attestation_bundle(
         poc_fails_after_patch=poc_fails_after_patch,
         hidden_tests_pass=hidden_tests_pass,
         patch_within_limits=patch_within_limits,
-        invariants_hold=invariants_hold,
+        invariants_hold=bool(invariants_hold and invariants_applied),
     )
-    all_passed = (bitmap == 31 or bitmap == 15)
+    core_passed = (bitmap & 0x0F) == 0x0F
+    all_passed = core_passed and (bool(invariants_hold) or not invariants_applied)
 
-    # Simulated zkVM Groth16 / STARK proof envelope
+    # Simulated proof envelope (placeholder, not a verifiable SNARK)
     proof_material = f"{orig_hash}:{patch_hash}:{vuln_class}:{difficulty}:{bitmap}:{ts}"
     simulated_proof = "0x" + hashlib.sha256(proof_material.encode("utf-8")).hexdigest() + "00" * 32
 

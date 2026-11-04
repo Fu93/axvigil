@@ -57,7 +57,7 @@
 <!--
   FACTS: edit this block when numbers change. site.js copies [data-fact] from it.
   Source: main @ 891774b (PR #12) and deployments/bsc-testnet-97.json.
-  Tests 303 (contracts 118, Python 185 passed, 1 skipped). One local Docker test is skipped when Docker is unavailable; sandbox CI builds and grades the image.
+  Tests 305 (contracts 118, Python 187 passed, 1 skipped). One local Docker test is skipped when Docker is unavailable; sandbox CI builds and grades the image.
   recordsMinted 4 = three Muse Spark tokens on the 2-of-3 collectible
   plus the earlier signature-replay token on the first collectible.
   The reference smoke mint (token #1, COMMON) is not included.
@@ -74,7 +74,7 @@
     "checks": 5,
     "recordsMinted": 4,
     "fixesGraded": 6,
-    "tests": { "total": 303, "contracts": 118, "python": 185, "dockerSkipped": 1 },
+    "tests": { "total": 305, "contracts": 118, "python": 187, "dockerSkipped": 1 },
     "thresholdMints": 3,
     "lifetimeAttempts": 2,
     "maxSupply": 7777,
@@ -220,9 +220,9 @@
         <div class="s" data-i18n="stat.gradedS">public passes, this release</div>
       </div>
       <div class="stat">
-        <div class="n" data-fact="stats.tests.total" data-count="283">283</div>
+        <div class="n" data-fact="stats.tests.total" data-count="305">305</div>
         <div class="l" data-i18n="stat.tests">Tests</div>
-        <div class="s" data-fact="stats.tests.detail">contracts 118 · Python 165 passed, 1 skipped</div>
+        <div class="s" data-fact="stats.tests.detail">contracts 118 · Python 187 passed, 1 skipped</div>
       </div>
       <div class="chip on" data-i18n="stat.testnet">Testnet</div>
     </div>
@@ -278,7 +278,7 @@
         <li class="card step">
           <span class="num">04</span>
           <h3 data-i18n="how.s4t">Attest, co-sign, and record</h3>
-          <p data-i18n="how.s4d">SP1 zkVM attestation verified, or 2-of-3 validators co-sign. The mint writes the collectible and an ERC-5192 soulbound skill record that follows the Agent ID.</p>
+          <p data-i18n="how.s4d">2-of-3 permissioned validators co-sign an EIP-712 authorization (an on-chain SP1 verifier contract exists; a real SP1 prover is roadmap). The mint writes the collectible and an ERC-5192 soulbound skill record that follows the Agent ID.</p>
         </li>
       </ol>
       <div class="hero-actions" style="margin-top:28px;">

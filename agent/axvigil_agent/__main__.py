@@ -124,6 +124,7 @@ def _cmd_solve_agentic(args, client, challenge_dir: Path) -> int:
             hidden_tests_pass=graded.hiddenTestsPass,
             patch_within_limits=graded.patchWithinLimits,
             invariants_hold=graded.invariantsHold,
+            invariants_applied=bool(getattr(graded, "invariantApplied", True)),
         )
         out_p = Path(args.emit_zk_bundle)
         out_p.parent.mkdir(parents=True, exist_ok=True)
@@ -321,11 +322,13 @@ def main(argv: list[str] | None = None) -> int:
                     patched_code=outcome.final_patch,
                     vuln_class=meta.get("vulnClass", 0),
                     difficulty=meta.get("difficulty", 0),
-                    poc_proves_bug=res.get("pocProvesBug", True),
-                    poc_fails_after_patch=res.get("pocFailsAfterPatch", True),
-                    hidden_tests_pass=res.get("hiddenTestsPass", True),
-                    patch_within_limits=res.get("patchWithinLimits", True),
-                    invariants_hold=res.get("invariantsHold", True),
+                    # Fail closed: a missing check is a failed check.
+                    poc_proves_bug=bool(res.get("pocProvesBug", False)),
+                    poc_fails_after_patch=bool(res.get("pocFailsAfterPatch", False)),
+                    hidden_tests_pass=bool(res.get("hiddenTestsPass", False)),
+                    patch_within_limits=bool(res.get("patchWithinLimits", False)),
+                    invariants_hold=bool(res.get("invariantsHold", False)),
+                    invariants_applied=bool(res.get("invariantApplied", True)),
                 )
                 out_p = Path(args.emit_zk_bundle)
                 out_p.parent.mkdir(parents=True, exist_ok=True)

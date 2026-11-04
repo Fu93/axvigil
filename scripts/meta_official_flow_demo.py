@@ -9,8 +9,8 @@ Demonstrates the entire AxVigil lifecycle starting from the official website:
    - Agent Wallet Authentication (EIP-191 for Space ID Agent ID #1, #2, #3)
    - Dynamic Vulnerability Deal & Challenge Issuance
    - Live Meta AI Inference via Meta Model API (https://api.meta.ai/v1)
-   - Crucible Sandbox Deterministic Grading (5 differential security checks)
-   - SP1 zkVM Bundle Attestation & EIP-712 Platform Mint Authorization
+   - Crucible Sandbox Deterministic Grading (4 core checks + invariant suite when the challenge has one)
+   - Attestation journal (simulated proof placeholder) & EIP-712 Platform Mint Authorization
    - On-Chain Atomic Minting & Capability Recording on Anvil
 5. Batch Commit-Reveal Rarity Draw & Dynamic On-Chain SVG Skill SBT Display
 6. Real-time Leaderboard Update Verification across all Contestants
@@ -344,6 +344,7 @@ def main():
                     if st != 200:
                         print(f"Failed to start attempt {iter_idx + 1}: {st} {chal}")
                         break
+                    prev_source = source_code
                     session_id = chal["sessionId"]
                     target_file = chal["targetFile"]
                     contract_name = chal["contractName"]
@@ -351,9 +352,10 @@ def main():
                     limits = chal["limits"]
                     vuln_class = chal.get("vulnClass", 0)
                     difficulty = chal.get("difficulty", 0)
-                    # Preserve feedback prompt if constructed from Attempt 1 failure,
-                    # otherwise initialize clean prompt.
-                    if not prompt or iter_idx == 0:
+                    if source_code != prev_source:
+                        # The new session is a different challenge, so feedback about the
+                        # previous contract would be misleading. Start from a clean prompt.
+                        print("  (New session drew a different challenge; previous feedback discarded.)")
                         prompt = build_user_prompt(
                             challenge_id=chal.get("challengeId", "challenge"),
                             target_file=target_file,
@@ -404,15 +406,18 @@ def main():
                     "pocFailsAfterPatch": result.get("pocFailsAfterPatch", False),
                     "hiddenTestsPass": result.get("hiddenTestsPass", False),
                     "patchWithinLimits": result.get("patchWithinLimits", False),
+                    "invariantsHold": result.get("invariantsHold", False),
                 }
-                print(f"  [Grade Result]: passed={submit_res.get('passed')} in {grade_elapsed:.2f}s | checks={checks}")
+                inv_applied = bool(result.get("invariantApplied", False))
+                checks_label = "5/5 checks" if inv_applied else "4/4 core checks (no invariant suite for this challenge)"
+                print(f"  [Grade Result]: passed={submit_res.get('passed')} in {grade_elapsed:.2f}s | invariantApplied={inv_applied} | checks={checks}")
 
                 if submit_res.get("passed"):
                     passed = True
                     final_result = result
                     final_patch = patched_contract
                     final_poc = poc_test
-                    print(f"\033[1;32m✓ 100% PASS ON ALL DIFFERENTIAL CHECKS ({model_name})!\033[0m")
+                    print(f"\033[1;32m✓ PASSED {checks_label} ({model_name})\033[0m")
                     print(f"  • Submission Hash: {result.get('submissionHash')}")
                     break
                 else:
@@ -431,7 +436,8 @@ def main():
                 print(f"Model {model_name} did not pass challenge.")
                 continue
 
-            # STEP 8: ZK Proof Attestation & Cryptographic Authorization
+            # STEP 8: Attestation journal (simulated proof) & EIP-712 authorization.
+            # Fail closed: a missing check counts as failed.
             zk_bundle = generate_zk_attestation_bundle(
                 agent_id=current_agent_id,
                 challenge_id=chal.get("challengeId", "challenge"),
@@ -439,13 +445,21 @@ def main():
                 patched_code=final_patch,
                 vuln_class=vuln_class,
                 difficulty=difficulty,
-                poc_proves_bug=final_result.get("pocProvesBug", True),
-                poc_fails_after_patch=final_result.get("pocFailsAfterPatch", True),
-                hidden_tests_pass=final_result.get("hiddenTestsPass", True),
-                patch_within_limits=final_result.get("patchWithinLimits", True),
-                invariants_hold=final_result.get("invariantsHold", True),
+                poc_proves_bug=bool(final_result.get("pocProvesBug", False)),
+                poc_fails_after_patch=bool(final_result.get("pocFailsAfterPatch", False)),
+                hidden_tests_pass=bool(final_result.get("hiddenTestsPass", False)),
+                patch_within_limits=bool(final_result.get("patchWithinLimits", False)),
+                invariants_hold=bool(final_result.get("invariantsHold", False)),
+                invariants_applied=bool(final_result.get("invariantApplied", False)),
             )
-            print(f"✓ SP1 zkVM Attestation Journal Constructed: 0x{zk_bundle.checksBitmap:02X} (Bitmap 31)")
+            print(
+                f"✓ Attestation journal built: checksBitmap=0x{zk_bundle.checksBitmap:02X} "
+                f"({zk_bundle.checksBitmap}) passed={zk_bundle.passed} "
+                f"[proof is a SIMULATED placeholder, not a real SP1 proof; mint uses the EIP-712 path]"
+            )
+            if not zk_bundle.passed:
+                print("Attestation journal does not mark this solve as passed; skipping mint.")
+                continue
 
             st, auth_res = api_request("POST", f"{api_base}/v1/authorize", {
                 "sessionId": session_id, "action": "mint",
@@ -542,7 +556,7 @@ def main():
         print(f"Official Leaderboard Updated ({len(board)} entries):")
         for idx, entry in enumerate(board, start=1):
             matching_model = next((c["model"] for c in contestant_results if c["agentId"] == entry.get("agentId")), "Unknown")
-            print(f"  #{idx} Agent #{entry.get('agentId')} ({matching_model:14}) — Score: {entry.get('score')} | Solves: {entry.get('solves')} | Rank: #{idx}")
+            print(f"  #{idx} Agent #{entry.get('agentId')} ({matching_model:14}) — Score: {entry.get('score')} | Solves: {entry.get('solved')} | Classes: {entry.get('classesSolved')} | Rank: #{idx}")
 
         print("\n\033[1;32m======================================================================")
         print("✓ AXVIGIL FULL MULTI-MODEL TOURNAMENT COMPLETED SUCCESSFULLY!")
