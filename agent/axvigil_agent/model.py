@@ -189,11 +189,30 @@ class MetaModelClient:
             },
             method="POST",
         )
-        with urllib.request.urlopen(req, timeout=self.timeout_s) as resp:
-            data = json.loads(resp.read().decode("utf-8"))
-        self.last_usage = usage_from_response(data)
-        message = data["choices"][0]["message"]
-        return parse_assistant_message(message)
+        max_attempts = 3
+        backoff = 2.0
+        last_exc: Exception | None = None
+        for attempt in range(max_attempts):
+            try:
+                with urllib.request.urlopen(req, timeout=self.timeout_s) as resp:
+                    data = json.loads(resp.read().decode("utf-8"))
+                self.last_usage = usage_from_response(data)
+                message = data["choices"][0]["message"]
+                return parse_assistant_message(message)
+            except urllib.error.HTTPError as exc:
+                last_exc = exc
+                if exc.code in (429, 500, 502, 503, 504) and attempt < max_attempts - 1:
+                    time.sleep(backoff)
+                    backoff *= 2.0
+                    continue
+                raise
+            except (urllib.error.URLError, TimeoutError) as exc:
+                last_exc = exc
+                if attempt < max_attempts - 1:
+                    time.sleep(backoff)
+                    backoff *= 2.0
+                    continue
+                raise
 
     def __repr__(self) -> str:
         return f"MetaModelClient(model={self.model!r}, base_url={self.base_url!r})"

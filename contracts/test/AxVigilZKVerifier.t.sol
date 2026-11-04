@@ -114,7 +114,7 @@ contract AxVigilZKVerifierTest is Test {
         assertEq(maxDiff, 2, "Difficulty mismatch");
 
         // Verify anti-replay nullifier marked
-        bytes32 nullifier = keccak256(abi.encodePacked(ALICE_AGENT_ID, challengeId));
+        bytes32 nullifier = zkVerifier.computeNullifier(ALICE_AGENT_ID, challengeId);
         assertTrue(zkVerifier.nullifiers(nullifier), "Nullifier not set");
     }
 
@@ -157,7 +157,7 @@ contract AxVigilZKVerifierTest is Test {
         vm.prank(alice);
         zkVerifier.verifyAndRecord(publicValues, validProof);
 
-        assertTrue(zkVerifier.nullifiers(keccak256(abi.encodePacked(ALICE_AGENT_ID, challengeId))));
+        assertTrue(zkVerifier.nullifiers(zkVerifier.computeNullifier(ALICE_AGENT_ID, challengeId)));
         uint32 solves = skill.solvesOf(ALICE_AGENT_ID, 0);
         assertEq(solves, 1);
         assertEq(skill.totalSolves(ALICE_AGENT_ID), 1);

@@ -56,6 +56,7 @@ contract AxVigilSkill is IERC5192, IERC165, IAxVigilSkill, AccessControl {
         /// @notice Solves recorded by mint and not yet confirmed or slashed. Per class.
         uint32[3] pendingPerClass;
         uint32[3] finalizedPerClass;
+        uint8[3] difficultyPerClass;
     }
 
     IAgentRegistry public immutable agentRegistry;
@@ -119,6 +120,9 @@ contract AxVigilSkill is IERC5192, IERC165, IAxVigilSkill, AccessControl {
         r.pendingPerClass[vulnClass] += 1;
         r.totalSolves += 1;
         r.classMask |= uint8(1 << vulnClass);
+        if (difficulty > r.difficultyPerClass[vulnClass]) {
+            r.difficultyPerClass[vulnClass] = difficulty;
+        }
         if (difficulty > r.maxDifficulty) r.maxDifficulty = difficulty;
         r.lastSolveAt = uint64(block.timestamp);
 
@@ -154,6 +158,15 @@ contract AxVigilSkill is IERC5192, IERC165, IAxVigilSkill, AccessControl {
         }
         if (r.solvesPerClass[vulnClass] == 0) {
             r.classMask = uint8(r.classMask & ~uint8(1 << vulnClass));
+            r.difficultyPerClass[vulnClass] = 0;
+            // Dynamically recompute maxDifficulty across remaining solved classes
+            uint8 newMax = 0;
+            for (uint8 c = 0; c < NUM_CLASSES; ++c) {
+                if (r.solvesPerClass[c] > 0 && r.difficultyPerClass[c] > newMax) {
+                    newMax = r.difficultyPerClass[c];
+                }
+            }
+            r.maxDifficulty = newMax;
         }
         emit SolveRevoked(agentId, vulnClass, r.totalSolves);
     }

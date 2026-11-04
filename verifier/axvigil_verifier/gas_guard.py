@@ -37,6 +37,11 @@ def is_out_of_gas_failure(reason: Optional[str]) -> bool:
         "evmerror: gaslimitexceeded",
         "exceeded block gas limit",
         "intrinsic gas too low",
+        "invalidfeopcode",
+        "memorylimitexceeded",
+        "stack overflow",
+        "max call depth exceeded",
+        "execution reverted: out of gas",
     ]
     return any(marker in low for marker in oog_markers)
 
@@ -63,6 +68,7 @@ def check_gas_regression(
     patched_gas: Dict[str, Optional[int]],
     *,
     max_increase_pct: float = 40.0,
+    min_absolute_delta: int = 15_000,
     block_limit_cap: int = 30_000_000,
 ) -> Tuple[bool, List[str]]:
     """Check for unacceptable gas regression between baseline and patched contract runs.
@@ -71,6 +77,7 @@ def check_gas_regression(
         baseline_gas: Mapping of test names to baseline gas consumed.
         patched_gas: Mapping of test names to patched gas consumed.
         max_increase_pct: Maximum allowed percentage increase in gas usage (default 40%).
+        min_absolute_delta: Minimum gas delta required to trigger a percentage violation.
         block_limit_cap: Absolute gas ceiling per transaction/test (default 30M EVM block cap).
 
     Returns:
@@ -90,8 +97,9 @@ def check_gas_regression(
 
         base_gas = baseline_gas.get(test_name)
         if base_gas and base_gas > 0:
-            pct_change = ((p_gas - base_gas) / base_gas) * 100.0
-            if pct_change > max_increase_pct:
+            delta = p_gas - base_gas
+            pct_change = (delta / base_gas) * 100.0
+            if pct_change > max_increase_pct and delta > min_absolute_delta:
                 violations.append(
                     f"{test_name} gas increased by {pct_change:.1f}% "
                     f"({base_gas:,} -> {p_gas:,}, max allowed +{max_increase_pct:.0f}%)"

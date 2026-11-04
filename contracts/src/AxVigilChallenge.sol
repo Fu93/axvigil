@@ -281,8 +281,8 @@ contract AxVigilChallenge is Ownable2Step, EIP712, ReentrancyGuard {
         r.evidenceHash = bytes32(0);
         r.respondBy = 0;
         bondsHeld -= bond;
+
         emit ChallengeExpired(tokenId);
-        emit ChallengeResolved(tokenId, false, bytes32(0));
         _credit(challenger, bond);
     }
 

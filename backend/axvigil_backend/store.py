@@ -100,6 +100,8 @@ class Store:
         with self._lock:
             if str(path) != ":memory:":
                 self._conn.execute("PRAGMA journal_mode=WAL")
+            self._conn.execute("PRAGMA busy_timeout=30000")
+            self._conn.execute("PRAGMA synchronous=NORMAL")
             self._conn.executescript(_SCHEMA)
             self._ensure_reward_column()
             self._conn.commit()
@@ -134,7 +136,7 @@ class Store:
             row = self._conn.execute(
                 "SELECT address, issued_at, used FROM nonces WHERE nonce=?", (nonce,)
             ).fetchone()
-            if not row or row["used"] or row["address"] != address:
+            if not row or row["used"] or row["address"].lower() != address.lower():
                 return False
             if time.time() - row["issued_at"] > ttl_s:
                 return False
@@ -364,9 +366,11 @@ class Store:
         out.sort(key=lambda x: (-x["score"], -x["classesSolved"], x["fastestSolveSeconds"] or 1e9))
         return out[:limit]
 
-    def recent_outcomes(self, mother_id: str, window_s: int) -> tuple[int, int]:
+    def recent_outcomes(self, mother_id: str, window_s: int, since_override: float | None = None) -> tuple[int, int]:
         """(passed, total) solves for a mother within the last window_s seconds."""
         since = time.time() - window_s
+        if since_override is not None:
+            since = max(since, since_override)
         with self._lock:
             rows = self._conn.execute(
                 "SELECT passed FROM solves WHERE mother_id=? AND created_at>=?", (mother_id, since)

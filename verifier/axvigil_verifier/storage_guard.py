@@ -27,7 +27,7 @@ class StorageSlot:
 
 def normalize_type_key(k: str) -> str:
     """Normalize solc AST node IDs from struct/enum/type names (e.g. t_struct(Foo)1234_storage -> t_struct(Foo)_storage)."""
-    return re.sub(r"(\))(\d+)(_storage)?$", r"\1\3", k)
+    return re.sub(r"((?:t_)?(?:struct|enum|contract|userDefinedValueType)\([^)]+\))(\d+)(_storage)?", r"\1\3", k)
 
 
 def parse_storage_layout_json(raw: str | dict) -> List[StorageSlot]:

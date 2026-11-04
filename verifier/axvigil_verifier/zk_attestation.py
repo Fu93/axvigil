@@ -38,7 +38,7 @@ class ZKAttestationBundle:
         def pad32_hex(hex_str: str) -> bytes:
             raw = bytes.fromhex(hex_str[2:] if hex_str.startswith("0x") else hex_str)
             if len(raw) < 32:
-                raw = raw.rjust(32, b"\x00")
+                raw = raw.ljust(32, b"\x00")
             return raw[:32]
 
         def challenge_bytes(c_id: str) -> bytes:

@@ -75,6 +75,7 @@ contract AxVigilCollectible is ERC721, Ownable2Step, Pausable, EIP712 {
     uint8 public constant POOL_ADVANCED = 1;
     uint8 public constant POOL_LEGENDARY = 2;
 
+    uint8 public constant TIER_COMMON = 0;
     uint8 public constant TIER_LEGENDARY = 3;
     uint8 public constant TIER_HIDDEN = 4;
     uint256 public constant STAGES = 4;
@@ -512,8 +513,10 @@ contract AxVigilCollectible is ERC721, Ownable2Step, Pausable, EIP712 {
             uint256 rand = uint256(keccak256(abi.encode(b.seed, t.entropy)));
             (bool drawn, uint8 tier) = _drawTier(id - 1, t.pool, rand);
             // Public tiers exhausted and the fixed Hidden roll missed (or this pool cannot
-            // draw Hidden). Stop. Do not force Hidden and do not revert.
-            if (!drawn) break;
+            // draw Hidden). Fallback to Common tier so nextToReveal advances and does not deadlock.
+            if (!drawn) {
+                tier = TIER_COMMON;
+            }
 
             uint256 index = artCount[tier][t.vulnClass]++;
             uint32 artId = uint32(uint256(tier) * ART_TIER_MUL + uint256(t.vulnClass) * ART_CLASS_MUL + index);
@@ -608,7 +611,20 @@ contract AxVigilCollectible is ERC721, Ownable2Step, Pausable, EIP712 {
 
     function setSigner(address newSigner) external onlyOwner {
         if (newSigner == address(0)) revert ZeroAddress();
-        emit SignerUpdated(signer, newSigner);
+        address oldSigner = signer;
+        if (isValidator[oldSigner] && !isValidator[newSigner]) {
+            isValidator[oldSigner] = false;
+            isValidator[newSigner] = true;
+            emit ValidatorRemoved(oldSigner);
+            emit ValidatorAdded(newSigner);
+        } else if (!isValidator[newSigner]) {
+            isValidator[newSigner] = true;
+            unchecked {
+                ++validatorCount;
+            }
+            emit ValidatorAdded(newSigner);
+        }
+        emit SignerUpdated(oldSigner, newSigner);
         signer = newSigner;
     }
 

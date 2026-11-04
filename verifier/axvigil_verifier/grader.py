@@ -106,20 +106,24 @@ def check_poc_decoy_probes(poc_text: str) -> tuple[bool, str | None]:
     low-level bytecode size/hash inspections (.code.length, extcodesize, extcodehash, .codehash)
     that artificially pass or fail depending on whether bytecode changed.
     """
+    clean_poc = re.sub(r"//.*$", "", poc_text, flags=re.MULTILINE)
+    clean_poc = re.sub(r"/\*.*?\*/", "", clean_poc, flags=re.DOTALL)
+
     suspicious_patterns = [
-        (r"\.code\.length\b", "bytecode length inspection (.code.length)"),
-        (r"\.code\b", "bytecode inspection (.code)"),
+        (r"\.\s*code\s*\.\s*length\b", "bytecode length inspection (.code.length)"),
+        (r"\.\s*code\b", "bytecode inspection (.code)"),
         (r"\bextcodesize\b", "assembly extcodesize inspection"),
         (r"\bextcodehash\b", "assembly extcodehash inspection"),
         (r"\bextcodecopy\b", "assembly extcodecopy inspection"),
-        (r"\.codehash\b", "bytecode hash inspection (.codehash)"),
+        (r"\.\s*codehash\b", "bytecode hash inspection (.codehash)"),
         (r"type\s*\([^)]+\)\.runtimeCode", "runtimeCode bytecode introspection"),
         (r"type\s*\([^)]+\)\.creationCode", "creationCode bytecode introspection"),
         (r"\bvm\.getCode\b", "cheatcode vm.getCode bytecode inspection"),
         (r"\bvm\.getDeployedCode\b", "cheatcode vm.getDeployedCode inspection"),
+        (r"\bdeployCode\b", "Foundry deployCode inspection"),
     ]
     for pattern, desc in suspicious_patterns:
-        if re.search(pattern, poc_text, re.IGNORECASE):
+        if re.search(pattern, clean_poc, re.IGNORECASE):
             return False, f"Decoy PoC rejected: contains bytecode introspection '{desc}'"
     return True, None
 
@@ -288,6 +292,9 @@ def grade(
             orig_slots = parse_storage_layout_json(orig_layout_raw)
             patched_slots = parse_storage_layout_json(patched_layout_raw)
             storage_ok, storage_violations = verify_storage_layout_preservation(orig_slots, patched_slots)
+        else:
+            storage_ok = False
+            storage_violations.append("checkStorageLayout enabled but storage layout could not be determined")
 
     patch_within_limits = within_lines and within_bytes and iface_ok and storage_ok
     storage_note = ""

@@ -1,4 +1,3 @@
-#!/usr/bin/env bash
 #!/usr/bin/env python3
 """AxVigil — Official End-to-End Multi-Model Demonstration driven by Meta Model API.
 
@@ -352,16 +351,19 @@ def main():
                     limits = chal["limits"]
                     vuln_class = chal.get("vulnClass", 0)
                     difficulty = chal.get("difficulty", 0)
-                    prompt = build_user_prompt(
-                        challenge_id=chal.get("challengeId", "challenge"),
-                        target_file=target_file,
-                        contract_name=contract_name,
-                        vuln_class_name=VULN_CLASS_NAMES.get(int(vuln_class), "reentrancy"),
-                        pragma=chal.get("pragma", "0.8.28"),
-                        source=source_code,
-                        required_functions=chal.get("requiredFunctions", []),
-                        limits=limits,
-                    )
+                    # Preserve feedback prompt if constructed from Attempt 1 failure,
+                    # otherwise initialize clean prompt.
+                    if not prompt or iter_idx == 0:
+                        prompt = build_user_prompt(
+                            challenge_id=chal.get("challengeId", "challenge"),
+                            target_file=target_file,
+                            contract_name=contract_name,
+                            vuln_class_name=VULN_CLASS_NAMES.get(int(vuln_class), "reentrancy"),
+                            pragma=chal.get("pragma", "0.8.28"),
+                            source=source_code,
+                            required_functions=chal.get("requiredFunctions", []),
+                            limits=limits,
+                        )
 
                 print(f"--- [Attempt {iter_idx + 1}/2] Querying Meta Model API ({model_name}) ---")
                 t_start = time.time()
@@ -465,13 +467,18 @@ def main():
             ], capture_output=True, check=True)
 
             solve_duration = time.time() - t_solve_start
-            print(f"✓ AxVigilCollectible Token #{round_idx} Minted to Agent #{current_agent_id} on Anvil!")
+            mint_res = subprocess.run([
+                "cast", "call", contracts["COLLECTIBLE"], "totalMinted()(uint256)",
+                "--rpc-url", rpc_url
+            ], capture_output=True, text=True, check=True)
+            minted_token_id = int(mint_res.stdout.strip())
+            print(f"✓ AxVigilCollectible Token #{minted_token_id} Minted to Agent #{current_agent_id} on Anvil!")
             print(f"✓ AxVigilSkill ERC-5192 Record Atomically Created for Agent #{current_agent_id}!")
 
             contestant_results.append({
                 "model": model_name,
                 "agentId": current_agent_id,
-                "tokenId": round_idx,
+                "tokenId": minted_token_id,
                 "target": contract_name,
                 "difficulty": difficulty,
                 "promptTokens": total_prompt_tok,

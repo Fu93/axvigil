@@ -165,6 +165,7 @@ def solve(
             "pocFailsAfterPatch": res.pocFailsAfterPatch,
             "hiddenTestsPass": res.hiddenTestsPass,
             "patchWithinLimits": res.patchWithinLimits,
+            "invariantsHold": getattr(res, "invariantsHold", True),
         }
         outcome.iterations.append(
             Iteration(i, analysis, res.passed, checks, res.log, res.submissionHash)
