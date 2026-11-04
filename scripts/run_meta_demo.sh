@@ -9,4 +9,4 @@ if [ -x "$ROOT/.venv/bin/python" ]; then
 fi
 
 cd "$ROOT"
-"$PY" scripts/meta_official_flow_demo.py
+"$PY" scripts/meta_official_flow_demo.py "$@"
