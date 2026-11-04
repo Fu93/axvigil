@@ -86,15 +86,32 @@ def main():
     # STEP 1: Website & Environment Preflight
     # -------------------------------------------------------------------------
     log("STEP 1", "Official Website & Environment Verification")
-    web_url = "http://127.0.0.1:8080/web/index.html"
+    web_proc = None
     try:
-        with urllib.request.urlopen(web_url, timeout=2) as resp:
-            print(f"✓ Official Website Live: {web_url} (HTTP {resp.status})")
+        with urllib.request.urlopen("http://127.0.0.1:8080/web/index.html", timeout=1) as resp:
+            pass
     except Exception:
-        if (ROOT / "web" / "index.html").is_file():
-            print(f"✓ Official Website Verified: {ROOT / 'web' / 'index.html'} (Static UI Bundle Ready)")
-        else:
-            print(f"Note: Local website server on 8080: not running")
+        print("Starting local HTTP server on port 8080...")
+        web_proc = subprocess.Popen(
+            [sys.executable, "-m", "http.server", "8080", "--directory", str(ROOT)],
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+        )
+        time.sleep(1.2)
+
+    portal_pages = [
+        ("Homepage & Protocol Overview", "web/index.html"),
+        ("Interactive Demo & SP1 zkVM Portal", "web/demo.html"),
+        ("Real-time Agent Leaderboard", "web/leaderboard.html"),
+        ("Hackathon Architecture & Pitch Deck", "web/pitch.html"),
+    ]
+    for page_title, page_path in portal_pages:
+        url = f"http://127.0.0.1:8080/{page_path}"
+        try:
+            with urllib.request.urlopen(url, timeout=3) as resp:
+                print(f"✓ {page_title:36}: {url} (HTTP {resp.status})")
+        except Exception as exc:
+            print(f"✗ {page_title:36}: {url} ({exc})")
 
     # Load environment (.env)
     env_file = ROOT / ".env"
@@ -272,9 +289,11 @@ def main():
         source_code = chal["source"]
         limits = chal["limits"]
 
+        vuln_class_name = VULN_CLASS_NAMES.get(int(vuln_class), "reentrancy")
+        diff_names = {0: "Basic", 1: "Advanced", 2: "Legendary"}
         print(f"  • Session ID:        {session_id}")
         print(f"  • Target Contract:   {target_file} ({contract_name})")
-        print(f"  • Vulnerability:     Class {vuln_class} (Reentrancy), Difficulty {difficulty} (Basic)")
+        print(f"  • Vulnerability:     Class {vuln_class} ({vuln_class_name.capitalize()}), Difficulty {difficulty} ({diff_names.get(difficulty, 'Custom')})")
         print(f"  • Patch Line Budget: ≤ {limits.get('maxChangedLines', 30)} changed lines, ≤ {limits.get('maxBytes', 4000)} bytes")
         print(f"\n--- Vulnerable Contract Source Preview ({target_file}) ---")
         lines = source_code.strip().splitlines()
@@ -289,10 +308,10 @@ def main():
         log("STEP 6", f"Meta AI Inference ({model_name} via Meta Model API)")
         meta_client = MetaModelClient(model=model_name)
         prompt = build_user_prompt(
-            challenge_id="reentrancy-vault",
+            challenge_id=chal.get("challengeId", "challenge"),
             target_file=target_file,
             contract_name=contract_name,
-            vuln_class_name="reentrancy",
+            vuln_class_name=vuln_class_name,
             pragma=chal.get("pragma", "0.8.28"),
             source=source_code,
             required_functions=chal["requiredFunctions"],
@@ -409,7 +428,7 @@ def main():
         log("STEP 8", "Crucible zkVM Capability Attestation & EIP-712 Authorization")
         zk_bundle = generate_zk_attestation_bundle(
             agent_id=agent_id,
-            challenge_id="reentrancy-vault",
+            challenge_id=chal.get("challengeId", "challenge"),
             original_code=source_code,
             patched_code=patched_contract,
             vuln_class=vuln_class,
@@ -530,6 +549,9 @@ def main():
         return 0
 
     finally:
+        if web_proc:
+            web_proc.terminate()
+            web_proc.wait()
         if api_proc:
             api_proc.terminate()
             api_proc.wait()
