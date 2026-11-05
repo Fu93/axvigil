@@ -18,13 +18,13 @@ TMP_DIR="$(mktemp -d)"
 trap 'rm -rf "$TMP_DIR"' EXIT INT TERM
 
 cd "$ROOT"
-PYTHONPATH="$ROOT/verifier" python3 -m axvigil_verifier grade \
+PYTHONPATH="$ROOT/verifier" "$PY" -m axvigil_verifier grade \
   --challenge challenges/reentrancy-001 \
   --patch challenges/reentrancy-001/submissions/sample.patch \
   --poc challenges/reentrancy-001/submissions/sample_poc.t.sol \
   --json > "$TMP_DIR/verifier-result.json"
 
-python3 -m backend.mint_auth \
+"$PY" -m backend.mint_auth \
   --result "$TMP_DIR/verifier-result.json" \
   --agent-id 1 \
   --to 0x00000000000000000000000000000000000000AA \
@@ -35,7 +35,7 @@ python3 -m backend.mint_auth \
   --difficulty 1 \
   --pool 0 > "$TMP_DIR/mint-auth.json"
 
-python3 - <<'PY' "$TMP_DIR/verifier-result.json" "$TMP_DIR/mint-auth.json"
+"$PY" - <<'PY' "$TMP_DIR/verifier-result.json" "$TMP_DIR/mint-auth.json"
 import json
 import sys
 

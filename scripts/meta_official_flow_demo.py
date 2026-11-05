@@ -72,6 +72,11 @@ def api_request(method: str, url: str, body: dict | None = None, token: str | No
 
 
 def main():
+    os.environ["PATH"] = (
+        f"{Path.home() / '.foundry' / 'bin'}"
+        f"{os.pathsep}{Path.home() / '.local' / 'bin'}"
+        f"{os.pathsep}{os.environ.get('PATH', '')}"
+    )
     print("""\033[1;33m
      █████╗ ██╗   ██╗██╗   ██╗██╗ ██████╗ ██╗██╗     
     ██╔══██╗╚██╗ ██╔╝██║   ██║██║██╔════╝ ██║██║     
@@ -123,9 +128,9 @@ def main():
                 k, v = line.split("=", 1)
                 os.environ.setdefault(k.strip(), v.strip())
 
-    api_key = os.environ.get("META_API_KEY")
+    api_key = os.environ.get("META_API_KEY") or os.environ.get("MODEL_API_KEY")
     if not api_key:
-        print("ERROR: META_API_KEY is not set.")
+        print("ERROR: META_API_KEY (or MODEL_API_KEY) is not set.")
         return 1
 
     # Determine contestants (default: all 3 Meta models)
@@ -337,8 +342,9 @@ def main():
             total_compl_tok = 0
             t_solve_start = time.time()
 
+            session_submitted = False
             for iter_idx in range(2):
-                if iter_idx > 0:
+                if iter_idx > 0 and session_submitted:
                     print(f"\n[Attempt {iter_idx + 1}/2] Opening second reward session with compiler/grader feedback...")
                     st, chal = api_request("POST", f"{api_base}/v1/start", {}, token)
                     if st != 200:
@@ -352,6 +358,7 @@ def main():
                     limits = chal["limits"]
                     vuln_class = chal.get("vulnClass", 0)
                     difficulty = chal.get("difficulty", 0)
+                    session_submitted = False
                     if source_code != prev_source:
                         # The new session is a different challenge, so feedback about the
                         # previous contract would be misleading. Start from a clean prompt.
@@ -380,14 +387,20 @@ def main():
 
                 try:
                     parsed = extract_json(reply)
-                except Exception as e:
+                    patched_contract = parsed["patched_contract"]
+                    poc_test = parsed["poc_test"]
+                    if not isinstance(patched_contract, str) or not isinstance(poc_test, str):
+                        raise TypeError("patched_contract and poc_test must be strings")
+                except (ValueError, KeyError, TypeError) as e:
                     print(f"Failed to parse JSON ({e}), retrying...")
-                    prompt = f"Your last response could not be parsed as valid JSON ({e}). Return ONLY the JSON object.\n\n" + prompt
+                    prompt = (
+                        f"Your last response could not be parsed as valid JSON ({e}). "
+                        "Return ONLY a JSON object with string keys patched_contract and poc_test.\n\n"
+                        + prompt
+                    )
                     continue
 
                 analysis = parsed.get("analysis", "Remediated smart contract bug.")
-                patched_contract = parsed["patched_contract"]
-                poc_test = parsed["poc_test"]
                 print(f"[Meta Model Analysis]: {analysis[:180]}...")
 
                 # STEP 7: Sandbox Deterministic Grading
@@ -398,6 +411,7 @@ def main():
                     "patch": patched_contract,
                     "poc": poc_test,
                 }, token)
+                session_submitted = True
                 grade_elapsed = time.time() - t_grade_start
 
                 result = submit_res.get("result", {})

@@ -2,7 +2,7 @@
 set -e
 export PATH="$HOME/.foundry/bin:$PATH"
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-UV="/home/nn2010/.local/bin/uv"
+UV="${UV:-$(command -v uv || echo "$HOME/.local/bin/uv")}"
 
 echo "== verifier =="
 (cd "$ROOT/verifier" && $UV run --with pytest pytest -q)

@@ -134,9 +134,9 @@ Sources:
 - [Elliptic](https://www.elliptic.co/insights/76-million-stolen-from-beanstalk-farms-defi-stablecoin-protocol/)
 - [DeFiHackLabs `Beanstalk_exp.sol` (MIT, not copied)](https://github.com/SunWeb3Sec/DeFiHackLabs/blob/main/src/test/2022-04/Beanstalk_exp.sol)
 
-## What still needs a live run
+## Reproducing a live or practice run
 
-Muse Spark was not called from this change. There is no model API key in the environment, and the task forbids calling one. Someone with `META_API_KEY` should deal the three new mothers in practice mode and confirm the agent loop still terminates:
+The real-incident track has been verified against `muse-spark-1.1` (including the 5/5 Nomad Bridge threshold solve recorded in `deployments/bsc-testnet-97.json`). With `META_API_KEY` set, you can deal any of the three newer mothers in practice mode and run the agent loop:
 
 ```bash
 # server already running, practice mode picks the mother
@@ -144,4 +144,4 @@ Muse Spark was not called from this change. There is no model API key in the env
 # and the same for nomad-unproven-message and beanstalk-flash-governance
 ```
 
-The offline oracle in `agent/` was not retargeted; it only knows the original reentrancy vault. Reference solutions for the new mothers are the `fixId` functions in `variantgen/variantgen/fixes.py`, and `verify-mother` / `scripts/bench_invariants.py --count 20` is the check that those fixes grade clean.
+The offline oracle in `agent/` only targets the original reentrancy vault fixture. Reference solutions for the real-incident mothers are the `fixId` functions in `variantgen/variantgen/fixes.py`, and `verify-mother` / `scripts/bench_invariants.py --count 20` is the check that those fixes grade clean across all five checks.

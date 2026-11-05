@@ -548,8 +548,8 @@ From a checkout of `main`, with Foundry installed and `cd contracts && forge bui
 
 ```bash
 scripts/test_all.sh
-# offline bank, one vulnerability family:
-See variantgen/README.md for the command that checks 20 fresh rewrites of one family.
+# offline bank, one vulnerability family (see variantgen/README.md):
+PYTHONPATH=variantgen:verifier python3 -m variantgen verify-mother --mother mothers/reentrancy --count 20
 ```
 
 A graded session writes `backend/evidence/<submissionHash>/manifest.json` (override with `EVIDENCE_DIR`). Recompute:

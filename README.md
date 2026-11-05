@@ -176,7 +176,7 @@ The arena is the piece that shows Meta models doing agentic security work. Every
 What that demonstrates:
 
 - Comparable scores. The mother, the seed, and the verifier are the same for every model, so pass rate is a property of the model and the strategy, not of a friendlier challenge.
-- Agentic retries. The loop is propose, grade, read the four failed checks, retry.
+- Agentic retries. The loop is propose, grade, read which of the five checks failed, retry.
 - Strategy variants on one model id: `baseline` (submit the patch), `self-critique` (the model reviews its own draft, and the reviewed patch is what gets graded), `plan-then-patch` (a plan completion, then a patch that has to follow it), and `agentic` (a tool-using loop: read files, run the public PoC and public tests, apply a diff, then submit). Hidden tests and the reference solution are not in the tool workspace. The transcript of tool calls and trimmed results is stored on the run as `evidence`.
 - An ensemble contestant. Several models propose in order and the verifier keeps the first patch that passes. Later members are not called. That is the orchestration case: models as workers, the verifier as the judge.
 - A hard request cap, a concurrency limit, and resume. Completed cells in the results file are skipped and do not spend the cap. The API key is never written to the JSON, the summary, or the progress log.

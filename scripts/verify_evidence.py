@@ -18,11 +18,15 @@ Exit 0 when every check that ran matches the bundle.
 from __future__ import annotations
 
 import argparse
+import json
+import os
+import shutil
 import sys
 import tempfile
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
+os.environ["PATH"] = f"{Path.home() / '.foundry' / 'bin'}{os.pathsep}{os.environ.get('PATH', '')}"
 sys.path.insert(0, str(ROOT / "backend"))
 sys.path.insert(0, str(ROOT / "verifier"))
 sys.path.insert(0, str(ROOT / "variantgen"))
@@ -38,40 +42,48 @@ from axvigil_backend.evidence import (  # noqa: E402
 
 
 def _grade(manifest: dict) -> dict:
-    from axvigil_verifier.grader import grade
+    from axvigil_verifier.grader import discover_solc, forge_executable, grade
     from variantgen.render import Mother, render_challenge
 
     mother_dir = ROOT / "mothers" / manifest["motherId"]
     if not (mother_dir / "mother.json").is_file():
         raise SystemExit(f"mother not in this repo: {manifest['motherId']}")
     tmp = Path(tempfile.mkdtemp(prefix="axv-evidence-"))
-    rendered = tmp / "challenge"
-    render_challenge(Mother(mother_dir), int(manifest["seed"]), rendered)
-    sub = tmp / "sub"
-    target = rendered.joinpath("challenge.json")
-    import json
-    meta = json.loads(target.read_text())
-    (sub / "patched").mkdir(parents=True)
-    (sub / "poc").mkdir()
-    (sub / "patched" / meta["targetFile"]).write_text(manifest["patch"])
-    (sub / "poc" / "Poc.t.sol").write_text(manifest["poc"])
-    res = grade(rendered, sub, seed=int(manifest["seed"]))
-    return {
-        "passed": res.passed,
-        "pocProvesBug": res.pocProvesBug,
-        "pocFailsAfterPatch": res.pocFailsAfterPatch,
-        "hiddenTestsPass": res.hiddenTestsPass,
-        "patchWithinLimits": res.patchWithinLimits,
-        "invariantsHold": res.invariantsHold,
-        "invariantProfile": {
-            "fuzzSeed": res.invariantFuzzSeed,
-            "fuzzRuns": res.invariantFuzzRuns,
-            "invariantRuns": res.invariantRuns,
-            "invariantDepth": res.invariantDepth,
-            "applied": res.invariantApplied,
-        },
-        "log": res.log,
-    }
+    try:
+        rendered = tmp / "challenge"
+        render_challenge(Mother(mother_dir), int(manifest["seed"]), rendered)
+        sub = tmp / "sub"
+        target = rendered.joinpath("challenge.json")
+        meta = json.loads(target.read_text())
+        (sub / "patched").mkdir(parents=True)
+        (sub / "poc").mkdir()
+        (sub / "patched" / meta["targetFile"]).write_text(manifest["patch"])
+        (sub / "poc" / "Poc.t.sol").write_text(manifest["poc"])
+        res = grade(
+            rendered,
+            sub,
+            forge_bin=forge_executable() or "forge",
+            solc_bin=discover_solc(),
+            seed=int(manifest["seed"]),
+        )
+        return {
+            "passed": res.passed,
+            "pocProvesBug": res.pocProvesBug,
+            "pocFailsAfterPatch": res.pocFailsAfterPatch,
+            "hiddenTestsPass": res.hiddenTestsPass,
+            "patchWithinLimits": res.patchWithinLimits,
+            "invariantsHold": res.invariantsHold,
+            "invariantProfile": {
+                "fuzzSeed": res.invariantFuzzSeed,
+                "fuzzRuns": res.invariantFuzzRuns,
+                "invariantRuns": res.invariantRuns,
+                "invariantDepth": res.invariantDepth,
+                "applied": res.invariantApplied,
+            },
+            "log": res.log,
+        }
+    finally:
+        shutil.rmtree(tmp, ignore_errors=True)
 
 
 def main(argv: list[str] | None = None) -> int:

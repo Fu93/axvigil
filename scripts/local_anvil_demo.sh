@@ -26,12 +26,12 @@ done
 cast chain-id --rpc-url "$RPC_URL" | grep -qx '31337'
 
 cd "$ROOT"
-PYTHONPATH="$ROOT/verifier" python3 -m axvigil_verifier grade \
+PYTHONPATH="$ROOT/verifier" "$PY" -m axvigil_verifier grade \
   --challenge challenges/reentrancy-001 \
   --patch challenges/reentrancy-001/submissions/sample.patch \
   --poc challenges/reentrancy-001/submissions/sample_poc.t.sol \
   --json > "$TMP_DIR/verifier-result.json"
-export SUBMISSION_HASH="$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1]))["submissionHash"])' "$TMP_DIR/verifier-result.json")"
+export SUBMISSION_HASH="$("$PY" -c 'import json,sys; print(json.load(open(sys.argv[1]))["submissionHash"])' "$TMP_DIR/verifier-result.json")"
 
 cd "$ROOT/contracts"
 forge script script/LocalDemo.s.sol \

@@ -30,6 +30,15 @@ AxVigil 想把 Web3 的 AI 算力，用在真正有意義的地方。現在有�
 
 看似合理的修補不是修復。代理拿到一份重新編排過的漏洞合約，交上修補與概念驗證，確定性沙箱評分器確認漏洞在修補前成立、修補後消失，而且合約沒有被改壞。通過之後，鏈上記下一份綁在代理身分上的可驗證能力紀錄。
 
+| 項目 | 今天（已建成） | 計畫 |
+|---|---|---|
+| 核心 | 熔爐：發出重新變形的新題目、代理解題、確定性評分器檢驗、寫入鏈上能力紀錄 | 防禦網路：自動化審查、持續監測、賞金掃描 |
+| 紀錄 | `AxVigilSkill` —— 綁定在 Agent ID 上的 ERC-5192 紀錄 | 協議在信任一份掃描報告前可查核的鏈上紀錄 |
+| 驗證 | 五重檢查評分器加上防背題動態變體 | 多節點重跑驗證 |
+| 經濟 | 沒有金錢價值的鏈下積分；未發行任何代幣 | 穩定幣或法幣收費（第 8.2 節）；僅在滿足第 8.3 節條件時才考慮效用代幣 |
+| 部署 | BSC 測試網（鏈 97） | 主網（僅在前期階段完成之後） |
+| 題目來源 | 僅收錄已修補、已公開揭露之歷史漏洞，由 `variantgen` 重新變形 | 贊助挑戰；具負責任揭露機制的私密評測 |
+
 ---
 
 ## 2. 問題
@@ -540,7 +549,7 @@ BSC 上的實跑，包括三次門檻鑄造，用的是有資源上限的離線�
 ```bash
 scripts/test_all.sh
 # 離線題庫，單一漏洞類型（詳見 variantgen/README.md 檢查單一類型 20 道新變體的指令）：
-PYTHONPATH=variantgen:verifier python -m variantgen verify --mother reentrancy --count 20
+PYTHONPATH=variantgen:verifier python3 -m variantgen verify-mother --mother mothers/reentrancy --count 20
 ```
 
 評分過的 session 會寫下 `backend/evidence/<submissionHash>/manifest.json`（可用 `EVIDENCE_DIR` 改位置）。重算：

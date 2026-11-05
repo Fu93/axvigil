@@ -845,7 +845,7 @@ footer { padding: 48px 0 32px; }
   .nav-links a { display: block; padding: 12px 10px; font-size: 0.85rem; }
   .nav-end .desktop-cta { display: none; }
   .grid-3, .proof-layout, .fgrid { grid-template-columns: 1fr 1fr; }
-  .stats { width: min(700px, 52vw); margin-left: max(40px, 4vw); margin-right: auto; }
+  .hero .stats { width: min(700px, 52vw); margin-left: max(40px, 4vw); margin-right: auto; }
   .pipe { grid-template-columns: 1fr 1fr; }
   .pipe-line { display: none; }
 }

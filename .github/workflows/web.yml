@@ -5,11 +5,15 @@ on:
     branches: [main, "**"]
     paths:
       - "web/**"
+      - "demo/**"
+      - "index.html"
       - "scripts/check_web.py"
       - ".github/workflows/web.yml"
   pull_request:
     paths:
       - "web/**"
+      - "demo/**"
+      - "index.html"
       - "scripts/check_web.py"
       - ".github/workflows/web.yml"
 

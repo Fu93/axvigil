@@ -2,7 +2,9 @@
 
 AxVigil's first challenges were synthetic patterns. This track rebuilds **real, already
 patched and publicly documented exploits** as self-contained mothers. They use the same
-format and the same `variantgen` and grader pipeline as the rest of the bank.
+format and the same `variantgen` and grader pipeline as the rest of the bank. For the full
+five-incident track (adding Platypus, Nomad Bridge, and Beanstalk) and the fifth check
+(`invariantsHold`), see [`../real-incident-track.md`](../real-incident-track.md).
 
 ## `bridge-phantom-deposit` · Phantom Bridge Deposit (first real-incident challenge)
 

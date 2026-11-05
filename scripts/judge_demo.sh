@@ -41,10 +41,10 @@ trap cleanup EXIT INT TERM
 
 echo ""
 echo "== 1/4 oracle agent (offline, no API key) =="
-PYTHONPATH="$ROOT/agent:$ROOT/verifier" python3 -m axvigil_agent solve \
+PYTHONPATH="$ROOT/agent:$ROOT/verifier" "$PY" -m axvigil_agent solve \
   --challenge "$ROOT/challenges/reentrancy-vault" --oracle --json \
   >"$TMP_DIR/oracle.json"
-python3 - <<'PY' "$TMP_DIR/oracle.json"
+"$PY" - <<'PY' "$TMP_DIR/oracle.json"
 import json, sys
 doc = json.load(open(sys.argv[1]))
 print(f"solved={doc['solved']} iterations={len(doc['iterations'])}")
@@ -98,7 +98,7 @@ export CHALLENGE_CACHE_DIR="$TMP_DIR/cache"
 export SESSION_SECRET="judge-demo-not-a-production-secret"
 mkdir -p "$CHALLENGE_CACHE_DIR"
 PYTHONPATH="$ROOT/backend:$ROOT/verifier:$ROOT/variantgen" \
-  python3 -m uvicorn axvigil_backend.app:app --host 127.0.0.1 --port "$API_PORT" --app-dir "$ROOT/backend" \
+  "$PY" -m uvicorn axvigil_backend.app:app --host 127.0.0.1 --port "$API_PORT" --app-dir "$ROOT/backend" \
   >"$TMP_DIR/api.log" 2>&1 &
 API_PID=$!
 for _ in $(seq 1 50); do
@@ -114,7 +114,7 @@ curl -sf "http://127.0.0.1:${API_PORT}/health" >/dev/null || {
 AXVIGIL_API="http://127.0.0.1:${API_PORT}" \
   DB_PATH="$DB_PATH" CHALLENGE_CACHE_DIR="$CHALLENGE_CACHE_DIR" \
   MINT_AUTH_OUT="$TMP_DIR/mint.json" PLAYER_KEY="$PLAYER_KEY" AGENT_ID="$AGENT_ID" \
-  python3 "$ROOT/scripts/judge_play.py" || {
+  "$PY" "$ROOT/scripts/judge_play.py" || {
     echo "API log:" >&2
     cat "$TMP_DIR/api.log" >&2
     exit 1
@@ -122,7 +122,7 @@ AXVIGIL_API="http://127.0.0.1:${API_PORT}" \
 
 echo ""
 echo "== 4/4 mint, reveal, tokenURI =="
-python3 - <<'PY' "$TMP_DIR/mint.json" "$TMP_DIR/mint-args.txt"
+"$PY" - <<'PY' "$TMP_DIR/mint.json" "$TMP_DIR/mint-args.txt"
 import json, sys
 auth = json.load(open(sys.argv[1]))
 if auth["pool"] != auth["difficulty"]:
@@ -149,7 +149,7 @@ cast send "$COLLECTIBLE" "revealTokens(uint256)" 5 \
 echo "collectible tokenURI: $(cast call "$COLLECTIBLE" "tokenURI(uint256)(string)" 1 --rpc-url "$RPC_URL")"
 echo "tier (0 common .. 3 legendary, 4 hidden only from pool 2): $(cast call "$COLLECTIBLE" "tierOf(uint256)(uint8)" 1 --rpc-url "$RPC_URL")"
 cast call "$SKILL" "tokenURI(uint256)(string)" "$AGENT_ID" --rpc-url "$RPC_URL" >"$TMP_DIR/skill-uri.txt"
-python3 - <<'PY' "$TMP_DIR/skill-uri.txt"
+"$PY" - <<'PY' "$TMP_DIR/skill-uri.txt"
 import base64, json, sys
 uri = open(sys.argv[1]).read().strip().strip('"')
 prefix = "data:application/json;base64,"

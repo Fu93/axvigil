@@ -427,7 +427,7 @@
     </a>
     <button class="nav-toggle" type="button" aria-expanded="false" aria-controls="site-nav">
       <span></span>
-      <span class="sr">Menu</span>
+      <span class="sr" data-i18n="nav.menu">Menu</span>
     </button>
     <ul class="nav-links" id="site-nav">
       <li class="pill" aria-hidden="true"></li>
@@ -441,7 +441,7 @@
       <li><a href="pitch.html" data-i18n="nav.pitch">Pitch</a></li>
     </ul>
     <div class="nav-end">
-      <div class="lang" role="group" aria-label="Language">
+      <div class="lang" role="group" data-i18n-aria="nav.lang" aria-label="Language">
         <button type="button" data-lang="en" aria-pressed="true">EN</button>
         <button type="button" data-lang="zh-TW" aria-pressed="false">繁體中文</button>
       </div>
@@ -463,7 +463,7 @@
         <span data-i18n="demo.hero.h1a">Interactive</span>
         <span class="accent" data-i18n="demo.hero.h1b">Pipeline.</span>
       </h1>
-      <p class="hero-sub" id="demo-sub">
+      <p class="hero-sub" id="demo-sub" data-i18n="demo-sub">
         Experience the end-to-end AxVigil proving ground: from seed-rendered anti-memorization challenges to 5-check differential verification, EIP-712 validator signatures, and on-chain soulbound capability records.
       </p>
 
@@ -526,7 +526,7 @@
       </div>
       <div class="sec-head">
         <h2 class="display" data-i18n="demo.crucible.h2">Fail, learn, then pass.</h2>
-        <p class="lede" data-i18n="demo.crucible.lede">A live differential solve transcript on <code>price-manipulation-42</code>. The agent first submits the contract unchanged, failing the differential check. After receiving compiler and test trace feedback, it submits the true root fix.</p>
+        <p class="lede" data-i18n="demo.crucible.lede" data-i18n-rich="true">A live differential solve transcript on <code>price-manipulation-42</code>. The agent first submits the contract unchanged, failing the differential check. After receiving compiler and test trace feedback, it submits the true root fix.</p>
       </div>
 
       <div class="terminal-card">
@@ -616,7 +616,7 @@
       </div>
       <div class="sec-head">
         <h2 class="display" data-i18n="demo.rec.h2">A skill record that grows on-chain.</h2>
-        <p class="lede" data-i18n="demo.rec.lede">Each AI agent holds a non-transferable Soulbound Skill Token (ERC-5192) bound to its Agent ID. The artwork is dynamically generated on-chain by the smart contract's <code>tokenURI</code>, illuminating distinct class emblems and upgrading the frame color as the agent masters harder tiers.</p>
+        <p class="lede" data-i18n="demo.rec.lede" data-i18n-rich="true">Each AI agent holds a non-transferable Soulbound Skill Token (ERC-5192) bound to its Agent ID. The artwork is dynamically generated on-chain by the smart contract's <code>tokenURI</code>, illuminating distinct class emblems and upgrading the frame color as the agent masters harder tiers.</p>
       </div>
 
       <div class="skill-stage-section">
@@ -696,7 +696,7 @@
               <dt data-i18n="demo.evid.registry">Agent Registry</dt>
               <dd><a href="https://testnet.bscscan.com/address/0x7Aa441477f0246353bdAe504cF0F9B3027D6d45e" target="_blank" rel="noopener">0x7Aa4…d45e</a> <button class="copy-chip" data-copy-val="0x7Aa441477f0246353bdAe504cF0F9B3027D6d45e" title="Copy full address">⧉ copy</button></dd>
               <dt data-i18n="demo.evid.zk">ZK Verifier</dt>
-              <dd><span style="color:var(--mint);font-family:var(--mono);" data-i18n="demo.evid.zkstatus">Local Anvil / EIP-712 threshold (ZK proof simulated)</span> <a href="pitch.html#proof" style="margin-left:6px;font-size:0.75rem;">(Architecture ↗)</a></dd>
+              <dd><span style="color:var(--mint);font-family:var(--mono);" data-i18n="demo.evid.zkstatus">Local Anvil / EIP-712 threshold (ZK proof simulated)</span> <a href="pitch.html#proof" style="margin-left:6px;font-size:0.75rem;" data-i18n="demo.evid.arch">(Architecture ↗)</a></dd>
               <dt data-i18n="demo.evid.prepr8">Pre-PR#8 Skill</dt>
               <dd><a href="https://testnet.bscscan.com/address/0x337743Da5894B58039743f46f689337991cECD18" target="_blank" rel="noopener">0x3377…CD18</a> <button class="copy-chip" data-copy-val="0x337743Da5894B58039743f46f689337991cECD18" title="Copy full address">⧉ copy</button></dd>
             </dl>
@@ -708,14 +708,14 @@
               <span class="idx">MUSE SPARK</span>
             </div>
             <dl class="kv-list">
-              <dt data-i18n="demo.evid.mint1">Mint #1 (Token 1)</dt>
-              <dd><a href="https://testnet.bscscan.com/tx/0x2381283bef977534ff5eaa234c6bdf7160a6a80a84aec4238d2063ceb7b826ea" target="_blank" rel="noopener">0x2381…26ea</a> <button class="copy-chip" data-copy-val="0x2381283bef977534ff5eaa234c6bdf7160a6a80a84aec4238d2063ceb7b826ea" title="Copy tx hash">⧉ copy</button></dd>
+              <dt data-i18n="demo.evid.mint1">Threshold #1</dt>
+              <dd><a href="https://testnet.bscscan.com/tx/0x720f135e0af68e9dd1b908fc428153cffb0351e173b3b8f9b741b83045d7e3ab" target="_blank" rel="noopener">0x720f…e3ab</a> <button class="copy-chip" data-copy-val="0x720f135e0af68e9dd1b908fc428153cffb0351e173b3b8f9b741b83045d7e3ab" title="Copy tx hash">⧉ copy</button></dd>
               <dt data-i18n="demo.evid.mint2">Mint #2 (Legendary)</dt>
               <dd><a href="https://testnet.bscscan.com/tx/0x8f135d51462a5a5ad98dc3af3df0838f5f3eabc1207210fc22041f876281c177" target="_blank" rel="noopener">0x8f13…c177</a> <button class="copy-chip" data-copy-val="0x8f135d51462a5a5ad98dc3af3df0838f5f3eabc1207210fc22041f876281c177" title="Copy tx hash">⧉ copy</button></dd>
-              <dt data-i18n="demo.evid.reveal">Reveal Tx</dt>
-              <dd><a href="https://testnet.bscscan.com/tx/0x8db5db92734979ee36dbc916e76b67c7f3f24ad9d570027f0ddbdc4f69be294b" target="_blank" rel="noopener">0x8db5…294b</a> <button class="copy-chip" data-copy-val="0x8db5db92734979ee36dbc916e76b67c7f3f24ad9d570027f0ddbdc4f69be294b" title="Copy tx hash">⧉ copy</button></dd>
+              <dt data-i18n="demo.evid.reveal">Batch 2 Reveal</dt>
+              <dd><a href="https://testnet.bscscan.com/tx/0xf83f082999ea63a7bef5f4eacc105e1aa2d648c2be38af1a5ff7fabdb978d597" target="_blank" rel="noopener">0xf83f…d597</a> <button class="copy-chip" data-copy-val="0xf83f082999ea63a7bef5f4eacc105e1aa2d648c2be38af1a5ff7fabdb978d597" title="Copy tx hash">⧉ copy</button></dd>
               <dt data-i18n="demo.evid.subhash">Submission Hash</dt>
-              <dd style="color:var(--mint);"><span data-i18n="demo.evid.subtext">0x8083…64df (re-verifiable via CID)</span> <button class="copy-chip" data-copy-val="0x80834fbc89e0be163ee745d19461c788c4ed86441c513cc6203c183b000864df" title="Copy submission hash">⧉ copy</button></dd>
+              <dd style="color:var(--mint);"><span data-i18n="demo.evid.subtext">0xfb18…c081 (re-verifiable via CID)</span> <button class="copy-chip" data-copy-val="0xfb18e408a932f7573e8b05e3aa2c817318c902863f2d0afeb3d47d72caa9c081" title="Copy submission hash">⧉ copy</button></dd>
             </dl>
           </div>
         </div>
@@ -964,6 +964,8 @@
   const demoI18n = {
     "en": {
       "skip": "Skip to content",
+      "nav.menu": "Menu",
+      "nav.lang": "Language",
       "demo-sub": "Experience the end-to-end AxVigil proving ground: from seed-rendered anti-memorization challenges to 5-check differential verification, EIP-712 validator signatures, and on-chain soulbound capability records.",
       "nav.problem": "Problem",
       "nav.how": "How",
@@ -1003,14 +1005,14 @@
       "demo.flow.5.desc": "Mint collectible + dynamic ERC-5192 soulbound skill.",
       "demo.crucible.bracket": "[:DIFFERENTIAL GRADER]",
       "demo.crucible.h2": "Fail, learn, then pass.",
-      "demo.crucible.lede": "A live differential solve transcript on price-manipulation-42. The agent first submits the contract unchanged, failing the differential check. After receiving compiler and test trace feedback, it submits the true root fix.",
+      "demo.crucible.lede": "A live differential solve transcript on <code>price-manipulation-42</code>. The agent first submits the contract unchanged, failing the differential check. After receiving compiler and test trace feedback, it submits the true root fix.",
       "demo.terminal.title": "agent solve session",
       "demo.tab.0": "[ Attempt 0: Unchanged / Rejected ]",
       "demo.tab.1": "[ Attempt 1: Patched / Solved ]",
       "demo.tab.2": "[ Attempt 2: Meta AI · Nomad Bridge ]",
       "demo.rec.bracket": "[:ON-CHAIN CAPABILITY]",
       "demo.rec.h2": "A skill record that grows on-chain.",
-      "demo.rec.lede": "Each AI agent holds a non-transferable Soulbound Skill Token (ERC-5192) bound to its Agent ID. The artwork is dynamically generated on-chain by the smart contract's tokenURI, illuminating distinct class emblems and upgrading the frame color as the agent masters harder tiers.",
+      "demo.rec.lede": "Each AI agent holds a non-transferable Soulbound Skill Token (ERC-5192) bound to its Agent ID. The artwork is dynamically generated on-chain by the smart contract's <code>tokenURI</code>, illuminating distinct class emblems and upgrading the frame color as the agent masters harder tiers.",
       "demo.stage.1": "1 Class · BASIC",
       "demo.stage.2": "2 Classes · ADV",
       "demo.stage.3": "3 Classes · LEGENDARY",
@@ -1041,13 +1043,14 @@
       "demo.evid.registry": "Agent Registry",
       "demo.evid.zk": "ZK Verifier",
       "demo.evid.zkstatus": "Local Anvil / EIP-712 threshold (ZK proof simulated)",
+      "demo.evid.arch": "(Architecture ↗)",
       "demo.evid.prepr8": "Pre-PR#8 Skill",
       "demo.evid.mints": "[:PROVABLE MINTS]",
-      "demo.evid.mint1": "Mint #1 (Token 1)",
+      "demo.evid.mint1": "Threshold #1",
       "demo.evid.mint2": "Mint #2 (Legendary)",
-      "demo.evid.reveal": "Reveal Tx",
+      "demo.evid.reveal": "Batch 2 Reveal",
       "demo.evid.subhash": "Submission Hash",
-      "demo.evid.subtext": "0x8083…64df (re-verifiable via CID)",
+      "demo.evid.subtext": "0xfb18…c081 (re-verifiable via CID)",
       "foot.blurb": "A proving ground for AI agents that fix smart-contract bugs. Meta Global AI Developer Hackathon. BSC testnet. Sandbox only.",
       "foot.project": "Project",
       "cta.github": "GitHub",
@@ -1064,6 +1067,8 @@
     },
     "zh-TW": {
       "skip": "跳至主要內容",
+      "nav.menu": "選單",
+      "nav.lang": "語言",
       "demo-sub": "實時體驗 AxVigil 端到端防禦驗證管線：從種子渲染防記憶變體、五重確定性差分沙箱評分、2-of-3 驗證者 EIP-712 連署，到鏈上動態靈魂綁定技能憑證演化。",
       "nav.problem": "問題",
       "nav.how": "如何運作",
@@ -1103,14 +1108,14 @@
       "demo.flow.5.desc": "鑄造紀念品 ＋ 動態演化 ERC-5192 靈魂綁定技能。",
       "demo.crucible.bracket": "[:差分評分沙箱]",
       "demo.crucible.h2": "失敗、學習、而後通過。",
-      "demo.crucible.lede": "在 price-manipulation-42 的實時差分求解記錄。Agent 最初提交未變更的合約，未通過差分檢查。收到編譯器與測試追蹤反饋後，提交真正的根因修復。",
+      "demo.crucible.lede": "在 <code>price-manipulation-42</code> 的實時差分求解記錄。Agent 最初提交未變更的合約，未通過差分檢查。收到編譯器與測試追蹤反饋後，提交真正的根因修復。",
       "demo.terminal.title": "agent 求解紀錄",
       "demo.tab.0": "[ 嘗試 0：未變更 / 拒絕 ]",
       "demo.tab.1": "[ 嘗試 1：已修復 / 通過 ]",
       "demo.tab.2": "[ 嘗試 2：Meta AI · Nomad 橋接 ]",
       "demo.rec.bracket": "[:鏈上能力憑證]",
       "demo.rec.h2": "在鏈上隨解題動態演化的技能憑證。",
-      "demo.rec.lede": "每位 AI Agent 擁有一枚與其 Agent ID 鎖定、不可轉讓的靈魂綁定技能憑證（ERC-5192）。徽章完全由合約 tokenURI 鏈上動態生成，隨難度晉級點亮各類漏洞徽記與外框色澤。",
+      "demo.rec.lede": "每位 AI Agent 擁有一枚與其 Agent ID 鎖定、不可轉讓的靈魂綁定技能憑證（ERC-5192）。徽章完全由合約 <code>tokenURI</code> 鏈上動態生成，隨難度晉級點亮各類漏洞徽記與外框色澤。",
       "demo.stage.1": "1 個題型 · 基礎",
       "demo.stage.2": "2 個題型 · 進階",
       "demo.stage.3": "3 個題型 · 傳奇",
@@ -1141,13 +1146,14 @@
       "demo.evid.registry": "Agent 註冊表",
       "demo.evid.zk": "ZK 驗證器",
       "demo.evid.zkstatus": "本地 Anvil / EIP-712 門檻簽名（ZK 證明模擬中）",
+      "demo.evid.arch": "（架構說明 ↗）",
       "demo.evid.prepr8": "PR#8 前舊技能",
       "demo.evid.mints": "[:可查證鑄造]",
-      "demo.evid.mint1": "鑄造 #1 (代幣 1)",
+      "demo.evid.mint1": "門檻鑄造 #1",
       "demo.evid.mint2": "鑄造 #2 (傳奇)",
-      "demo.evid.reveal": "開盲盒交易",
+      "demo.evid.reveal": "Batch 2 開盲盒",
       "demo.evid.subhash": "提交內容雜湊",
-      "demo.evid.subtext": "0x8083…64df (可經 CID 重現複驗)",
+      "demo.evid.subtext": "0xfb18…c081 (可經 CID 重現複驗)",
       "foot.blurb": "給會修智能合約漏洞的 AI agent 的試煉場。Meta Global AI Developer Hackathon。BSC 測試網。僅沙箱。",
       "foot.project": "專案",
       "cta.github": "GitHub",
@@ -1172,7 +1178,14 @@
     if (sub && dict["demo-sub"]) sub.textContent = dict["demo-sub"];
     document.querySelectorAll("[data-i18n]").forEach(el => {
       const key = el.getAttribute("data-i18n");
-      if (dict[key]) el.textContent = dict[key];
+      if (dict[key]) {
+        if (el.hasAttribute("data-i18n-rich")) el.innerHTML = dict[key];
+        else el.textContent = dict[key];
+      }
+    });
+    document.querySelectorAll("[data-i18n-aria]").forEach(el => {
+      const key = el.getAttribute("data-i18n-aria");
+      if (dict[key]) el.setAttribute("aria-label", dict[key]);
     });
     switchIter(currentIter);
     try {

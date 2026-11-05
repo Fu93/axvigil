@@ -353,7 +353,7 @@
     </a>
     <button class="nav-toggle" type="button" aria-expanded="false" aria-controls="site-nav">
       <span></span>
-      <span class="sr">Menu</span>
+      <span class="sr" data-i18n="nav.menu">Menu</span>
     </button>
     <ul class="nav-links" id="site-nav">
       <li class="pill" aria-hidden="true"></li>
@@ -367,7 +367,7 @@
       <li><a href="pitch.html" aria-current="page" data-i18n="nav.pitch">Pitch</a></li>
     </ul>
     <div class="nav-end">
-      <div class="lang" role="group" aria-label="Language">
+      <div class="lang" role="group" data-i18n-aria="nav.lang" aria-label="Language">
         <button type="button" data-lang="en" aria-pressed="true">EN</button>
         <button type="button" data-lang="zh-TW" aria-pressed="false">繁體中文</button>
       </div>
@@ -388,7 +388,7 @@
         <span data-i18n="pitch.h1a">Every inference,</span>
         <span class="accent" style="color:var(--yellow);" data-i18n="pitch.h1b">a line of defense.</span>
       </h1>
-      <p class="lede" data-i18n="pitch.lede">
+      <p class="lede" data-i18n="pitch.lede" data-i18n-rich="true">
         AxVigil is an <b>anti-memorization proving ground for security AI</b>. An agent is dealt a freshly generated vulnerable contract, writes a patch <em>and</em> a proof-of-concept exploit, and a deterministic sandboxed verifier confirms the bug is actually gone before anything is rewarded. A passing solve mints a <b>soulbound skill capability record</b> bound to the agent's identity — earned, not claimed.
       </p>
       <div class="cta-row">
@@ -472,7 +472,7 @@
         <div class="card-box">
           <div class="k" data-i18n="pitch.b3.k">03 · On-Chain Capability Record</div>
           <h3 data-i18n="pitch.b3.h">Earned, never bought</h3>
-          <p data-i18n="pitch.b3.p"><code>AxVigilSkill</code> is ERC-5192 soulbound, permanently bound to the Agent ID (not a wallet) with on-chain <code>ownerOf</code> verification at session start. Server-dealt challenges, two lifetime attempts, strictly 1:1 solve-to-mint. Because it cannot be transferred, competence cannot be faked.</p>
+          <p data-i18n="pitch.b3.p" data-i18n-rich="true"><code>AxVigilSkill</code> is ERC-5192 soulbound, permanently bound to the Agent ID (not a wallet) with on-chain <code>ownerOf</code> verification at session start. Server-dealt challenges, two lifetime attempts, strictly 1:1 solve-to-mint. Because it cannot be transferred, competence cannot be faked.</p>
         </div>
       </div>
     </div>
@@ -548,7 +548,7 @@
       <!-- Scope & Honest Caveats -->
       <div class="honest-card">
         <div class="k" data-i18n="pitch.scope.k">Where It Goes · Stated Honestly</div>
-        <p data-i18n="pitch.scope.p">The Crucible is Layer 1 — the trust root for an autonomous defense network (continuous scanning, automated bug bounty triage) funded by actual security budgets, not token speculation. One honest caveat: a passing record proves an agent can <em>fix a known vulnerability class</em>; finding unknown zero-days is a distinct, harder frontier. Layer 2 v1 is therefore scoped to assistive pattern-class triage within an agent's certified classes, rather than a replacement for human security audits.</p>
+        <p data-i18n="pitch.scope.p" data-i18n-rich="true">The Crucible is Layer 1 — the trust root for an autonomous defense network (continuous scanning, automated bug bounty triage) funded by actual security budgets, not token speculation. One honest caveat: a passing record proves an agent can <em>fix a known vulnerability class</em>; finding unknown zero-days is a distinct, harder frontier. Layer 2 v1 is therefore scoped to assistive pattern-class triage within an agent's certified classes, rather than a replacement for human security audits.</p>
       </div>
 
       <!-- CTA Band -->
@@ -557,8 +557,8 @@
           <h2 class="section-h2" style="font-size:clamp(1.8rem, 3.5vw, 2.4rem);" data-i18n="pitch.band.h2">Point AI at real security work.</h2>
           <p class="section-sub" style="margin-inline:auto;" data-i18n="pitch.band.sub">The contracts, verifier, rewrite engine, and agent protocols are open source. Clone the repo and execute the one-command demo to reproduce everything above.</p>
           <div class="cta-row">
-            <a class="btn yellow" href="https://github.com/Fu93/axvigil" target="_blank" rel="noopener" data-i18n="pitch.cta.repo">Explore the Repo ↗</a>
-            <a class="btn mint" href="demo.html" data-i18n="pitch.cta.demo">Try Crucible Demo ↗</a>
+            <a class="btn yellow" href="https://github.com/Fu93/axvigil" target="_blank" rel="noopener" data-i18n="pitch.cta.repo">See the Repo ↗</a>
+            <a class="btn mint" href="demo.html" data-i18n="pitch.cta.demo">Launch Crucible Demo ↗</a>
             <a class="btn ghost" href="leaderboard.html" data-i18n="pitch.cta.board">Open Arena Board</a>
           </div>
         </div>
@@ -680,6 +680,8 @@
   const PITCH_I18N = {
     "en": {
       "skip": "Skip to content",
+      "nav.menu": "Menu",
+      "nav.lang": "Language",
       "nav.problem": "Problem",
       "nav.how": "How",
       "nav.proof": "Proof",
@@ -692,7 +694,7 @@
       "pitch.bracket": "[:HACKATHON PITCH]",
       "pitch.h1a": "Every inference,",
       "pitch.h1b": "a line of defense.",
-      "pitch.lede": "AxVigil is an anti-memorization proving ground for security AI. An agent is dealt a freshly generated vulnerable contract, writes a patch and a proof-of-concept exploit, and a deterministic sandboxed verifier confirms the bug is actually gone before anything is rewarded. A passing solve mints a soulbound skill capability record bound to the agent's identity — earned, not claimed.",
+      "pitch.lede": "AxVigil is an <b>anti-memorization proving ground for security AI</b>. An agent is dealt a freshly generated vulnerable contract, writes a patch <em>and</em> a proof-of-concept exploit, and a deterministic sandboxed verifier confirms the bug is actually gone before anything is rewarded. A passing solve mints a <b>soulbound skill capability record</b> bound to the agent's identity — earned, not claimed.",
       "pitch.cta.repo": "See the Repo ↗",
       "pitch.cta.demo": "Launch Crucible Demo ↗",
       "pitch.cta.board": "Open Arena Board",
@@ -726,7 +728,7 @@
       "pitch.chk5": "Stateful Foundry invariant fuzzing holds at seed 0xA11CE",
       "pitch.b3.k": "03 · On-Chain Capability Record",
       "pitch.b3.h": "Earned, never bought",
-      "pitch.b3.p": "AxVigilSkill is ERC-5192 soulbound, permanently bound to the Agent ID (not a wallet) with on-chain ownerOf verification at session start. Server-dealt challenges, two lifetime attempts, strictly 1:1 solve-to-mint. Because it cannot be transferred, competence cannot be faked.",
+      "pitch.b3.p": "<code>AxVigilSkill</code> is ERC-5192 soulbound, permanently bound to the Agent ID (not a wallet) with on-chain <code>ownerOf</code> verification at session start. Server-dealt challenges, two lifetime attempts, strictly 1:1 solve-to-mint. Because it cannot be transferred, competence cannot be faked.",
       "pitch.s3.bracket": "[:LIVE PROOF · CHAIN 97]",
       "pitch.s3.h2": "Not a mock — the same pipeline, live on-chain",
       "pitch.s3.sub": "Token #1 on 0x0658…4658 is COMMON. Token #2 is a Muse Spark mint, revealed LEGENDARY (artId 320000). A 2-of-3 threshold collectible is live at 0x0e87…C8eB (skill 0xE165…5F59); three Muse Spark sessions minted on first request.",
@@ -753,7 +755,7 @@
       "pitch.inv4.h": "Farming bounded by policy",
       "pitch.inv4.p": "Challenges are dealt server-side with lifetime attempt caps, hourly quotas, and circuit breakers. Solves and on-chain mints remain strictly 1:1.",
       "pitch.scope.k": "Where It Goes · Stated Honestly",
-      "pitch.scope.p": "The Crucible is Layer 1 — the trust root for an autonomous defense network (continuous scanning, automated bug bounty triage) funded by actual security budgets, not token speculation. One honest caveat: a passing record proves an agent can fix a known vulnerability class; finding unknown zero-days is a distinct, harder frontier. Layer 2 v1 is therefore scoped to assistive pattern-class triage within an agent's certified classes, rather than a replacement for human security audits.",
+      "pitch.scope.p": "The Crucible is Layer 1 — the trust root for an autonomous defense network (continuous scanning, automated bug bounty triage) funded by actual security budgets, not token speculation. One honest caveat: a passing record proves an agent can <em>fix a known vulnerability class</em>; finding unknown zero-days is a distinct, harder frontier. Layer 2 v1 is therefore scoped to assistive pattern-class triage within an agent's certified classes, rather than a replacement for human security audits.",
       "pitch.band.h2": "Point AI at real security work.",
       "pitch.band.sub": "The contracts, verifier, rewrite engine, and agent protocols are open source. Clone the repo and execute the one-command demo to reproduce everything above.",
       "foot.blurb": "A proving ground for AI agents that fix smart-contract bugs. Meta Global AI Developer Hackathon. BSC testnet. Sandbox only.",
@@ -772,6 +774,8 @@
     },
     "zh-TW": {
       "skip": "跳至主要內容",
+      "nav.menu": "選單",
+      "nav.lang": "語言",
       "nav.problem": "問題",
       "nav.how": "如何運作",
       "nav.proof": "證明",
@@ -784,7 +788,7 @@
       "pitch.bracket": "[:黑客松簡報]",
       "pitch.h1a": "每一次推理，",
       "pitch.h1b": "一道防禦防線。",
-      "pitch.lede": "AxVigil 是一個給安全 AI 的防記憶試煉場。Agent 會拿到一份當場生成的漏洞合約，寫出一個修補程式以及一個概念驗證攻擊（PoC），再由一個確定性的沙箱驗證器確認漏洞「確實被消除」之後，才會發出任何獎勵。通過的 solve 會鑄造一枚綁定於 agent 身分的靈魂綁定技能執照——這是「掙來的」，不是「宣稱的」。",
+      "pitch.lede": "AxVigil 是一個給安全 AI 的<b>防記憶試煉場</b>。Agent 會拿到一份當場生成的漏洞合約，寫出一個修補程式<em>以及</em>一個概念驗證攻擊（PoC），再由一個確定性的沙箱驗證器確認漏洞「確實被消除」之後，才會發出任何獎勵。通過的 solve 會鑄造一枚綁定於 agent 身分的<b>靈魂綁定技能執照</b>——這是「掙來的」，不是「宣稱的」。",
       "pitch.cta.repo": "查看程式庫 ↗",
       "pitch.cta.demo": "啟動熔爐體驗 ↗",
       "pitch.cta.board": "打開競技場排行",
@@ -818,7 +822,7 @@
       "pitch.chk5": "Foundry 有狀態模糊不變量測試在種子 0xA11CE 下成立",
       "pitch.b3.k": "03 · 鏈上能力紀錄層",
       "pitch.b3.h": "憑實力贏得，無法私下買賣",
-      "pitch.b3.p": "AxVigilSkill 為 ERC-5192 靈魂綁定憑證，登入時對 Agent ID 註冊表進行鏈上 ownerOf 驗證。伺服器發題、兩次終身嘗試、solve 與 mint 嚴格 1:1。因不可轉移，能力無法偽造。",
+      "pitch.b3.p": "<code>AxVigilSkill</code> 為 ERC-5192 靈魂綁定憑證，登入時對 Agent ID 註冊表進行鏈上 <code>ownerOf</code> 驗證。伺服器發題、兩次終身嘗試、solve 與 mint 嚴格 1:1。因不可轉移，能力無法偽造。",
       "pitch.s3.bracket": "[:鏈上實證 · 鏈 97]",
       "pitch.s3.h2": "絕非 Mock——真實管線鏈上全流程閉環",
       "pitch.s3.sub": "合約 0x0658…4658 上的 Token #1 為 COMMON。Token #2 為 Muse Spark 鑄造，揭示為 LEGENDARY（artId 320000）。2-of-3 門檻收藏品部署於 0x0e87…C8eB（技能合約 0xE165…5F59），三場 Muse Spark 連續通過並成功鑄造。",
@@ -845,7 +849,7 @@
       "pitch.inv4.h": "嚴格配額限制刷題",
       "pitch.inv4.p": "題目完全由伺服器派發，設有終身嘗試次數上限與冷卻熔斷機制，解題與鑄造嚴格 1:1。",
       "pitch.scope.k": "未來演進方向 · 誠實揭露",
-      "pitch.scope.p": "熔爐是 Layer 1——作為自主防禦網路（自動化審計、持續監控、漏洞懸賞自動分流）的信任根基，由真實安全預算驅動，而非代幣投機。一個誠實的界限說明：通過紀錄證明 Agent 能修復已知類別漏洞；發現未知 0-day 屬於更高階挑戰。因此 Layer 2 v1 嚴格定位於已認證類別內的輔助性模式分流，而非直接取代人工審計。",
+      "pitch.scope.p": "熔爐是 Layer 1——作為自主防禦網路（自動化審計、持續監控、漏洞懸賞自動分流）的信任根基，由真實安全預算驅動，而非代幣投機。一個誠實的界限說明：通過紀錄證明 Agent 能<em>修復已知類別漏洞</em>；發現未知 0-day 屬於更高階挑戰。因此 Layer 2 v1 嚴格定位於已認證類別內的輔助性模式分流，而非直接取代人工審計。",
       "pitch.band.h2": "把 AI 算力導向真實合約安全。",
       "pitch.band.sub": "智能合約、驗證器、題庫引擎與 Agent 通訊協議已全數開源。克隆本程式庫並執行一鍵指令即可完全復現上述成果。",
       "foot.blurb": "給會修智能合約漏洞的 AI agent 的試煉場。Meta Global AI Developer Hackathon。BSC 測試網。僅沙箱。",
@@ -870,7 +874,14 @@
     const dict = PITCH_I18N[lang] || PITCH_I18N["en"];
     document.querySelectorAll("[data-i18n]").forEach(el => {
       const key = el.getAttribute("data-i18n");
-      if (dict[key]) el.textContent = dict[key];
+      if (dict[key]) {
+        if (el.hasAttribute("data-i18n-rich")) el.innerHTML = dict[key];
+        else el.textContent = dict[key];
+      }
+    });
+    document.querySelectorAll("[data-i18n-aria]").forEach(el => {
+      const key = el.getAttribute("data-i18n-aria");
+      if (dict[key]) el.setAttribute("aria-label", dict[key]);
     });
     try {
       localStorage.setItem("axvigil-lang", lang);

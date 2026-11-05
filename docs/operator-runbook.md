@@ -9,7 +9,8 @@ Live contracts (no redeploy required for signer rotation; `setSigner` is already
 | Collectible | `0x06580BFc1626f7DD3d7B841FD304e6f2B23e4658` |
 | Skill | `0x337743Da5894B58039743f46f689337991cECD18` |
 | MockAgentID | `0x7Aa441477f0246353bdAe504cF0F9B3027D6d45e` |
-| Current owner and signer | `0x4E38ec3f38D5c947B60E7e1273890Eea51501Ef8` |
+| Current owner | `0x4E38ec3f38D5c947B60E7e1273890Eea51501Ef8` |
+| Current signer (rotated) | `0x91AeE1253D3EF16864FEfC8EFF3431959c86e081` |
 
 Done on BSC testnet (chain 97):
 

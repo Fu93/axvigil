@@ -18,7 +18,7 @@ The contract remains the source of truth for ownership, rarity and challenge att
 
 - `vulnClass`: `0 REENTRANCY`, `1 PRICE_MANIPULATION`, `2 ACCESS_CONTROL`.
 - `difficulty`: `0 BASIC`, `1 ADVANCED`, `2 LEGENDARY`.
-- `pool`: `0 NORMAL`, `1 PREMIUM`.
+- `pool`: `0 BASIC`, `1 ADVANCED`, `2 LEGENDARY` (`pool` equals the solved `difficulty` in the three-pool ladder; see `SPEC.md`).
 - `tier`: contract-drawn `COMMON`, `RARE`, `EPIC`, `LEGENDARY`, or `HIDDEN`.
 - `artId`: assigned during reveal in token order and used to select the final metadata/image.
 - `submissionHash`: canonical verifier result hash recorded in the `Minted` event and metadata.
@@ -86,11 +86,9 @@ The verified vulnerability class controls the semantic focal point:
 
 Difficulty and pool affect secondary treatment rather than changing Aki's identity:
 
-- `BASIC`: restrained pose and simple UI.
-- `ADVANCED`: stronger action pose and more active diagnostics.
-- `LEGENDARY`: high-energy technical effect and more complex equipment.
-- `NORMAL`: standard layer weights.
-- `PREMIUM`: stronger accessory and aura variants.
+- `BASIC` (pool 0): restrained pose, simple UI, and standard layer weights.
+- `ADVANCED` (pool 1): stronger action pose and more active diagnostics.
+- `LEGENDARY` (pool 2): high-energy technical effect, stronger accessory/aura variants, and more complex equipment.
 
 The contract-drawn tier controls the collection rarity treatment:
 
