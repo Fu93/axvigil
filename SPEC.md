@@ -48,5 +48,6 @@ Agent ID: SPACE ID .ai Agent ID registry on BSC mainnet 0x60B9262456dE011F7d15a5
 - Total supply configured as 7,777 = those tiers. Legendary is released in 4 equal stages across the public supply. Hidden is not stage-gated.
 - Hourly mint cap; pausable; rotatable signer; supply cannot increase.
 - Hackathon randomness: commit-reveal (no VRF).
-- Skill record: non-transferable (ERC-5192 locked), bound to Agent ID tokenId, revocable by admin, records counts per vulnClass and max difficulty; tokenURI on-chain SVG that grows with each new vuln class.
+- Skill record: non-transferable (ERC-5192 locked), bound to Agent ID tokenId, revocable by admin (and per-solve revocable via `AxVigilChallenge`), records counts per vulnClass and max difficulty (dynamically recomputed on solve revocation); tokenURI on-chain SVG that grows with each new vuln class.
+- Optional optimistic challenge window (`AxVigilChallenge`) and zkVM verifier path (`AxVigilZKVerifier`) enforce post-mint challenge resolution and domain-bound nullifiers.
 - No token, no yield promises.

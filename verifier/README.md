@@ -34,12 +34,13 @@ Five deterministic checks → `passed` = all five. A challenge with no
 | `pocProvesBug` | the PoC **passes** on the **original** contract |
 | `pocFailsAfterPatch` | the same PoC **fails** on the **patched** contract |
 | `hiddenTestsPass` | the hidden functional tests **pass** on the **patched** contract |
-| `patchWithinLimits` | bounded changed lines/bytes, contract + public interface preserved |
-| `invariantsHold` | Foundry fuzz + invariant tests **pass** on the **patched** contract, at the pinned seed `0xA11CE`, 2000 fuzz runs, 256 invariant runs, depth 32 |
+| `patchWithinLimits` | bounded changed lines/bytes, contract + public interface preserved, EVM storage layout preserved, and no forge-std cheatcodes in patch |
+| `invariantsHold` | Foundry fuzz + invariant tests **pass** on the **patched** contract, at the pinned seed `0xA11CE`, 2000 fuzz runs, 256 invariant runs, depth 32 (plus decoy-probe rejection on the PoC) |
 
 The anti-gaming guarantees come from the **differential** (pass-on-vulnerable ∧
-fail-on-patched), the limits check, and the invariant suite: a fake fix, a gutted
-contract, a no-op PoC, and a patch that only special-cases the hidden unit tests
+fail-on-patched, plus ground-truth `solution/poc/Poc.t.sol` verification when present),
+the limits/storage/cheatcode check, and the invariant suite: a fake fix, a gutted
+contract, a no-op or decoy PoC, and a patch that only special-cases the hidden unit tests
 are all rejected (`tests/test_grader.py`, `tests/test_invariants.py`).
 
 ## Sandbox

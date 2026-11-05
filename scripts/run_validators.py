@@ -127,6 +127,8 @@ def main() -> None:
                         manifest,
                         lambda m: _grade(m, recheck=recheck, allow_test=allow_test),
                         evidence,
+                        round_num=int(body.get("round", 1)),
+                        challenger=str(body.get("challenger", "0x" + "00" * 20)),
                     )
                 else:
                     self.send_error(404)

@@ -176,7 +176,7 @@ class Workspace:
     def _rel_files(self) -> list[str]:
         found: list[str] = []
         for dirpath, dirnames, filenames in os.walk(self.root):
-            dirnames[:] = [d for d in dirnames if not (self.root / d).is_symlink()]
+            dirnames[:] = [d for d in dirnames if not (Path(dirpath) / d).is_symlink()]
             for name in filenames:
                 path = Path(dirpath) / name
                 if path.is_symlink():

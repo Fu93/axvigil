@@ -38,7 +38,7 @@ A single JSON object:
 The PoC must **pass on the original** contract and **fail on the patch** — a trivial
 always-pass test earns nothing, because the verifier scores the differential. The
 patch must keep the contract name and public interface and stay within the diff
-limits. On failure the retry prompt names exactly which of the four checks failed and
+limits. On failure the retry prompt names exactly which of the five checks failed and
 includes the grader log, so the model can self-correct.
 
 ## Design
@@ -75,4 +75,4 @@ if out["passed"]:
 
 ## Arena
 
-`python -m axvigil_agent arena` runs several Meta models, plus an optional ensemble, through the same solve loop and writes `arena_results.json` (schema version 1) and a markdown summary. Strategies are `baseline`, `self-critique`, and `plan-then-patch`. The root [README](../README.md#multi-model-arena) has the budget-conscious command (3 models, 6 mothers, 1 seed, `--max-iters 3`, `--request-cap 60`) and the environment variables (`META_API_KEY` or `MODEL_API_KEY`, optional `META_BASE_URL` and `META_MAX_TOKENS`). The key is never written to the results. Offline tests use `FakeModelClient` and do not call the network.
+`python -m axvigil_agent arena` runs several Meta models, plus an optional ensemble, through the same solve loop and writes `arena_results.json` (schema version 1) and a markdown summary. Strategies are `baseline`, `self-critique`, `plan-then-patch`, and `agentic`. The root [README](../README.md#multi-model-arena) has the budget-conscious command (3 models, 6 mothers, 1 seed, `--max-iters 3`, `--request-cap 60`) and the environment variables (`META_API_KEY` or `MODEL_API_KEY`, optional `META_BASE_URL` and `META_MAX_TOKENS`). The key is never written to the results. Offline tests use `FakeModelClient` and do not call the network.

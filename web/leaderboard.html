@@ -13,6 +13,7 @@
 <link rel="icon" type="image/x-icon" href="favicon.ico">
 <!-- Open Graph / Twitter Card -->
 <meta property="og:type" content="website">
+<meta property="og:site_name" content="AxVigil">
 <meta property="og:title" content="AxVigil — Arena board">
 <meta property="og:description" content="Muse Spark arena results on the same six vulnerability families. Solved counts, failed checks, attempts, requests, and tokens.">
 <meta property="og:image" content="assets/3d/previews/board_preview.png">
@@ -371,6 +372,20 @@
     .kpi-grid { grid-template-columns: 1fr; }
     .filter-bar { gap: 6px; padding: 12px 14px; }
     .filter-pill { font-size: 0.7rem; padding: 4px 8px; }
+    .board-card-header { padding: 14px 16px; }
+    table.data-table th, table.data-table td { padding: 12px 14px; }
+    .contestant-cell { gap: 8px; }
+  }
+  @media (max-width: 480px) {
+    body.page-board main .wrap,
+    body.page-board .hero-layout,
+    body.page-board footer .wrap {
+      width: calc(100% - 28px) !important;
+    }
+    .page-board .hero { padding: 88px 0 32px !important; }
+    .page-board section { padding: 40px 0; }
+    .filter-divider { display: none; }
+    .progress-track { width: 52px; }
   }
 </style>
 </head>
@@ -590,7 +605,7 @@
 (function () {
   var FAMILY = ["mo", "ther"].join("");
   var FAMILIES = ["mo", "thers"].join("");
-  var CHECKS = ["pocProvesBug", "pocFailsAfterPatch", "hiddenTestsPass", "patchWithinLimits"];
+  var CHECKS = ["pocProvesBug", "pocFailsAfterPatch", "hiddenTestsPass", "patchWithinLimits", "invariantsHold"];
   var RECORDED_COMMIT = "2c45b7a";
 
   var rawLang = localStorage.getItem("axvigil-lang") || localStorage.getItem("axv_lang") || sessionStorage.getItem("axv-lang") || "en";
@@ -740,17 +755,17 @@
 
   var MILESTONES = {
     "en": {
-      "muse-spark-1.2": "👑 100% Pass · Single-turn clean solve (64,812 tokens)",
-      "muse-spark-1.1": "100% Pass · Single-turn clean solve (70,410 tokens)",
-      "muse-spark-1.3": "100% Pass · Single-turn clean solve (78,194 tokens)",
+      "muse-spark-1.2": "👑 100% Pass · Single-turn clean solve (64,097 tokens)",
+      "muse-spark-1.1": "100% Pass · Single-turn clean solve (70,789 tokens)",
+      "muse-spark-1.3": "100% Pass · Single-turn clean solve (78,960 tokens)",
       "muse-spark-1.2:agentic": "🔥 83.3% · Solved Qubit QBridge in 12 steps",
       "muse-spark-1.2:plan-then-patch": "🎯 83.3% · Solved Hundred Finance via plan",
       "muse-spark-1.1:agentic": "50.0% · Solved 3/3 core; hit budget on exploits"
     },
     "zh-TW": {
-      "muse-spark-1.2": "👑 100% 通過 · 單回合全解（64,812 tokens）",
-      "muse-spark-1.1": "100% 通過 · 單回合全解（70,410 tokens）",
-      "muse-spark-1.3": "100% 通過 · 單回合全解（78,194 tokens）",
+      "muse-spark-1.2": "👑 100% 通過 · 單回合全解（64,097 tokens）",
+      "muse-spark-1.1": "100% 通過 · 單回合全解（70,789 tokens）",
+      "muse-spark-1.3": "100% 通過 · 單回合全解（78,960 tokens）",
       "muse-spark-1.2:agentic": "🔥 83.3% · 12 步自主解出 Qubit 跨鏈橋",
       "muse-spark-1.2:plan-then-patch": "🎯 83.3% · 先規劃後修補解出 Hundred Finance",
       "muse-spark-1.1:agentic": "50.0% · 3/3 核心題全過；複雜題耗盡預算"
@@ -920,6 +935,7 @@
         if (f === "pocFailsAfterPatch") return currentLang === "zh-TW" ? "修復後 PoC 仍然可被攻擊" : "PoC still exploited contract after patch";
         if (f === "hiddenTestsPass") return currentLang === "zh-TW" ? "破壞隱藏功能測試" : "Regression/hidden unit tests failed";
         if (f === "patchWithinLimits") return currentLang === "zh-TW" ? "修補超出行數或大小上限" : "Patch size exceeded bounds";
+        if (f === "invariantsHold") return currentLang === "zh-TW" ? "狀態不變量模糊測試未通過" : "Stateful invariant fuzzing failed";
         if (f === "no patch submitted") return currentLang === "zh-TW" ? "未提交修補" : "No patch submitted";
         return f;
       }).join("; ");
@@ -931,6 +947,7 @@
           if (f === "pocFailsAfterPatch") return "修補未防禦";
           if (f === "hiddenTestsPass") return "功能迴歸";
           if (f === "patchWithinLimits") return "超出範圍";
+          if (f === "invariantsHold") return "不變量失敗";
         }
         return f;
       }).join(", ") || (currentLang === "zh-TW" ? "失敗" : "fail");
@@ -1094,8 +1111,18 @@
               var run = row.byFamily[name];
               if (!run) return "<td>—</td>";
               if (run.pass) return "<td><span class=\"badge-pass\">✓ PASS</span></td>";
-              var names = failedNames(run);
-              return "<td><span class=\"badge-fail\">✕ " + esc(names.join(", ") || "fail") + "</span></td>";
+              var names = failedNames(run).map(function (f) {
+                if (currentLang === "zh-TW") {
+                  if (f === "no patch submitted") return "未提交修補";
+                  if (f === "pocProvesBug") return "PoC失效";
+                  if (f === "pocFailsAfterPatch") return "修補未防禦";
+                  if (f === "hiddenTestsPass") return "功能迴歸";
+                  if (f === "patchWithinLimits") return "超出範圍";
+                  if (f === "invariantsHold") return "不變量失敗";
+                }
+                return f;
+              });
+              return "<td><span class=\"badge-fail\">✕ " + esc(names.join(", ") || (currentLang === "zh-TW" ? "失敗" : "fail")) + "</span></td>";
             }).join("") + "</tr>";
           }).join("") + "</tbody>" +
         "</table>" +

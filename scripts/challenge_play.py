@@ -157,10 +157,20 @@ def _ask_sign(urls: list[str], manifest: dict, auth: dict) -> tuple[list[str], l
     return sigs, rows
 
 
-def _ask_challenge(urls: list[str], token_id: int, manifest: dict) -> tuple[list[dict], list[dict]]:
+def _ask_challenge(
+    urls: list[str],
+    token_id: int,
+    manifest: dict,
+    *,
+    round_num: int = 1,
+    challenger: str = "0x" + "00" * 20,
+) -> tuple[list[dict], list[dict]]:
     agreed, rows = [], []
     for url in urls:
-        code, body = _post(url + "/challenge", {"tokenId": token_id, "manifest": manifest})
+        code, body = _post(
+            url + "/challenge",
+            {"tokenId": token_id, "manifest": manifest, "round": round_num, "challenger": challenger},
+        )
         rows.append({"url": url, "status": code, "upheld": body.get("upheld"), "error": body.get("error")})
         if code == 200:
             agreed.append(body)
@@ -273,7 +283,7 @@ def main() -> int:
         sys.stderr.write("bad token is not Challenged\n")
         return 3
 
-    verdicts, verdict_rows = _ask_challenge(urls, bad_id, bad)
+    verdicts, verdict_rows = _ask_challenge(urls, bad_id, bad, round_num=1, challenger=challenger)
     sys.stderr.write(f"bad /challenge: {json.dumps(verdict_rows)}\n")
     upheld = [row for row in verdicts if row.get("upheld") is True]
     if len(upheld) < 2:

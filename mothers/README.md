@@ -20,7 +20,7 @@ grading contract, sources, and timings are in
 | `nomad-unproven-message` (real incident) | 2 access control | 2 legendary | an unproven message reads as root zero, and that zero root was pre-approved, so `process` releases escrow | reject the zero root even when the confirm-map says it is acceptable |
 | `beanstalk-flash-governance` (real incident) | 2 access control | 1 advanced | emergency execution counts live votes, so a same-transaction deposit can pass a supermajority | count the start-of-block checkpoint, not votes deposited in the execution transaction |
 
-The last two are **real-incident** challenges, rebuilt self-contained with no fork, and both
+The last five are **real-incident** challenges, rebuilt self-contained with no fork, and
 graded so that only the class fix passes:
 
 - `bridge-phantom-deposit` (Qubit QBridge, Jan 2022): only rejecting codeless tokens is accepted;

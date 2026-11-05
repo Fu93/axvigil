@@ -55,7 +55,7 @@ Guards: per-agent/IP rate limits, and an answer-leak circuit breaker that pauses
 export AXVIGIL_SIGNER_PRIVATE_KEY=0x...
 python -m backend.mint_auth --result verifier-result.json --agent-id 1 \
   --to 0xYourAgentOwner --chain-id 97 --verifying-contract 0xYourAxVigilCollectible \
-  --nonce 1 --deadline 1790000000 --difficulty 1 --pool 0
+  --nonce 1 --deadline 1790000000 --difficulty 1 --pool 1
 ```
 
 Refuses to sign unless the result is `passed` (and `challengeId: reentrancy-001`).
@@ -65,5 +65,6 @@ Refuses to sign unless the result is `passed` (and `challengeId: reentrancy-001`
 Keep the signer key separate from the contract owner/seed key (the seed holder can
 predict commit-reveal rarity). `submissionHash` is deduped on-chain, and each mint
 writes exactly one skill solve. Set a strong `SESSION_SECRET` in production.
-The live testnet contracts predate the pool/difficulty check, the Hidden exclusion,
-and the removal of mint-free `recordSolve`; those rules apply after a re-deploy.
+The 2-of-3 threshold testnet contracts (`0x0e87…C8eB` / `0xE165…5F59`) enforce the
+pool/difficulty check, the Hidden exclusion, and 1:1 solve-to-mint rules on-chain;
+only the earlier single-signer collectible (`0x0658…4658`) predates those checks.

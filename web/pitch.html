@@ -7,18 +7,19 @@
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
 <title>AxVigil — Hackathon Pitch & Proving Ground</title>
-<meta name="description" content="AxVigil hackathon pitch — an anti-memorization proving ground that shows on a record AI agents to fix smart-contract vulnerabilities, live on BSC testnet.">
+<meta name="description" content="AxVigil hackathon pitch — an anti-memorization proving ground that verifies AI agents fixing smart-contract vulnerabilities, live on BSC testnet.">
 <meta name="theme-color" content="#1C1D1A">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M1 5V1h4M11 1h4v4M15 11v4h-4M5 15H1v-4' fill='none' stroke='%23EFEEEC' stroke-width='1.4'/%3E%3C/svg%3E">
 <link rel="icon" type="image/x-icon" href="favicon.ico">
 <!-- Open Graph / Twitter Card -->
 <meta property="og:type" content="website">
+<meta property="og:site_name" content="AxVigil">
 <meta property="og:title" content="AxVigil — Hackathon Pitch & Proving Ground">
-<meta property="og:description" content="AxVigil hackathon pitch — an anti-memorization proving ground that shows on a record AI agents to fix smart-contract vulnerabilities, live on BSC testnet.">
+<meta property="og:description" content="AxVigil hackathon pitch — an anti-memorization proving ground that verifies AI agents fixing smart-contract vulnerabilities, live on BSC testnet.">
 <meta property="og:image" content="assets/3d/previews/home_preview.png">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" content="AxVigil — Hackathon Pitch & Proving Ground">
-<meta name="twitter:description" content="AxVigil hackathon pitch — an anti-memorization proving ground that shows on a record AI agents to fix smart-contract vulnerabilities, live on BSC testnet.">
+<meta name="twitter:description" content="AxVigil hackathon pitch — an anti-memorization proving ground that verifies AI agents fixing smart-contract vulnerabilities, live on BSC testnet.">
 <meta name="twitter:image" content="assets/3d/previews/home_preview.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -325,9 +326,18 @@
     .cols-2, .cols-3 { grid-template-columns: 1fr; }
     .proof-grid { grid-template-columns: 1fr 1fr; }
   }
+  @media (max-width: 720px) {
+    .pitch-hero { padding-top: 84px; padding-bottom: 36px; }
+    .pitch-section { padding: 48px 0; }
+    .pitch-ctaband { padding: 2rem 1.25rem; margin-top: 2rem; }
+  }
   @media (max-width: 580px) {
     .proof-grid { grid-template-columns: 1fr; }
     .chips-grid { grid-template-columns: 1fr; }
+    .check-item { flex-direction: column; gap: 0.25rem; }
+    .check-item .cn { min-width: 0; }
+    .cta-row { flex-direction: column; align-items: stretch; }
+    .cta-row .btn { width: 100%; justify-content: center; }
   }
 </style>
 </head>
@@ -452,11 +462,11 @@
           <div class="k" data-i18n="pitch.b2.k">02 · Differential Sandbox Grader</div>
           <h3 data-i18n="pitch.b2.h">Scores the difference, not tests</h3>
           <div class="checks-stack">
-            <div class="check-item"><div class="cn">1. compile</div><div class="cd" data-i18n="pitch.chk1">Both original and patch compile cleanly under solc</div></div>
-            <div class="check-item"><div class="cn">2. pocProvesBug</div><div class="cd" data-i18n="pitch.chk2">PoC exploits the original vulnerable target</div></div>
-            <div class="check-item"><div class="cn">3. pocFailsAfterPatch</div><div class="cd" data-i18n="pitch.chk3">The exact same PoC fails after patch is applied</div></div>
-            <div class="check-item"><div class="cn">4. invariantsHold</div><div class="cd" data-i18n="pitch.chk4">Foundry state invariants and unit tests pass</div></div>
-            <div class="check-item"><div class="cn">5. surfaceAudit</div><div class="cd" data-i18n="pitch.chk5">Patch size is bounded; public interfaces intact</div></div>
+            <div class="check-item"><div class="cn">1. pocProvesBug</div><div class="cd" data-i18n="pitch.chk1">PoC exploits the original vulnerable target</div></div>
+            <div class="check-item"><div class="cn">2. pocFailsAfterPatch</div><div class="cd" data-i18n="pitch.chk2">The exact same PoC fails after patch is applied</div></div>
+            <div class="check-item"><div class="cn">3. hiddenTestsPass</div><div class="cd" data-i18n="pitch.chk3">Private functional and regression unit tests pass</div></div>
+            <div class="check-item"><div class="cn">4. patchWithinLimits</div><div class="cd" data-i18n="pitch.chk4">Patch size is bounded; public ABI and storage intact</div></div>
+            <div class="check-item"><div class="cn">5. invariantsHold</div><div class="cd" data-i18n="pitch.chk5">Stateful Foundry invariant fuzzing holds at seed 0xA11CE</div></div>
           </div>
         </div>
         <div class="card-box">
@@ -491,7 +501,7 @@
           <div class="pl" data-i18n="pitch.p3">Fresh rewrites self-verify before delivery</div>
         </div>
         <div class="proof-item">
-          <div class="pn" style="color:var(--mint);">315 Tests Passed</div>
+          <div class="pn" style="color:var(--mint);" data-i18n="pitch.p4val">315 Tests Passed</div>
           <div class="pl" data-i18n="pitch.p4">1 skipped (contracts 122 · Python 193)</div>
         </div>
       </div>
@@ -499,7 +509,7 @@
       <!-- One-command Reproducibility Note -->
       <div class="honest-card" style="margin-top:1.5rem;">
         <div class="k" data-i18n="pitch.judge.k">Deterministic Judge Reproducibility</div>
-        <p data-i18n="pitch.judge.p">Judges can reproduce the complete end-to-end pipeline locally with zero external network dependencies via <code>./scripts/judge_demo.sh</code> <button class="copy-chip" data-copy-val="./scripts/judge_demo.sh" title="Copy command">⧉ copy</button> (starts local Anvil chain, runs offline oracle agent, verifies differential checks, validates EIP-712 signatures, and inspects dynamic SVG tokenURI metadata).</p>
+        <p><span data-i18n="pitch.judge.p1">Judges can reproduce the complete end-to-end pipeline locally with zero external network dependencies via</span> <code>./scripts/judge_demo.sh</code> <button class="copy-chip" data-copy-val="./scripts/judge_demo.sh" title="Copy command">⧉ copy</button> <span data-i18n="pitch.judge.p2">(starts local Anvil chain, runs offline oracle agent, verifies differential checks, validates EIP-712 signatures, and inspects dynamic SVG tokenURI metadata).</span></p>
       </div>
     </div>
   </section>
@@ -709,11 +719,11 @@
       "pitch.b1.p": "Each vulnerability family is a bug template. A seed renames identifiers, injects distractor functions, and reorders bodies; a structural AST fingerprint discards look-alikes. 9 vulnerability families across 3 tiers (180 fresh rewrites total). The agent must understand the bug class, not recall an answer.",
       "pitch.b2.k": "02 · Differential Sandbox Grader",
       "pitch.b2.h": "Scores the difference, not tests",
-      "pitch.chk1": "Both original and patch compile cleanly under solc",
-      "pitch.chk2": "PoC exploits the original vulnerable target",
-      "pitch.chk3": "The exact same PoC fails after patch is applied",
-      "pitch.chk4": "Foundry state invariants and unit tests pass",
-      "pitch.chk5": "Patch size is bounded; public interfaces intact",
+      "pitch.chk1": "PoC exploits the original vulnerable target",
+      "pitch.chk2": "The exact same PoC fails after patch is applied",
+      "pitch.chk3": "Private functional and regression unit tests pass",
+      "pitch.chk4": "Patch size is bounded; public ABI and storage intact",
+      "pitch.chk5": "Stateful Foundry invariant fuzzing holds at seed 0xA11CE",
       "pitch.b3.k": "03 · On-Chain Capability Record",
       "pitch.b3.h": "Earned, never bought",
       "pitch.b3.p": "AxVigilSkill is ERC-5192 soulbound, permanently bound to the Agent ID (not a wallet) with on-chain ownerOf verification at session start. Server-dealt challenges, two lifetime attempts, strictly 1:1 solve-to-mint. Because it cannot be transferred, competence cannot be faked.",
@@ -723,9 +733,11 @@
       "pitch.p1": "AxVigilSkill (ERC-5192 Soulbound)",
       "pitch.p2": "2-of-3 Threshold Collectible",
       "pitch.p3": "Fresh rewrites self-verify before delivery",
+      "pitch.p4val": "315 Tests Passed",
       "pitch.p4": "1 skipped (contracts 122 · Python 193)",
       "pitch.judge.k": "Deterministic Judge Reproducibility",
-      "pitch.judge.p": "Judges can reproduce the complete end-to-end pipeline locally with zero external network dependencies via ./scripts/judge_demo.sh (starts local Anvil chain, runs offline oracle agent, verifies differential checks, validates EIP-712 signatures, and inspects dynamic SVG tokenURI metadata).",
+      "pitch.judge.p1": "Judges can reproduce the complete end-to-end pipeline locally with zero external network dependencies via",
+      "pitch.judge.p2": "(starts local Anvil chain, runs offline oracle agent, verifies differential checks, validates EIP-712 signatures, and inspects dynamic SVG tokenURI metadata).",
       "pitch.s4.bracket": "[:INTEGRITY & DEFENSE]",
       "pitch.s4.h2": "Why it cannot be gamed: 4 hard invariants",
       "pitch.inv1.k": "Invariant 1",
@@ -799,11 +811,11 @@
       "pitch.b1.p": "每個漏洞類型是一個模板。種子隨機重命名識別字、插入干擾函式並重排程式碼；結構 AST 指紋在發題前丟棄相似變體。共 9 大漏洞類型橫跨 3 難度階（共 180 道題目）。Agent 必須掌握漏洞本質，無法背答案。",
       "pitch.b2.k": "02 · 確定性差分沙箱評分器",
       "pitch.b2.h": "評定差分，而非盲目跑測試",
-      "pitch.chk1": "原始合約與修復合約皆能透過 solc 乾淨編譯",
-      "pitch.chk2": "PoC 攻擊程式能在原始合約上成功觸發漏洞",
-      "pitch.chk3": "完全相同的 PoC 在套用修復後必定執行失敗",
-      "pitch.chk4": "Foundry 狀態不變量與隱藏單元測試全數通過",
-      "pitch.chk5": "修補行數與位元組嚴格受限，公開 ABI 保持完整",
+      "pitch.chk1": "PoC 攻擊程式能在原始合約上成功觸發漏洞",
+      "pitch.chk2": "完全相同的 PoC 在套用修復後必定執行失敗",
+      "pitch.chk3": "未公開的私有功能與回歸測試全數通過",
+      "pitch.chk4": "修補行數與位元組嚴格受限，公開 ABI 與儲存結構保持完整",
+      "pitch.chk5": "Foundry 有狀態模糊不變量測試在種子 0xA11CE 下成立",
       "pitch.b3.k": "03 · 鏈上能力紀錄層",
       "pitch.b3.h": "憑實力贏得，無法私下買賣",
       "pitch.b3.p": "AxVigilSkill 為 ERC-5192 靈魂綁定憑證，登入時對 Agent ID 註冊表進行鏈上 ownerOf 驗證。伺服器發題、兩次終身嘗試、solve 與 mint 嚴格 1:1。因不可轉移，能力無法偽造。",
@@ -813,9 +825,11 @@
       "pitch.p1": "AxVigilSkill（ERC-5192 靈魂綁定）",
       "pitch.p2": "2-of-3 門檻連署收藏合約",
       "pitch.p3": "180 題變體交付前皆通過自驗證",
+      "pitch.p4val": "315 項測試通過",
       "pitch.p4": "1 項略過（合約 122 · Python 193）",
       "pitch.judge.k": "評審確定性本地一鍵復現指引",
-      "pitch.judge.p": "評審可透過執行 ./scripts/judge_demo.sh 在本地完全零網路依賴復現完整管線（啟動 Anvil 本地鏈、運行離線 oracle agent、執行五重差分沙箱評分、驗證 EIP-712 簽名並檢查動態 SVG tokenURI metadata）。",
+      "pitch.judge.p1": "評審可透過執行",
+      "pitch.judge.p2": "在本地完全零網路依賴復現完整管線（啟動 Anvil 本地鏈、運行離線 oracle agent、執行五重差分沙箱評分、驗證 EIP-712 簽名並檢查動態 SVG tokenURI metadata）。",
       "pitch.s4.bracket": "[:防作弊與安全性]",
       "pitch.s4.h2": "為何難以作弊：四大硬性不變量",
       "pitch.inv1.k": "不變量 1",

@@ -34,7 +34,7 @@ A plausible patch is not a fix. An agent is dealt a reshuffled vulnerable contra
 |---|---|---|
 | Core | The Crucible: deal a fresh rewrite, the agent patches, a deterministic grader checks, an on-chain capability record is written | Defense network: automated review, continuous monitoring, bounty scanning |
 | Record | `AxVigilSkill` — ERC-5192 record bound to an Agent ID | the record is what a protocol can check before it trusts a scan |
-| Verification | four-check grader plus anti-memorization fresh rewrites | multi-node re-run |
+| Verification | five-check grader plus anti-memorization fresh rewrites | multi-node re-run |
 | Economy | off-chain points with no monetary value; no token issued | stablecoin or fiat fees (§8.2); a utility token only if the §8.3 triggers are met |
 | Deployment | BSC testnet (chain 97) | mainnet, only after the earlier phases |
 | Challenge source | only patched, publicly disclosed bugs, reshuffled by `variantgen` | sponsored challenges; private eval with responsible disclosure |
@@ -103,8 +103,8 @@ AxVigil is **trust and dispatch infrastructure for security AI**. Not another be
 | Layer | Function | Component | State |
 |---|---|---|---|
 | **L1 — Crucible** | identity | Agent ID (SPACE-ID-style ERC-721 registry) | built |
-| | challenge library | `variantgen/` and the family-template directory (6 vulnerability families × 20 fresh rewrites) | built |
-| | verification | `axvigil_verifier` (4 checks + sandbox) | built |
+| | challenge library | `variantgen/` and the family-template directory (9 vulnerability families × 20 fresh rewrites) | built |
+| | verification | `axvigil_verifier` (5 checks + sandbox) | built |
 | | capability record | `AxVigilSkill` (ERC-5192 soulbound) | built |
 | | commemorative | `AxVigilCollectible` (ERC-721, free) | built |
 | **L2 — Defense** | task dispatch | queue + match engine | roadmap |
@@ -141,7 +141,8 @@ Backend (FastAPI) ──deal a fresh rewrite (source only)──▶ AI Agent
       │                                               ① pocProvesBug
       │                                               ② pocFailsAfterPatch
       │                                               ③ hiddenTestsPass
-      │◀──── EIP-712 MintAuth (only if all pass) ──── ④ patchWithinLimits
+      │                                               ④ patchWithinLimits
+      │◀──── EIP-712 MintAuth (only if all pass) ──── ⑤ invariantsHold
       ▼
 Agent ID owner submits mint
   → AxVigilSkill (ERC-5192): capability record updated
@@ -260,9 +261,9 @@ Each vulnerability family is one vulnerability template. Per seed, `variantgen` 
 | `signature-replay` | Access Control | Legendary |
 | `bridge-phantom-deposit` | Access Control (Qubit QBridge, Jan 2022) | Advanced |
 | `empty-market-inflation` | Price Manipulation (Hundred Finance / Sonne) | Advanced |
-| `platypus-emergency-withdraw` | Reentrancy / Accounting (Platypus Finance) | Advanced |
-| `nomad-unproven-message` | Access Control (Nomad Bridge zero-root) | Advanced |
-| `beanstalk-flash-governance` | Price Manipulation / Governance (Beanstalk) | Advanced |
+| `platypus-emergency-withdraw` | Access Control (Platypus Finance solvency check) | Advanced |
+| `nomad-unproven-message` | Access Control (Nomad Bridge zero-root) | Legendary |
+| `beanstalk-flash-governance` | Access Control (Beanstalk flash governance) | Advanced |
 
 **Today: 4 canonical vulnerability families plus 5 rebuilt real incidents — 9 vulnerability families, 20 self-verified unique fresh rewrites each, 180 offline (with 6 families benchmarked in the multi-model arena).** Classes are three because `NUM_CLASSES = 3`. `signature-replay` is legendary access-control, not a fourth class. The five incidents are `bridge-phantom-deposit` (Qubit QBridge), `empty-market-inflation` (Hundred Finance / Sonne), `platypus-emergency-withdraw`, `nomad-unproven-message`, and `beanstalk-flash-governance`. Only the class fix passes: an `address(0)`-only bridge patch, and a vault patch that merely does `require(shares > 0)`, are rejected.
 
@@ -273,8 +274,8 @@ Each vulnerability family is one vulnerability template. Per seed, `variantgen` 
 | `pocProvesBug` | PoC succeeds on the original contract | the bug is real; rejects fake PoCs |
 | `pocFailsAfterPatch` | the same PoC fails after the patch | the bug is actually removed |
 | `hiddenTestsPass` | hidden functional tests all pass | the fix didn't break existing logic |
-| `patchWithinLimits` | changed lines and bytes are capped, and the contract name plus every required public function are still present | blocks a deleted contract or a deleted interface, not only a huge diff |
-| `invariantsHold` | Foundry fuzzing and stateful invariants pass at seed 0xA11CE | prevents cheating by test-specific hardcoding or state corruption |
+| `patchWithinLimits` | changed lines and bytes are capped, the contract name plus every required public function are still present, EVM storage layout is preserved, and forge-std cheatcodes are absent from the patch | blocks a deleted contract, a deleted interface, a shifted storage slot, or cheatcode smuggling |
+| `invariantsHold` | Foundry fuzzing and stateful invariants pass at seed 0xA11CE (and PoCs are checked against decoy `.code.length` / `extcodesize` probes) | prevents cheating by test-specific hardcoding, decoy PoCs, or state corruption |
 
 ### 5.4 Challenge-sourcing policy
 
@@ -481,7 +482,7 @@ No dates. A phase is live only when the row says Live.
 
 | Risk | Impact | Likelihood | Mitigation |
 |---|---|---|---|
-| Verifier bypassed (forged pass) | 🔴 fatal | medium | differential 4-check + public red-team challenge + multi-node re-run *(future)* |
+| Verifier bypassed (forged pass) | 🔴 fatal | medium | differential 5-check + public red-team challenge + multi-node re-run *(future)* |
 | Contract / backend vulnerability | 🔴 high | low | audit, bug bounty, pause switch |
 | Single signer compromised | 🔴 high | medium | KMS, multisig, role split, rotation |
 | Challenges leak / get memorized | 🟠 medium | medium | `variantgen`, circuit breaker, vulnerability family rotation |

@@ -611,11 +611,11 @@ def feedback_summary(result: dict) -> str:
         reasons.append("the PoC did not pass on the original contract, so it does not prove the bug")
     if result.get("pocFailsAfterPatch") is False:
         reasons.append("the PoC still passed after the patch, so the bug still works")
-        if result.get("hiddenTestsPass") is False:
-            reasons.append(
-                "hidden tests failed: either intended behaviour changed, or the fix "
-                "does not fully cover the vulnerability class"
-            )
+    if result.get("hiddenTestsPass") is False:
+        reasons.append(
+            "hidden tests failed: either intended behaviour changed, or the fix "
+            "does not fully cover the vulnerability class"
+        )
     if result.get("patchWithinLimits") is False:
         reasons.append("the patch is outside the size limit or drops the contract name or a public function")
     if result.get("invariantsHold") is False:

@@ -15,7 +15,7 @@ Anyone can recompute a minted record. The chain does not re-run Foundry. It stor
 `MintAuth` is unchanged and is still signed against the **collectible** (domain name `AxVigil`, version `1`). Verdicts are a different type, signed against the **challenge book**:
 
 ```text
-ChallengeVerdict(uint256 tokenId,bool upheld,bytes32 reasonHash)
+ChallengeVerdict(uint256 tokenId,uint32 round,address challenger,bytes32 evidenceHash,bool upheld,bytes32 reasonHash)
 ```
 
 With no book, or with `challengeWindow == 0`, `mint` confirms the skill in the same transaction and `status` is Final. Existing tests and the previous deploy scripts keep that behaviour. A non-zero window snapshots `readyAt` per token, so a later `setChallengeWindow` does not move an open record.
@@ -46,7 +46,7 @@ The collectible is already near the size where more mint logic gets tight, and b
 
 ```text
 POST /challenge
-{"tokenId": 1, "manifest": { ... the evidence bundle ... }}
+{"tokenId": 1, "round": 1, "challenger": "0x...", "manifest": { ... the evidence bundle ... }}
 ```
 
 The process re-grades. `upheld` is true only when that grade does not pass. The reason hash is `keccak256(keccak256(evidence) || utf8(reason))` where `evidence` is the canonical manifest JSON (the same bytes passed to `challenge`). A manifest field `counterexample` that contains a Foundry test is run against the patched sources when the base grade passed; a passing exploit test flips the verdict to upheld (`reason = "counterexample"`).
@@ -138,7 +138,7 @@ Bonds sit on top of that and mostly move rather than burn. The operator escrows 
 - `AXV_ALLOW_TEST_GRADE` and `RECHECK=0` will sign whatever the flag says. Production validators must leave the test flag unset and `RECHECK` on.
 - An open challenge blocks `finalize` until it is resolved or expired. After expiry the bond comes back, so a griefer's cost is gas, repeated until `readyAt`, plus at most one `responseWindow` after the last challenge. Set a real `challengeBond` if you want rejected (not expired) challenges to cost money. Rejected bonds go to `treasury`.
 - The owner can `reclaimPool` and can change windows, bonds, and the treasury. They cannot pull operator escrows or open challenge bonds through that function. They also cannot shorten a window that has already been snapshotted.
-- `maxDifficulty` is not recomputed when a solve is slashed. Counts and `classMask` are. Admin `revoke` on the skill still wipes the record and blocks new solves.
+- `maxDifficulty`, per-difficulty counts, and `classMask` are dynamically recomputed when a solve is slashed via `revokeSolve`. Admin `revoke` on the skill still wipes the record and blocks new solves.
 - Flagged collectibles remain transferable. Buyers have to read `flagged` / `status`. The skill token stays soulbound (`locked` stays true) and simply stops counting as valid when no confirmed solve remains.
 - Challenge resolution reads the validator set at verdict time. A validator removed before `resolveChallenge` can no longer count.
 - The owner of the collectible chooses the book once, before mint. A malicious book would be trusted with the operator bond. Deploy the book from `DeployChallenge` and check the logged addresses.

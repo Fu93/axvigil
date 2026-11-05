@@ -2,8 +2,16 @@
 __pycache__/
 *.pyc
 .pytest_cache/
+.env
+*.env
+!.env.example
+.venv/
+*/.venv/
+*.egg-info/
 contracts/out/
 contracts/cache/
+contracts/broadcast/
 backend/axvigil.db*
+backend/evidence/
 *.md
 demo/

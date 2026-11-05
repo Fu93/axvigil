@@ -40,6 +40,9 @@ Web3 當下有兩個事實並排擺著:
 | `signature-replay` | 權限控制 | Legendary |
 | `bridge-phantom-deposit` | 權限控制(Qubit QBridge,2022 年 1 月) | Advanced |
 | `empty-market-inflation` | 價格操縱(Hundred Finance / Sonne) | Advanced |
+| `platypus-emergency-withdraw` | 權限控制(Platypus Finance 償付能力檢查) | Advanced |
+| `nomad-unproven-message` | 權限控制(Nomad Bridge zero-root) | Legendary |
+| `beanstalk-flash-governance` | 權限控制(Beanstalk 閃電治理) | Advanced |
 
 **2. 一個評「差分」而非「測試套件」的確定性驗證器(`verifier/`)。**
 五項檢查,每一項都必須通過:
@@ -105,7 +108,8 @@ agent 看到的題目、拿到的評分、鏈上的紀錄,是同一條管線。�
 - **背答案沒用**——每道題都是當場生成、指紋去重的變體。
 - **偽造的修補過不了**——差分要求攻擊在修補前成功、修補後失敗,且功能測試仍通過。
 - **EVM Storage Layout 毀損偵測**——動態提取合約位元組碼儲存槽位（`forge inspect storage-layout --json`），修補若發生 slot 位移、變數刪除或類型不相容立即拒絕。
-- **反作弊 Decoy PoC 熔斷**——AST 靜態分析偵測並拒絕利用 `.code.length`、`extcodesize`、`extcodehash`、`.codehash` 探測合約代碼長度偽造漏洞的欺騙修復。
+- **反作弊 Decoy PoC 與修補作弊碼熔斷**——靜態分析偵測並拒絕利用 `.code.length`、`extcodesize`、`extcodehash`、`.codehash`、`type(...).runtimeCode`、`type(...).creationCode`、`gasleft()` 或 `selfbalance()` 探測合約特徵偽造漏洞的欺騙性 PoC，同時禁止修補程式引入 `forge-std/Vm.sol` 或呼叫 Foundry 作弊碼地址 `0x7109709ECfa91a80626fF3989D68f67F5b1DD12D`。
+- **防共謀官方基準 PoC 雙重驗證**——當題目附帶官方基準 `solution/poc/Poc.t.sol` 時，修補後的合約不僅要擋住 Agent 自寫的 PoC，也必須同時成功抵禦官方基準攻擊。
 - **暴力「修補」過不了**——patch 大小有上限,且公開介面必須存活。
 - **刷獎勵有邊界**——伺服器發題、每個 Agent ID 兩次終身嘗試、每小時鑄造上限、API 限流、答案外洩斷路器,以及把真實 Agent ID 註冊表當作前提。
 

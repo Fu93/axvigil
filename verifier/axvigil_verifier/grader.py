@@ -101,16 +101,25 @@ def _interface_preserved(patched: str, contract_name: str, required_selectors: l
 
 def check_patch_cheatcodes(patched_sources: dict[str, str]) -> tuple[bool, str | None]:
     """Ensure production patch does not import test frameworks or invoke cheatcodes."""
+    import_pattern = (
+        r"\bimport\s+[^;]*forge-std/(?:Test|Vm|console|StdCheats)\.sol",
+        "Foundry test library import in production patch",
+    )
     banned = [
-        (r"import\s+[^;]*forge-std/(?:Test|Vm|console)\.sol", "Foundry test library import in production patch"),
         (r"0x7109709ECfa91a80626fF3989D68f67F5b1DD12D", "Foundry cheatcode address in production patch"),
         (r"\bHEVM_ADDRESS\b", "HEVM_ADDRESS cheatcode reference in production patch"),
-        (r"\bvm\s*\.\s*(?:warp|roll|prank|deal|expectRevert|store|load|mockCall)\b", "Cheatcode invocation in production patch"),
+        (r"\bvm\s*\.\s*(?:warp|roll|prank|startPrank|deal|expectRevert|store|load|mockCall|etch|ffi)\b", "Cheatcode invocation in production patch"),
     ]
     for filename, code in patched_sources.items():
-        clean = re.sub(r'("(?:\\[\s\S]|[^"\\])*"|\'(?:\\[\s\S]|[^\'\\])*\')', '""', code)
-        clean = re.sub(r"//.*$", "", clean, flags=re.MULTILINE)
-        clean = re.sub(r"/\*.*?\*/", "", clean, flags=re.DOTALL)
+        no_comments = re.sub(
+            r'("(?:\\[\s\S]|[^"\\])*"|\'(?:\\[\s\S]|[^\'\\])*\')|//.*?$|/\*[\s\S]*?\*/',
+            lambda m: m.group(1) or "",
+            code,
+            flags=re.MULTILINE,
+        )
+        if re.search(import_pattern[0], no_comments, re.IGNORECASE):
+            return False, f"Illegal patch rejected: contains '{import_pattern[1]}' in {filename}"
+        clean = re.sub(r'("(?:\\[\s\S]|[^"\\])*"|\'(?:\\[\s\S]|[^\'\\])*\')', '""', no_comments)
         for pattern, desc in banned:
             if re.search(pattern, clean, re.IGNORECASE):
                 return False, f"Illegal patch rejected: contains '{desc}' in {filename}"

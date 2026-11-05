@@ -36,8 +36,8 @@ interface ICollectibleDifficulty {
 /// record stays Pending until `finalize`. Anyone can `challenge` during that window
 /// by posting `challengeBond`. A verdict is not the challenger's word: `threshold`
 /// distinct validators (the set on the collectible) must sign
-/// `ChallengeVerdict(uint256 tokenId,bool upheld,bytes32 reasonHash)` under this
-/// contract's EIP-712 domain (name "AxVigil", version "1", this address).
+/// `ChallengeVerdict(uint256 tokenId,uint32 round,address challenger,bytes32 evidenceHash,bool upheld,bytes32 reasonHash)`
+/// under this contract's EIP-712 domain (name "AxVigil", version "1", this address).
 ///
 /// Upheld: the collectible is flagged, the pending skill solve is dropped, and the
 /// challenger is credited their bond plus the operator escrow (or `protocolReward`

@@ -13,6 +13,7 @@
 <link rel="icon" type="image/x-icon" href="favicon.ico">
 <!-- Open Graph / Twitter Card -->
 <meta property="og:type" content="website">
+<meta property="og:site_name" content="AxVigil">
 <meta property="og:title" content="AxVigil — Interactive Crucible Demo">
 <meta property="og:description" content="Interactive end-to-end demonstration of AxVigil: Seed-rendered mutation, 5-check differential verification, dynamic on-chain skill SBT, and BSC testnet evidence.">
 <meta property="og:image" content="assets/3d/previews/proof_preview.png">
@@ -144,7 +145,7 @@
     overflow-x: auto;
     -webkit-overflow-scrolling: touch;
     max-width: 100%;
-    padding-bottom: 4px;
+    padding: 4px;
     scrollbar-width: none;
   }
   .tab-group::-webkit-scrollbar {
@@ -400,6 +401,19 @@
     .skill-stage-section { grid-template-columns: 1fr; }
     .evidence-grid { grid-template-columns: 1fr; }
   }
+  @media (max-width: 720px) {
+    .terminal-topbar { padding: 0.75rem 1rem; }
+    .checks-grid { padding: 1rem; grid-template-columns: 1fr; }
+    .verdict-banner { padding: 1rem; }
+    .code-pane { padding: 1rem; }
+    .evidence-card { padding: 1rem; }
+  }
+  @media (max-width: 480px) {
+    .kv-list { grid-template-columns: 1fr; gap: 0.25rem 0; }
+    .kv-list dd { margin-bottom: 0.65rem; }
+    .stage-selector-buttons { flex-direction: column; }
+    .scarcity-segment { font-size: 0.65rem; }
+  }
 </style>
 </head>
 <body>
@@ -442,12 +456,12 @@
     <div class="atmo" aria-hidden="true"><div class="wash"></div><div class="glow"></div></div>
     <div class="wrap">
       <div class="sec-top">
-        <p class="bracket">[:CRUCIBLE DEMO]</p>
+        <p class="bracket" data-i18n="demo.hero.bracket">[:CRUCIBLE DEMO]</p>
         <p class="idx">_001 / 004</p>
       </div>
       <h1 class="display">
-        <span>Interactive</span>
-        <span class="accent">Pipeline.</span>
+        <span data-i18n="demo.hero.h1a">Interactive</span>
+        <span class="accent" data-i18n="demo.hero.h1b">Pipeline.</span>
       </h1>
       <p class="hero-sub" id="demo-sub">
         Experience the end-to-end AxVigil proving ground: from seed-rendered anti-memorization challenges to 5-check differential verification, EIP-712 validator signatures, and on-chain soulbound capability records.
@@ -467,7 +481,7 @@
           <div class="lbl" data-i18n="demo.stat3.lbl">Test suite (contracts 122 · Python 193, 1 skipped)</div>
         </div>
         <div class="stat-box">
-          <div class="val">Chain 97</div>
+          <div class="val" data-i18n="demo.stat4.val">Chain 97</div>
           <div class="lbl" data-i18n="demo.stat4.lbl">Live BSC testnet threshold deployment</div>
         </div>
       </div>
@@ -555,7 +569,7 @@
       <div class="code-pair-grid">
         <div class="code-pane">
           <div class="code-pane-title">
-            <span>REENTRANCY MOTHER · SEED 0</span>
+            <span data-i18n="demo.code.a.title">REENTRANCY MOTHER · SEED 0</span>
             <span class="bracket">[:VARIANT_A]</span>
           </div>
           <pre><code><span class="token-fn">function</span> <span class="token-diff">take</span>() <span class="token-fn">external</span> {
@@ -572,7 +586,7 @@
 
         <div class="code-pane">
           <div class="code-pane-title">
-            <span>REENTRANCY MOTHER · SEED 11</span>
+            <span data-i18n="demo.code.b.title">REENTRANCY MOTHER · SEED 11</span>
             <span class="bracket">[:VARIANT_B]</span>
           </div>
           <pre><code><span class="token-fn">function</span> <span class="token-diff">redeem</span>() <span class="token-fn">external</span> {
@@ -701,7 +715,7 @@
               <dt data-i18n="demo.evid.reveal">Reveal Tx</dt>
               <dd><a href="https://testnet.bscscan.com/tx/0x8db5db92734979ee36dbc916e76b67c7f3f24ad9d570027f0ddbdc4f69be294b" target="_blank" rel="noopener">0x8db5…294b</a> <button class="copy-chip" data-copy-val="0x8db5db92734979ee36dbc916e76b67c7f3f24ad9d570027f0ddbdc4f69be294b" title="Copy tx hash">⧉ copy</button></dd>
               <dt data-i18n="demo.evid.subhash">Submission Hash</dt>
-              <dd style="color:var(--mint);"><span data-i18n="demo.evid.subtext">0x8083…64df (可經 CID 重現複驗)</span> <button class="copy-chip" data-copy-val="0x8083a216ec2aa45c71a39626e5fc5f27cfcb746ea5ef0d277d3aa33827d064df" title="Copy submission hash">⧉ copy</button></dd>
+              <dd style="color:var(--mint);"><span data-i18n="demo.evid.subtext">0x8083…64df (re-verifiable via CID)</span> <button class="copy-chip" data-copy-val="0x80834fbc89e0be163ee745d19461c788c4ed86441c513cc6203c183b000864df" title="Copy submission hash">⧉ copy</button></dd>
             </dl>
           </div>
         </div>
@@ -960,12 +974,18 @@
       "cta.demo": "Demo",
       "nav.pitch": "Pitch",
       "cta.records": "See live records",
+      "demo.hero.bracket": "[:CRUCIBLE DEMO]",
+      "demo.hero.h1a": "Interactive",
+      "demo.hero.h1b": "Pipeline.",
       "demo.stat1.lbl": "Vulnerability families × fresh rewrites (180 total)",
       "demo.stat2.val": "5 Checks",
       "demo.stat2.lbl": "Differential & invariant verification",
       "demo.stat3.val": "315 Passed",
       "demo.stat3.lbl": "Test suite (contracts 122 · Python 193, 1 skipped)",
+      "demo.stat4.val": "Chain 97",
       "demo.stat4.lbl": "Live BSC testnet threshold deployment",
+      "demo.code.a.title": "REENTRANCY MOTHER · SEED 0",
+      "demo.code.b.title": "REENTRANCY MOTHER · SEED 11",
       "demo.flow.1.num": "01 · MUTATE",
       "demo.flow.1.title": "Family + Seed",
       "demo.flow.1.desc": "Renamed, distractors injected, AST fingerprint checked.",
@@ -1054,12 +1074,18 @@
       "cta.demo": "體驗",
       "nav.pitch": "簡報",
       "cta.records": "看鏈上紀錄",
+      "demo.hero.bracket": "[:熔爐互動體驗]",
+      "demo.hero.h1a": "互動式驗證",
+      "demo.hero.h1b": "全管線。",
       "demo.stat1.lbl": "漏洞類型 × 新變體（共 180 題）",
       "demo.stat2.val": "五重檢查",
       "demo.stat2.lbl": "差分與不變量沙箱驗證",
       "demo.stat3.val": "315 項通過",
       "demo.stat3.lbl": "測試套件（合約 122 · Python 193，1 項略過）",
+      "demo.stat4.val": "鏈 97",
       "demo.stat4.lbl": "BSC 測試網上線門檻合約部署",
+      "demo.code.a.title": "重入母模板 · 種子 0",
+      "demo.code.b.title": "重入母模板 · 種子 11",
       "demo.flow.1.num": "01 · 突變",
       "demo.flow.1.title": "題型 ＋ 種子",
       "demo.flow.1.desc": "識別字改名、插入干擾函式、檢查 AST 指紋。",

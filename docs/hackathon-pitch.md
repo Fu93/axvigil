@@ -30,7 +30,7 @@ The gap between them is a **trust problem**: there is no independent, re-runnabl
 **1. An anti-memorization challenge engine (`variantgen/` and the family-template directory).**
 Each "vulnerability family" is one vulnerability template. A seed renders a structurally unique fresh rewrite every time — renamed identifiers, injected distractor functions, reordered bodies — and a structural fingerprint discards look-alikes before issue. So a public answer is worthless; the agent has to fix the *class* of bug, not recall a known hack.
 
-- **9 vulnerability families across 3 vulnerability classes and all 3 difficulty tiers** (including 5 minimal offline reproductions of DeFi incidents), each tested for 20 distinct fresh rewrites, **180 in all**. The arena benchmarks 6 of the 9. Two rebuild already-patched public incidents, and the grader accepts only the class fix.
+- **9 vulnerability families across 3 vulnerability classes and all 3 difficulty tiers** (including 5 minimal offline reproductions of DeFi incidents), each tested for 20 distinct fresh rewrites, **180 in all**. The arena benchmarks 6 of the 9. Five rebuild already-patched public incidents, and the grader accepts only the class fix.
 
 | Vulnerability family | Class | Difficulty |
 |---|---|---|
@@ -40,6 +40,9 @@ Each "vulnerability family" is one vulnerability template. A seed renders a stru
 | `signature-replay` | Access Control | Legendary |
 | `bridge-phantom-deposit` | Access Control (Qubit QBridge, Jan 2022) | Advanced |
 | `empty-market-inflation` | Price Manipulation (Hundred Finance / Sonne) | Advanced |
+| `platypus-emergency-withdraw` | Access Control (Platypus Finance solvency check) | Advanced |
+| `nomad-unproven-message` | Access Control (Nomad Bridge zero-root) | Legendary |
+| `beanstalk-flash-governance` | Access Control (Beanstalk flash governance) | Advanced |
 
 **2. A deterministic grader that scores the *difference*, not a test suite (`verifier/`).**
 Five checks, every one required:
@@ -105,7 +108,8 @@ In the spirit of cryptographic transparency, we explicitly document the security
 - **Memorization doesn't help** — every challenge is a fresh, fingerprinted fresh rewrite.
 - **A fake fix can't pass** — the differential requires the exploit to work before and fail after, and the functional tests to still pass.
 - **Storage corruption & slot shifts detected** — dynamic EVM storage layout preservation check (`forge inspect storage-layout --json`) fails patches that delete, shift, or re-order variables.
-- **Anti-cheat decoy PoC guard** — static AST inspects and rejects PoCs probing `.code.length`, `extcodesize`, `extcodehash`, `.codehash`, or `type(...).runtimeCode` to simulate vulnerabilities without true state manipulation.
+- **Anti-cheat decoy PoC & patch cheatcode guard** — static inspection rejects PoCs probing `.code.length`, `extcodesize`, `extcodehash`, `.codehash`, `type(...).runtimeCode`, `type(...).creationCode`, `gasleft()`, or `selfbalance()` to simulate vulnerabilities without true state manipulation, and rejects patches that import `forge-std/Vm.sol` or call `0x7109709ECfa91a80626fF3989D68f67F5b1DD12D`.
+- **Anti-collusion reference PoC check** — when a challenge ships a canonical `solution/poc/Poc.t.sol`, the patched contract must also repel the ground-truth exploit, not only the agent's self-authored PoC.
 - **Brute-force "fixes" can't pass** — patch size is capped and the public interface must survive.
 - **Farming is bounded** — server-dealt challenges, two lifetime attempts per Agent ID, hourly mint caps, API rate limits, an answer-leak circuit breaker, and a real Agent ID registry as a prerequisite.
 

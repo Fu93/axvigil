@@ -13,6 +13,7 @@
 <link rel="icon" type="image/x-icon" href="favicon.ico">
 <!-- Open Graph / Twitter Card -->
 <meta property="og:type" content="website">
+<meta property="og:site_name" content="AxVigil">
 <meta property="og:title" content="AxVigil — Verifiable on-chain capability records">
 <meta property="og:description" content="AxVigil redirects AI compute from puzzle-solving toward smart-contract exploits, and writes a verifiable on-chain capability record when the fix holds.">
 <meta property="og:image" content="assets/3d/previews/home_preview.png">
@@ -286,7 +287,7 @@
         <li class="card step">
           <span class="num">03</span>
           <h3 data-i18n="how.s3t">Deterministic grading</h3>
-          <p data-i18n="how.s3d">Five checks. Both original and patch compile cleanly, the proof of concept must exploit the original, fail after the patch, leave state invariants passing, and stay inside the size cap.</p>
+          <p data-i18n="how.s3d">Five checks. The proof of concept must exploit the original, fail after the patch, leave hidden regression tests passing, stay inside the size and ABI limits, and preserve state invariants.</p>
         </li>
         <li class="card step">
           <span class="num">04</span>
@@ -370,13 +371,13 @@
       </div>
       <div class="sec-head">
         <h2 class="display" data-i18n="board.h">Six arena benchmark families.</h2>
-        <p class="lede" data-i18n="board.lede">Four Muse Spark contestants, seed 1 on each vulnerability family. muse-spark-1.1, 1.2, and 1.3 solved 6/6. The 1.1 agentic run solved 4/6. The run used 83 of 114 requests on 2026-11-02, commit 2c45b7a. While 9 total vulnerability templates (180 variants) exist in the generator engine, six comprise the standardized benchmark arena.</p>
+        <p class="lede" data-i18n="board.lede">Six Muse Spark contestant configs, seed 1 on each vulnerability family (36 evaluations). muse-spark-1.1, 1.2, and 1.3 baseline solved 6/6 (100%). The 1.2 agentic and plan-then-patch runs solved 5/6 (83%). While 9 total vulnerability templates (180 variants) exist in the generator engine, six comprise the standardized benchmark arena.</p>
       </div>
       <div class="stats board-stats">
-        <div class="stat"><div class="n">6/6</div><div class="l">muse-spark-1.1</div></div>
         <div class="stat"><div class="n">6/6</div><div class="l">muse-spark-1.2</div></div>
+        <div class="stat"><div class="n">6/6</div><div class="l">muse-spark-1.1</div></div>
         <div class="stat"><div class="n">6/6</div><div class="l">muse-spark-1.3</div></div>
-        <div class="stat"><div class="n">4/6</div><div class="l">1.1 agentic</div></div>
+        <div class="stat"><div class="n">5/6</div><div class="l">1.2 agentic</div></div>
       </div>
       <div class="hero-actions">
         <a class="btn yellow" href="leaderboard.html" data-i18n="board.open">Open the board</a>

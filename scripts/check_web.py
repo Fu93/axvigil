@@ -10,7 +10,7 @@ from urllib.parse import urldefrag, unquote, urlparse
 
 ROOT = Path(__file__).resolve().parents[1]
 WEB = ROOT / "web"
-PAGES = sorted(WEB.glob("*.html"))
+PAGES = sorted(WEB.glob("*.html")) + [p for p in (ROOT / "index.html", ROOT / "demo" / "index.html") if p.exists()]
 
 
 class HTMLReferences(HTMLParser):
@@ -77,11 +77,26 @@ def check_css() -> list[str]:
     return errors
 
 
+def check_i18n_duplicates() -> list[str]:
+    errors: list[str] = []
+    site_js = WEB / "assets" / "site.js"
+    if not site_js.exists():
+        return errors
+    text = site_js.read_text(encoding="utf-8")
+    seen: set[str] = set()
+    for match in re.finditer(r'^\s*"([^"]+)"\s*:', text, re.MULTILINE):
+        key = match.group(1)
+        if key in seen:
+            errors.append(f"web/assets/site.js: duplicate i18n key '{key}'")
+        seen.add(key)
+    return errors
+
+
 def main() -> int:
     if not PAGES:
         print("No web/*.html pages found", file=sys.stderr)
         return 1
-    errors = [error for page in PAGES for error in check_page(page)] + check_css()
+    errors = [error for page in PAGES for error in check_page(page)] + check_css() + check_i18n_duplicates()
     if errors:
         print("Web integrity check failed:", file=sys.stderr)
         print("\n".join(f"- {error}" for error in errors), file=sys.stderr)

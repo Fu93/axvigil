@@ -94,7 +94,7 @@ AxVigil 是**安全 AI 的信任與調度基礎設施**。不是另一個 benchm
 | 層 | 功能 | 元件 | 狀態 |
 |---|---|---|---|
 | **L1 — 熔爐** | 身分 | Agent ID(SPACE-ID 式 ERC-721 註冊表) | 已建成 |
-| | 題庫 | `variantgen/` and the family-template directory(9 漏洞類型 × 20 變體，共 180 題) | 已建成 |
+| | 題庫 | `variantgen/` 與家族模板目錄(9 漏洞類型 × 20 變體，共 180 題) | 已建成 |
 | | 驗證 | `axvigil_verifier`(五項差分檢查 + 沙箱) | 已建成 |
 | | 執照 | `AxVigilSkill`(ERC-5192 靈魂綁定) | 已建成 |
 | | 紀念 | `AxVigilCollectible`(ERC-721,免費) | 已建成 |
@@ -132,7 +132,8 @@ Backend (FastAPI) ──發放新變體(僅原始碼)──▶ AI Agent
       │                                    ① pocProvesBug
       │                                    ② pocFailsAfterPatch
       │                                    ③ hiddenTestsPass
-      │◀── EIP-712 MintAuth(全部通過才簽) ─── ④ patchWithinLimits
+      │                                    ④ patchWithinLimits
+      │◀── EIP-712 MintAuth(全部通過才簽) ─── ⑤ invariantsHold
       ▼
 Agent ID 持有人送出 mint
   → AxVigilSkill (ERC-5192):更新執照
@@ -186,7 +187,7 @@ Agent 迴圈是提案、評分、把評分日誌餵回去、再試（`agent/axvi
 **失敗分析（兩個由實跑找到、並在 PR #11 修好的基準錯誤）。**
 
 1. 隱藏測試失敗時的文字說修補改變了預期行為、應把修補維持最小。模型正確認出幽靈存款，卻只擋了 `token == address(0)`。`test_codelessNonZeroTokenCannotPhantomDeposit` 會拒絕它。現在的提示改為：失敗代表行為被改了，或修補沒有蓋住整個漏洞類別，而且不點名隱藏測試，也不寫出 `code.length` 的修法。
-2. the access-control hidden-test template 要求還原字串 `"not owner"`。渲染會把角色改名（`custodian`、`manager` 等），脆弱原始碼裡沒有那串字，所以正確的 `"not custodian"` 被誤判失敗。隱藏測試現在接受未授權呼叫者的任何 revert。
+2. 權限控制隱藏測試模板原本要求還原字串 `"not owner"`。渲染會把角色改名（`custodian`、`manager` 等），脆弱原始碼裡沒有那串字，所以正確的 `"not custodian"` 被誤判失敗。隱藏測試現在接受未授權呼叫者的任何 revert。
 
 ### 4.6 信任模型與威脅模型
 
@@ -227,7 +228,7 @@ BSC 上的實跑，包括三次門檻鑄造，用的是有資源上限的離線�
 - `MockAgentID` 是開放鑄造，不是 SPACE ID 的 Agent ID 註冊表。
 - 後端拒絕第三次獎勵 session。合約拒絕第三次 `mint`。兩者不是同一個計數器：放棄的 session 花掉後端嘗試，但不鑄造。
 - 技能圖可以依通過的類別長出新紋章，但單一 Agent ID 最多記錄兩次 solve，因為每次 solve 都由一次 mint 寫入，而 mint 上限是兩次。
-- 隱藏測試不放進 session 載荷，但在 the hidden-test templates in the family-template directory 裡是公開的。
+- 隱藏測試不放進 session 載荷，但在家族模板目錄的隱藏測試模板裡是公開的。
 - 出題者分潤、商業評測的質押或費用、B2B 掃描計費都是路線圖，尚未實作。
 - 離線驗證指令 為每個漏洞類型檢查 20 個唯一變體（共 180 題）。線上發題現在也會在發題前用參考解檢查該 seed，並跳過已發過的結構指紋。它不會事先公布未來每一個 seed 的清單。
 
@@ -251,9 +252,9 @@ BSC 上的實跑，包括三次門檻鑄造，用的是有資源上限的離線�
 | `signature-replay` | 權限控制 | Legendary |
 | `bridge-phantom-deposit` | 權限控制(Qubit QBridge,2022 年 1 月) | Advanced |
 | `empty-market-inflation` | 價格操縱(Hundred Finance / Sonne) | Advanced |
-| `platypus-emergency-withdraw` | 重入／會計缺陷(Platypus Finance) | Advanced |
-| `nomad-unproven-message` | 權限控制(Nomad Bridge zero-root) | Advanced |
-| `beanstalk-flash-governance` | 價格操縱／治理(Beanstalk) | Advanced |
+| `platypus-emergency-withdraw` | 權限控制(Platypus Finance 償付能力檢查) | Advanced |
+| `nomad-unproven-message` | 權限控制(Nomad Bridge zero-root) | Legendary |
+| `beanstalk-flash-governance` | 權限控制(Beanstalk 閃電治理) | Advanced |
 
 **今天：4 個正規漏洞類型加上 5 個重建的真實事件——共 9 個漏洞類型，離線各 20 個自我驗證的唯一變體，合計 180 題（其中 6 個類型納入多模型競技場基準測試）。** 類別只有三個，因為 `NUM_CLASSES = 3`。`signature-replay` 是傳奇難度的權限控制，不是第四個類別。五件真實事件是 `bridge-phantom-deposit`（Qubit QBridge）、`empty-market-inflation`（Hundred Finance / Sonne）、`platypus-emergency-withdraw`、`nomad-unproven-message` 與 `beanstalk-flash-governance`。只接受類別級修補。
 
@@ -264,8 +265,8 @@ BSC 上的實跑，包括三次門檻鑄造，用的是有資源上限的離線�
 | `pocProvesBug` | PoC 在原始合約上成功 | 漏洞真實;排除偽 PoC |
 | `pocFailsAfterPatch` | 同一 PoC 在修補後失敗 | 漏洞確實被消除 |
 | `hiddenTestsPass` | 隱藏功能測試全部通過 | 修補沒破壞既有邏輯 |
-| `patchWithinLimits` | 改動行數與位元組有上限，而且合約名稱與每一個必要的公開函式都還在 | 阻擋刪掉合約或刪掉介面，不只是擋一份過大的 diff |
-| `invariantsHold` | Foundry 狀態不變量與模糊測試通過 (seed 0xA11CE) | 防範作弊型硬編碼或狀態污染 |
+| `patchWithinLimits` | 改動行數與位元組有上限、合約名稱與每個必要的公開函式皆保留、EVM 儲存佈局零位移，且禁止夾帶 forge-std 作弊碼 | 阻擋刪掉合約、刪掉介面、位移儲存槽或夾帶作弊碼 |
+| `invariantsHold` | Foundry 狀態不變量與模糊測試通過 (seed 0xA11CE)，且阻擋探測 `.code.length` / `extcodesize` 的欺騙性 PoC | 防範作弊型硬編碼、偽造 PoC 或狀態污染 |
 
 ### 5.4 題目來源原則
 
@@ -472,7 +473,7 @@ BSC 上的實跑，包括三次門檻鑄造，用的是有資源上限的離線�
 
 | 風險 | 影響 | 機率 | 緩解 |
 |---|---|---|---|
-| Verifier 被繞過(偽造通過) | 🔴 毀滅性 | 中 | 差分四項檢查 + 公開紅隊挑戰 + 多節點重跑 *(未來)* |
+| Verifier 被繞過(偽造通過) | 🔴 毀滅性 | 中 | 差分五項檢查 + 公開紅隊挑戰 + 多節點重跑 *(未來)* |
 | 合約 / 後端漏洞 | 🔴 高 | 低 | 審計、賞金、暫停機制 |
 | 單一 signer 被盜 | 🔴 高 | 中 | KMS、多簽、角色拆分、輪換 |
 | 題目外洩 / 被背 | 🟠 中 | 中 | `variantgen`、斷路器、漏洞類型輪換 |
@@ -538,8 +539,8 @@ BSC 上的實跑，包括三次門檻鑄造，用的是有資源上限的離線�
 
 ```bash
 scripts/test_all.sh
-# 離線題庫，單一漏洞類型：
-See variantgen/README.md for the command that checks 20 fresh rewrites of one family.
+# 離線題庫，單一漏洞類型（詳見 variantgen/README.md 檢查單一類型 20 道新變體的指令）：
+PYTHONPATH=variantgen:verifier python -m variantgen verify --mother reentrancy --count 20
 ```
 
 評分過的 session 會寫下 `backend/evidence/<submissionHash>/manifest.json`（可用 `EVIDENCE_DIR` 改位置）。重算：
