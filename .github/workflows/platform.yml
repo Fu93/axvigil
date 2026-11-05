@@ -11,6 +11,7 @@ on:
       - 'backend/**'
       - 'agent/**'
       - 'contracts/**'
+      - 'scripts/verify_evidence.py'
       - 'SPEC.md'
       - '.github/workflows/platform.yml'
   pull_request:
@@ -22,6 +23,7 @@ on:
       - 'backend/**'
       - 'agent/**'
       - 'contracts/**'
+      - 'scripts/verify_evidence.py'
       - 'SPEC.md'
       - '.github/workflows/platform.yml'
 

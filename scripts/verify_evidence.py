@@ -42,7 +42,8 @@ from axvigil_backend.evidence import (  # noqa: E402
 
 
 def _grade(manifest: dict) -> dict:
-    from axvigil_verifier.grader import discover_solc, forge_executable, grade
+    from axvigil_verifier.grader import grade
+    from axvigil_verifier.toolchain import discover_solc, forge_executable
     from variantgen.render import Mother, render_challenge
 
     mother_dir = ROOT / "mothers" / manifest["motherId"]
@@ -63,7 +64,7 @@ def _grade(manifest: dict) -> dict:
             rendered,
             sub,
             forge_bin=forge_executable() or "forge",
-            solc_bin=discover_solc(),
+            solc=discover_solc(),
             seed=int(manifest["seed"]),
         )
         return {
