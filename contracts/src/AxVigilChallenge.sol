@@ -209,9 +209,10 @@ contract AxVigilChallenge is Ownable2Step, EIP712, ReentrancyGuard {
         r.agentId = agentId;
         r.vulnClass = vulnClass;
         try ICollectibleDifficulty(msg.sender).tokenData(tokenId) returns (ICollectibleDifficulty.TokenData memory td) {
-            r.difficulty = td.difficulty > 0 ? td.difficulty : 1;
+            if (td.difficulty >= 3) revert InvalidParams();
+            r.difficulty = td.difficulty;
         } catch {
-            r.difficulty = 1;
+            r.difficulty = 0;
         }
         r.submissionHash = submissionHash;
         r.operator = operator;

@@ -23,12 +23,12 @@ SHUF_SEP = "// @@SHUF@@"
 class Mother:
     def __init__(self, mother_dir: Path):
         self.dir = Path(mother_dir)
-        self.meta = json.loads((self.dir / "mother.json").read_text())
-        self.src_tmpl = (self.dir / "src.sol.tmpl").read_text()
-        self.hidden_tmpl = (self.dir / "hidden.t.sol.tmpl").read_text()
-        self.poc_tmpl = (self.dir / "poc.t.sol.tmpl").read_text()
+        self.meta = json.loads((self.dir / "mother.json").read_text(encoding="utf-8"))
+        self.src_tmpl = (self.dir / "src.sol.tmpl").read_text(encoding="utf-8")
+        self.hidden_tmpl = (self.dir / "hidden.t.sol.tmpl").read_text(encoding="utf-8")
+        self.poc_tmpl = (self.dir / "poc.t.sol.tmpl").read_text(encoding="utf-8")
         inv = self.dir / "invariant.t.sol.tmpl"
-        self.invariant_tmpl = inv.read_text() if inv.is_file() else None
+        self.invariant_tmpl = inv.read_text(encoding="utf-8") if inv.is_file() else None
 
     @property
     def mother_id(self) -> str:
@@ -118,12 +118,12 @@ def render_challenge(mother: Mother, seed: int, out_dir: Path) -> dict:
     (out_dir / "solution" / "patched").mkdir(parents=True, exist_ok=True)
     (out_dir / "solution" / "poc").mkdir(parents=True, exist_ok=True)
 
-    (out_dir / "src" / target_file).write_text(rendered_src)
-    (out_dir / "test" / "Hidden.t.sol").write_text(hidden)
-    (out_dir / "solution" / "patched" / target_file).write_text(patched_src)
-    (out_dir / "solution" / "poc" / "Poc.t.sol").write_text(poc)
+    (out_dir / "src" / target_file).write_text(rendered_src, encoding="utf-8")
+    (out_dir / "test" / "Hidden.t.sol").write_text(hidden, encoding="utf-8")
+    (out_dir / "solution" / "patched" / target_file).write_text(patched_src, encoding="utf-8")
+    (out_dir / "solution" / "poc" / "Poc.t.sol").write_text(poc, encoding="utf-8")
     if invariant is not None:
-        (out_dir / "test" / "Invariant.t.sol").write_text(invariant)
+        (out_dir / "test" / "Invariant.t.sol").write_text(invariant, encoding="utf-8")
 
     required = [ctx["ids"][s] for s in mother.meta.get("requiredFunctionSentinels", [])]
     challenge = {
@@ -145,5 +145,5 @@ def render_challenge(mother: Mother, seed: int, out_dir: Path) -> dict:
         challenge["invariantTests"] = "Invariant.t.sol"
     if mother.meta.get("track"):
         challenge["track"] = mother.meta["track"]
-    (out_dir / "challenge.json").write_text(json.dumps(challenge, indent=2))
+    (out_dir / "challenge.json").write_text(json.dumps(challenge, indent=2), encoding="utf-8")
     return challenge

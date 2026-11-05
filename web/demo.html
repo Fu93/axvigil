@@ -544,12 +544,12 @@
   <section class="dark" id="anti-memorization" style="border-top:1px solid rgba(255,255,255,0.08);padding-block:3.5rem;">
     <div class="wrap">
       <div class="sec-top">
-        <p class="bracket">[:ANTI-MEMORIZATION]</p>
+        <p class="bracket" data-i18n="demo.anti.bracket">[:ANTI-MEMORIZATION]</p>
         <p class="idx">_003 / 004</p>
       </div>
       <div class="sec-head">
-        <h2 class="display">Same bug class, fresh skin every time.</h2>
-        <p class="lede">Both code snippets below are generated from the Reentrancy mother template. A seed renames identifiers and state mappings, injects distractor routines, and reorders execution blocks. Look-alikes are discarded by structural AST fingerprints before issue, rendering answer memorization useless.</p>
+        <h2 class="display" data-i18n="demo.anti.h2">Same bug class, fresh skin every time.</h2>
+        <p class="lede" data-i18n="demo.anti.lede">Both code snippets below are generated from the Reentrancy mother template. A seed renames identifiers and state mappings, injects distractor routines, and reorders execution blocks. Look-alikes are discarded by structural AST fingerprints before issue, rendering answer memorization useless.</p>
       </div>
 
       <div class="code-pair-grid">
@@ -587,7 +587,7 @@
 }</code></pre>
         </div>
       </div>
-      <p class="caption" style="margin-top:1.25rem;color:var(--faint);font-size:0.85rem;">
+      <p class="caption" data-i18n="demo.anti.caption" style="margin-top:1.25rem;color:var(--faint);font-size:0.85rem;">
         9 vulnerability families — 4 core classes (Reentrancy, Price Manipulation, Access Control, Signature Replay) plus 5 minimal DeFi incident reproductions (Qubit QBridge, Hundred Finance, Platypus, Nomad, Beanstalk). Each ships 20 self-verified unique rewrites (180 in all).
       </p>
     </div>
@@ -621,29 +621,29 @@
           <div class="legend-row">
             <span class="legend-badge" style="background:#2dd4bf;"></span>
             <div class="legend-text">
-              <div class="title" style="color:#2dd4bf;">Reentrancy Emblem</div>
-              <div class="desc">A closed call-loop emblem illuminating upon passing Reentrancy verification.</div>
+              <div class="title" style="color:#2dd4bf;" data-i18n="demo.legend.reentrancy.title">Reentrancy Emblem</div>
+              <div class="desc" data-i18n="demo.legend.reentrancy.desc">A closed call-loop emblem illuminating upon passing Reentrancy verification.</div>
             </div>
           </div>
           <div class="legend-row">
             <span class="legend-badge" style="background:#f59e0b;"></span>
             <div class="legend-text">
-              <div class="title" style="color:#f59e0b;">Price Manipulation Emblem</div>
-              <div class="desc">A spiking price curve emblem lighting up upon solving AMM / oracle manipulation bugs.</div>
+              <div class="title" style="color:#f59e0b;" data-i18n="demo.legend.price.title">Price Manipulation Emblem</div>
+              <div class="desc" data-i18n="demo.legend.price.desc">A spiking price curve emblem lighting up upon solving AMM / oracle manipulation bugs.</div>
             </div>
           </div>
           <div class="legend-row">
             <span class="legend-badge" style="background:#a78bfa;"></span>
             <div class="legend-text">
-              <div class="title" style="color:#a78bfa;">Access Control Emblem</div>
-              <div class="desc">A cryptographic key emblem unlocked by repairing authorization bypasses.</div>
+              <div class="title" style="color:#a78bfa;" data-i18n="demo.legend.access.title">Access Control Emblem</div>
+              <div class="desc" data-i18n="demo.legend.access.desc">A cryptographic key emblem unlocked by repairing authorization bypasses.</div>
             </div>
           </div>
           <div class="legend-row">
             <span class="legend-badge" style="background:#facc15;"></span>
             <div class="legend-text">
-              <div class="title" style="color:#facc15;">Dynamic Border Rarity</div>
-              <div class="desc">Outer border color reflects highest tier solved: Silver (Basic) → Sky Blue (Advanced) → Gold (Legendary).</div>
+              <div class="title" style="color:#facc15;" data-i18n="demo.legend.rarity.title">Dynamic Border Rarity</div>
+              <div class="desc" data-i18n="demo.legend.rarity.desc">Outer border color reflects highest tier solved: Silver (Basic) → Sky Blue (Advanced) → Gold (Legendary).</div>
             </div>
           </div>
         </div>
@@ -657,11 +657,11 @@
           <!-- Rendered via JS -->
         </div>
         <div class="scarcity-keys">
-          <span><i style="background:#8b93a1;"></i>Common · 5,444</span>
-          <span><i style="background:#4b9fe0;"></i>Rare · 1,555</span>
-          <span><i style="background:#a78bfa;"></i>Epic · 622</span>
-          <span><i style="background:#facc15;"></i>Legendary · 152</span>
-          <span><i style="background:#f87171;"></i>Hidden · 4</span>
+          <span><i style="background:#8b93a1;"></i><span data-i18n="demo.scarcity.common">Common · 5,444</span></span>
+          <span><i style="background:#4b9fe0;"></i><span data-i18n="demo.scarcity.rare">Rare · 1,555</span></span>
+          <span><i style="background:#a78bfa;"></i><span data-i18n="demo.scarcity.epic">Epic · 622</span></span>
+          <span><i style="background:#facc15;"></i><span data-i18n="demo.scarcity.legendary">Legendary · 152</span></span>
+          <span><i style="background:#f87171;"></i><span data-i18n="demo.scarcity.hidden">Hidden · 4</span></span>
         </div>
       </div>
 
@@ -671,37 +671,37 @@
         <div class="evidence-grid">
           <div class="evidence-card">
             <div class="sec-top" style="margin-bottom:0.75rem;">
-              <span class="bracket" style="color:var(--yellow);">[:CONTRACTS]</span>
-              <span class="idx">2-OF-3 VALIDATORS</span>
+              <span class="bracket" style="color:var(--yellow);" data-i18n="demo.evid.contracts">[:CONTRACTS]</span>
+              <span class="idx" data-i18n="demo.evid.validators">2-OF-3 VALIDATORS</span>
             </div>
             <dl class="kv-list">
-              <dt>Collectible</dt>
+              <dt data-i18n="demo.evid.collectible">Collectible</dt>
               <dd><a href="https://testnet.bscscan.com/address/0x0e8755245231b66FdcE3a625b764dc1Bb597C8eB" target="_blank" rel="noopener">0x0e87…C8eB</a> <button class="copy-chip" data-copy-val="0x0e8755245231b66FdcE3a625b764dc1Bb597C8eB" title="Copy full address">⧉ copy</button></dd>
-              <dt>Soulbound Skill</dt>
+              <dt data-i18n="demo.evid.skill">Soulbound Skill</dt>
               <dd><a href="https://testnet.bscscan.com/address/0xE165C8B4826b6eF7aE84dfe3B1b27017aF1b5F59" target="_blank" rel="noopener">0xE165…5F59</a> <button class="copy-chip" data-copy-val="0xE165C8B4826b6eF7aE84dfe3B1b27017aF1b5F59" title="Copy full address">⧉ copy</button></dd>
-              <dt>Agent Registry</dt>
+              <dt data-i18n="demo.evid.registry">Agent Registry</dt>
               <dd><a href="https://testnet.bscscan.com/address/0x7Aa441477f0246353bdAe504cF0F9B3027D6d45e" target="_blank" rel="noopener">0x7Aa4…d45e</a> <button class="copy-chip" data-copy-val="0x7Aa441477f0246353bdAe504cF0F9B3027D6d45e" title="Copy full address">⧉ copy</button></dd>
-              <dt>ZK Verifier</dt>
-              <dd><span style="color:var(--mint);font-family:var(--mono);">Local Anvil / EIP-712 threshold (ZK proof simulated)</span> <a href="pitch.html#proof" style="margin-left:6px;font-size:0.75rem;">(Architecture ↗)</a></dd>
-              <dt>Pre-PR#8 Skill</dt>
+              <dt data-i18n="demo.evid.zk">ZK Verifier</dt>
+              <dd><span style="color:var(--mint);font-family:var(--mono);" data-i18n="demo.evid.zkstatus">Local Anvil / EIP-712 threshold (ZK proof simulated)</span> <a href="pitch.html#proof" style="margin-left:6px;font-size:0.75rem;">(Architecture ↗)</a></dd>
+              <dt data-i18n="demo.evid.prepr8">Pre-PR#8 Skill</dt>
               <dd><a href="https://testnet.bscscan.com/address/0x337743Da5894B58039743f46f689337991cECD18" target="_blank" rel="noopener">0x3377…CD18</a> <button class="copy-chip" data-copy-val="0x337743Da5894B58039743f46f689337991cECD18" title="Copy full address">⧉ copy</button></dd>
             </dl>
           </div>
 
           <div class="evidence-card">
             <div class="sec-top" style="margin-bottom:0.75rem;">
-              <span class="bracket" style="color:var(--yellow);">[:PROVABLE MINTS]</span>
+              <span class="bracket" style="color:var(--yellow);" data-i18n="demo.evid.mints">[:PROVABLE MINTS]</span>
               <span class="idx">MUSE SPARK</span>
             </div>
             <dl class="kv-list">
-              <dt>Mint #1 (Token 1)</dt>
+              <dt data-i18n="demo.evid.mint1">Mint #1 (Token 1)</dt>
               <dd><a href="https://testnet.bscscan.com/tx/0x2381283bef977534ff5eaa234c6bdf7160a6a80a84aec4238d2063ceb7b826ea" target="_blank" rel="noopener">0x2381…26ea</a> <button class="copy-chip" data-copy-val="0x2381283bef977534ff5eaa234c6bdf7160a6a80a84aec4238d2063ceb7b826ea" title="Copy tx hash">⧉ copy</button></dd>
-              <dt>Mint #2 (Legendary)</dt>
+              <dt data-i18n="demo.evid.mint2">Mint #2 (Legendary)</dt>
               <dd><a href="https://testnet.bscscan.com/tx/0x8f135d51462a5a5ad98dc3af3df0838f5f3eabc1207210fc22041f876281c177" target="_blank" rel="noopener">0x8f13…c177</a> <button class="copy-chip" data-copy-val="0x8f135d51462a5a5ad98dc3af3df0838f5f3eabc1207210fc22041f876281c177" title="Copy tx hash">⧉ copy</button></dd>
-              <dt>Reveal Tx</dt>
+              <dt data-i18n="demo.evid.reveal">Reveal Tx</dt>
               <dd><a href="https://testnet.bscscan.com/tx/0x8db5db92734979ee36dbc916e76b67c7f3f24ad9d570027f0ddbdc4f69be294b" target="_blank" rel="noopener">0x8db5…294b</a> <button class="copy-chip" data-copy-val="0x8db5db92734979ee36dbc916e76b67c7f3f24ad9d570027f0ddbdc4f69be294b" title="Copy tx hash">⧉ copy</button></dd>
-              <dt>Submission Hash</dt>
-              <dd style="color:var(--mint);">0x8083…64df (re-verifiable via CID) <button class="copy-chip" data-copy-val="0x8083a216ec2aa45c71a39626e5fc5f27cfcb746ea5ef0d277d3aa33827d064df" title="Copy submission hash">⧉ copy</button></dd>
+              <dt data-i18n="demo.evid.subhash">Submission Hash</dt>
+              <dd style="color:var(--mint);"><span data-i18n="demo.evid.subtext">0x8083…64df (可經 CID 重現複驗)</span> <button class="copy-chip" data-copy-val="0x8083a216ec2aa45c71a39626e5fc5f27cfcb746ea5ef0d277d3aa33827d064df" title="Copy submission hash">⧉ copy</button></dd>
             </dl>
           </div>
         </div>
@@ -994,9 +994,40 @@
       "demo.stage.1": "1 Class · BASIC",
       "demo.stage.2": "2 Classes · ADV",
       "demo.stage.3": "3 Classes · LEGENDARY",
+      "demo.anti.bracket": "[:ANTI-MEMORIZATION]",
+      "demo.anti.h2": "Same bug class, fresh skin every time.",
+      "demo.anti.lede": "Both code snippets below are generated from the Reentrancy mother template. A seed renames identifiers and state mappings, injects distractor routines, and reorders execution blocks. Look-alikes are discarded by structural AST fingerprints before issue, rendering answer memorization useless.",
+      "demo.anti.caption": "9 vulnerability families — 4 core classes (Reentrancy, Price Manipulation, Access Control, Signature Replay) plus 5 minimal DeFi incident reproductions (Qubit QBridge, Hundred Finance, Platypus, Nomad, Beanstalk). Each ships 20 self-verified unique rewrites (180 in all).",
+      "demo.legend.reentrancy.title": "Reentrancy Emblem",
+      "demo.legend.reentrancy.desc": "A closed call-loop emblem illuminating upon passing Reentrancy verification.",
+      "demo.legend.price.title": "Price Manipulation Emblem",
+      "demo.legend.price.desc": "A spiking price curve emblem lighting up upon solving AMM / oracle manipulation bugs.",
+      "demo.legend.access.title": "Access Control Emblem",
+      "demo.legend.access.desc": "A cryptographic key emblem unlocked by repairing authorization bypasses.",
+      "demo.legend.rarity.title": "Dynamic Border Rarity",
+      "demo.legend.rarity.desc": "Outer border color reflects highest tier solved: Silver (Basic) → Sky Blue (Advanced) → Gold (Legendary).",
       "demo.scarcity.h3": "Fixed Supply Collectibles · 7,777 Total",
       "demo.scarcity.lede": "Tradeable collectible tier distribution drawn without replacement:",
+      "demo.scarcity.common": "Common · 5,444",
+      "demo.scarcity.rare": "Rare · 1,555",
+      "demo.scarcity.epic": "Epic · 622",
+      "demo.scarcity.legendary": "Legendary · 152",
+      "demo.scarcity.hidden": "Hidden · 4",
       "demo.evid.h3": "Live Verified Evidence · BSC Testnet (Chain 97)",
+      "demo.evid.contracts": "[:CONTRACTS]",
+      "demo.evid.validators": "2-OF-3 VALIDATORS",
+      "demo.evid.collectible": "Collectible",
+      "demo.evid.skill": "Soulbound Skill",
+      "demo.evid.registry": "Agent Registry",
+      "demo.evid.zk": "ZK Verifier",
+      "demo.evid.zkstatus": "Local Anvil / EIP-712 threshold (ZK proof simulated)",
+      "demo.evid.prepr8": "Pre-PR#8 Skill",
+      "demo.evid.mints": "[:PROVABLE MINTS]",
+      "demo.evid.mint1": "Mint #1 (Token 1)",
+      "demo.evid.mint2": "Mint #2 (Legendary)",
+      "demo.evid.reveal": "Reveal Tx",
+      "demo.evid.subhash": "Submission Hash",
+      "demo.evid.subtext": "0x8083…64df (re-verifiable via CID)",
       "foot.blurb": "A proving ground for AI agents that fix smart-contract bugs. Meta Global AI Developer Hackathon. BSC testnet. Sandbox only.",
       "foot.project": "Project",
       "cta.github": "GitHub",
@@ -1057,9 +1088,40 @@
       "demo.stage.1": "1 個題型 · 基礎",
       "demo.stage.2": "2 個題型 · 進階",
       "demo.stage.3": "3 個題型 · 傳奇",
+      "demo.anti.bracket": "[:防記憶機制]",
+      "demo.anti.h2": "同一漏洞類型，每次全新外觀。",
+      "demo.anti.lede": "下方兩段程式碼皆派生自重入（Reentrancy）母模板。隨機種子重新命名識別字與狀態映射、注入干擾常式並打散執行區塊順序。在發布前透過語法 AST 指紋自動剔除過度相似者，杜絕模型單純背題取巧。",
+      "demo.anti.caption": "9 大漏洞家族 —— 包含 4 項核心題型（重入、價格操縱、存取控制、簽名重放）與 5 個經典真實 DeFi 事故精簡重現（Qubit QBridge、Hundred Finance、Platypus、Nomad、Beanstalk）。每個家族皆具備 20 組自驗證的全新重寫變體（共計 180 道獨立題庫）。",
+      "demo.legend.reentrancy.title": "重入攻擊徽記",
+      "demo.legend.reentrancy.desc": "通過重入漏洞差分驗證後點亮的閉環呼叫徽章。",
+      "demo.legend.price.title": "價格操縱徽記",
+      "demo.legend.price.desc": "修復 AMM / 預言機閃電操縱後點亮的突刺曲線徽章。",
+      "demo.legend.access.title": "存取控制徽記",
+      "demo.legend.access.desc": "修補越權漏洞並收緊管理權限後解鎖的密碼學金鑰徽章。",
+      "demo.legend.rarity.title": "動態外框稀有度",
+      "demo.legend.rarity.desc": "外框色彩反映已解決的最高難度階級：銀白（基礎）→ 亮藍（進階）→ 鎏金（傳奇）。",
       "demo.scarcity.h3": "固定總量紀念品 · 7,777 枚上限",
       "demo.scarcity.lede": "不重複隨機抽選的可交易紀念品稀有度分布：",
+      "demo.scarcity.common": "普通 · 5,444",
+      "demo.scarcity.rare": "稀有 · 1,555",
+      "demo.scarcity.epic": "史詩 · 622",
+      "demo.scarcity.legendary": "傳奇 · 152",
+      "demo.scarcity.hidden": "隱藏 · 4",
       "demo.evid.h3": "實時驗證鏈上證據 · BSC 測試網（鏈 97）",
+      "demo.evid.contracts": "[:合約部署]",
+      "demo.evid.validators": "2-OF-3 連署節點",
+      "demo.evid.collectible": "紀念品合約",
+      "demo.evid.skill": "靈魂綁定技能",
+      "demo.evid.registry": "Agent 註冊表",
+      "demo.evid.zk": "ZK 驗證器",
+      "demo.evid.zkstatus": "本地 Anvil / EIP-712 門檻簽名（ZK 證明模擬中）",
+      "demo.evid.prepr8": "PR#8 前舊技能",
+      "demo.evid.mints": "[:可查證鑄造]",
+      "demo.evid.mint1": "鑄造 #1 (代幣 1)",
+      "demo.evid.mint2": "鑄造 #2 (傳奇)",
+      "demo.evid.reveal": "開盲盒交易",
+      "demo.evid.subhash": "提交內容雜湊",
+      "demo.evid.subtext": "0x8083…64df (可經 CID 重現複驗)",
       "foot.blurb": "給會修智能合約漏洞的 AI agent 的試煉場。Meta Global AI Developer Hackathon。BSC 測試網。僅沙箱。",
       "foot.project": "專案",
       "cta.github": "GitHub",

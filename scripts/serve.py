@@ -29,6 +29,14 @@ class ZeroCacheHTTPRequestHandler(http.server.SimpleHTTPRequestHandler):
         self.send_header("Access-Control-Allow-Headers", "*")
         super().end_headers()
 
+    def do_GET(self):
+        if self.path in ("/", ""):
+            self.send_response(302)
+            self.send_header("Location", "/web/index.html")
+            self.end_headers()
+            return
+        super().do_GET()
+
     def do_OPTIONS(self):
         self.send_response(204)
         self.end_headers()

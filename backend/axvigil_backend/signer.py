@@ -35,10 +35,14 @@ MINT_AUTH_TYPES = _MINT_TYPES
 _VERDICT_TYPES = {
     "ChallengeVerdict": [
         {"name": "tokenId", "type": "uint256"},
+        {"name": "round", "type": "uint256"},
+        {"name": "challenger", "type": "address"},
+        {"name": "evidenceHash", "type": "bytes32"},
         {"name": "upheld", "type": "bool"},
         {"name": "reasonHash", "type": "bytes32"},
     ]
 }
+VERDICT_TYPES = _VERDICT_TYPES
 DOMAIN_NAME = "AxVigil"
 DOMAIN_VERSION = "1"
 
@@ -154,16 +158,31 @@ class AuthSigner:
         out["submissionHash"] = message["submissionHash"] if str(message["submissionHash"]).startswith("0x") else "0x" + message["submissionHash"]
         return SignedAuth("mint", out, sig, self.address, digest)
 
-    def sign_verdict(self, *, token_id: int, upheld: bool, reason_hash: str) -> SignedAuth:
+    def sign_verdict(
+        self,
+        *,
+        token_id: int,
+        round_num: int = 1,
+        challenger: str = "0x0000000000000000000000000000000000000000",
+        evidence_hash: str = "0x" + "00" * 32,
+        upheld: bool,
+        reason_hash: str,
+    ) -> SignedAuth:
         """Sign ChallengeVerdict for the challenge book (this signer's verifying contract)."""
         msg = {
             "tokenId": int(token_id),
+            "round": int(round_num),
+            "challenger": to_checksum_address(challenger),
+            "evidenceHash": _b32(evidence_hash),
             "upheld": bool(upheld),
             "reasonHash": _b32(reason_hash),
         }
         sig, digest = self._sign(_VERDICT_TYPES, msg)
         out = {
             "tokenId": int(token_id),
+            "round": int(round_num),
+            "challenger": to_checksum_address(challenger),
+            "evidenceHash": evidence_hash if str(evidence_hash).startswith("0x") else "0x" + evidence_hash,
             "upheld": bool(upheld),
             "reasonHash": reason_hash if str(reason_hash).startswith("0x") else "0x" + reason_hash,
         }

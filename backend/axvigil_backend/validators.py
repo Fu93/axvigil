@@ -78,7 +78,15 @@ class LocalValidator:
         signed = AuthSigner(self.private_key, self.chain_id, self.verifying_contract).sign_prepared_mint(auth)
         return {"signer": signed.signer, "signature": signed.signature, "digest": signed.digest}
 
-    def consider_challenge(self, token_id: int, manifest: dict, grade_fn, evidence: bytes) -> dict:
+    def consider_challenge(
+        self,
+        token_id: int,
+        manifest: dict,
+        grade_fn,
+        evidence: bytes,
+        round_num: int = 1,
+        challenger: str = "0x0000000000000000000000000000000000000000",
+    ) -> dict:
         """Re-grade `manifest` and sign ChallengeVerdict. Does not trust a claimed pass bit.
 
         `evidence` must be the exact bytes the challenger will pass to `challenge`.
@@ -98,8 +106,14 @@ class LocalValidator:
         reason = str(result.get("reason") or ("regrade-passed" if passed else "regrade-failed"))
         upheld = not passed
         reason_hash = verdict_reason_hash(evidence, reason)
+        evidence_hash = "0x" + keccak(evidence).hex()
         signed = AuthSigner(self.private_key, self.chain_id, self.challenge_contract).sign_verdict(
-            token_id=int(token_id), upheld=upheld, reason_hash=reason_hash
+            token_id=int(token_id),
+            round_num=int(round_num),
+            challenger=challenger,
+            evidence_hash=evidence_hash,
+            upheld=upheld,
+            reason_hash=reason_hash,
         )
         return {
             "signer": signed.signer,
@@ -109,7 +123,7 @@ class LocalValidator:
             "reasonHash": reason_hash,
             "passed": passed,
             "reason": reason,
-            "evidenceHash": "0x" + keccak(evidence).hex(),
+            "evidenceHash": evidence_hash,
         }
 
 

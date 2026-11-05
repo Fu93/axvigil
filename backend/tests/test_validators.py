@@ -16,7 +16,7 @@ from eth_account.messages import encode_typed_data
 from eth_utils import to_checksum_address
 
 from axvigil_backend.evidence import canonical_json, recompute_submission_hash
-from axvigil_backend.signer import DOMAIN_NAME, DOMAIN_VERSION
+from axvigil_backend.signer import DOMAIN_NAME, DOMAIN_VERSION, VERDICT_TYPES
 from axvigil_backend.validators import (
     GradeRefused,
     LocalValidator,
@@ -115,15 +115,12 @@ def test_failing_regrade_is_upheld_and_recovers():
                 "chainId": 97,
                 "verifyingContract": BOOK,
             },
-            {
-                "ChallengeVerdict": [
-                    {"name": "tokenId", "type": "uint256"},
-                    {"name": "upheld", "type": "bool"},
-                    {"name": "reasonHash", "type": "bytes32"},
-                ]
-            },
+            VERDICT_TYPES,
             {
                 "tokenId": 7,
+                "round": 1,
+                "challenger": "0x0000000000000000000000000000000000000000",
+                "evidenceHash": bytes.fromhex(out["evidenceHash"][2:]),
                 "upheld": True,
                 "reasonHash": bytes.fromhex(out["reasonHash"][2:]),
             },

@@ -920,12 +920,24 @@
         if (f === "pocFailsAfterPatch") return currentLang === "zh-TW" ? "修復後 PoC 仍然可被攻擊" : "PoC still exploited contract after patch";
         if (f === "hiddenTestsPass") return currentLang === "zh-TW" ? "破壞隱藏功能測試" : "Regression/hidden unit tests failed";
         if (f === "patchWithinLimits") return currentLang === "zh-TW" ? "修補超出行數或大小上限" : "Patch size exceeded bounds";
+        if (f === "no patch submitted") return currentLang === "zh-TW" ? "未提交修補" : "No patch submitted";
         return f;
       }).join("; ");
 
+      var badgeText = failList.map(function (f) {
+        if (currentLang === "zh-TW") {
+          if (f === "no patch submitted") return "未提交修補";
+          if (f === "pocProvesBug") return "PoC失效";
+          if (f === "pocFailsAfterPatch") return "修補未防禦";
+          if (f === "hiddenTestsPass") return "功能迴歸";
+          if (f === "patchWithinLimits") return "超出範圍";
+        }
+        return f;
+      }).join(", ") || (currentLang === "zh-TW" ? "失敗" : "fail");
+
       var resBadge = run.pass
         ? "<span class=\"badge-pass\" title=\"" + (currentLang === "zh-TW" ? "所有 5 重確定性檢查皆通過" : "All 5 differential checks satisfied") + "\">✓ PASS</span>"
-        : "<span class=\"badge-fail\" title=\"" + esc(failDesc || (currentLang === "zh-TW" ? "檢查未通過" : "Check failed")) + "\">✕ " + esc(failList.join(", ") || "fail") + "</span>";
+        : "<span class=\"badge-fail\" title=\"" + esc(failDesc || (currentLang === "zh-TW" ? "檢查未通過" : "Check failed")) + "\">✕ " + esc(badgeText) + "</span>";
 
       var pTokens = (run.tokens && run.tokens.prompt != null) ? run.tokens.prompt.toLocaleString("en-US") : "0";
       var cTokens = (run.tokens && run.tokens.completion != null) ? run.tokens.completion.toLocaleString("en-US") : "0";

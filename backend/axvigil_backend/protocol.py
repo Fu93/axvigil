@@ -124,7 +124,7 @@ class Platform:
         for _ in range(12):
             seed = secrets.randbelow(1 << 31)
             out, meta = self._render(mother, seed)
-            source = (out / "src" / meta["targetFile"]).read_text()
+            source = (out / "src" / meta["targetFile"]).read_text(encoding="utf-8")
             fp = fingerprint(source)
             if fp in seen:
                 continue
@@ -157,7 +157,7 @@ class Platform:
         if not (out / "challenge.json").is_file():
             render_challenge(mother, seed, out)
         import json
-        meta = json.loads((out / "challenge.json").read_text())
+        meta = json.loads((out / "challenge.json").read_text(encoding="utf-8"))
         return out, meta
 
     def ownership_mode(self) -> str:
@@ -278,8 +278,8 @@ class Platform:
         sess = self._owned_session(session_id, address)
         out = self.s.challenge_cache_dir / sess["challenge_id"]
         import json
-        meta = json.loads((out / "challenge.json").read_text())
-        source = (out / "src" / meta["targetFile"]).read_text()
+        meta = json.loads((out / "challenge.json").read_text(encoding="utf-8"))
+        source = (out / "src" / meta["targetFile"]).read_text(encoding="utf-8")
         frags = _fragments(source)
         if index < 0 or index >= len(frags):
             raise ProtocolError(416, f"fragment {index} out of range (0..{len(frags)-1})")
@@ -327,15 +327,15 @@ class Platform:
         from axvigil_verifier.grader import grade
         out = self.s.challenge_cache_dir / sess["challenge_id"]
         import json
-        meta = json.loads((out / "challenge.json").read_text())
+        meta = json.loads((out / "challenge.json").read_text(encoding="utf-8"))
         target = meta["targetFile"]
 
         tmp = Path(self.s.challenge_cache_dir) / f"_sub-{session_id}"
         try:
             (tmp / "patched").mkdir(parents=True, exist_ok=True)
             (tmp / "poc").mkdir(parents=True, exist_ok=True)
-            (tmp / "patched" / target).write_text(patch)
-            (tmp / "poc" / "Poc.t.sol").write_text(poc)
+            (tmp / "patched" / target).write_text(patch, encoding="utf-8")
+            (tmp / "poc" / "Poc.t.sol").write_text(poc, encoding="utf-8")
             res = grade(out, tmp, seed=sess["seed"], forge_bin=self.s.forge_bin,
                         solc=self.s.solc_bin, timeout_s=self.s.grade_timeout_s)
         except Exception:
@@ -380,7 +380,7 @@ class Platform:
             })
         result = redact_public_grade(res.to_json(), public_challenge_id(session_id))
         result["solveSeconds"] = solve_seconds
-        source = (out / "src" / target).read_text()
+        source = (out / "src" / target).read_text(encoding="utf-8")
         payload = res.to_json() if hasattr(res, "to_json") else {}
         log = getattr(res, "log", None) or payload.get("log") or ""
         evidence = self._write_evidence(
@@ -564,9 +564,9 @@ class Platform:
         if not cid_path.is_file() or not manifest_path.is_file():
             return {}
         import json
-        manifest = json.loads(manifest_path.read_text())
+        manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
         return {
-            "evidenceCid": cid_path.read_text().strip(),
+            "evidenceCid": cid_path.read_text(encoding="utf-8").strip(),
             "seedCommitment": manifest.get("seedCommitment"),
         }
 

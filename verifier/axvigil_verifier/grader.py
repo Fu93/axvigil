@@ -67,11 +67,11 @@ class ChallengeError(Exception):
 def _read(p: Path) -> str:
     if not p.is_file():
         raise ChallengeError(f"missing file: {p}")
-    return p.read_text()
+    return p.read_text(encoding="utf-8")
 
 
 def _load_sources(src_dir: Path) -> dict[str, str]:
-    return {p.name: p.read_text() for p in sorted(src_dir.glob("*.sol"))}
+    return {p.name: p.read_text(encoding="utf-8") for p in sorted(src_dir.glob("*.sol"))}
 
 
 def _changed_lines(a: str, b: str) -> int:
@@ -99,6 +99,24 @@ def _interface_preserved(patched: str, contract_name: str, required_selectors: l
     return (not missing, missing)
 
 
+def check_patch_cheatcodes(patched_sources: dict[str, str]) -> tuple[bool, str | None]:
+    """Ensure production patch does not import test frameworks or invoke cheatcodes."""
+    banned = [
+        (r"import\s+[^;]*forge-std/(?:Test|Vm|console)\.sol", "Foundry test library import in production patch"),
+        (r"0x7109709ECfa91a80626fF3989D68f67F5b1DD12D", "Foundry cheatcode address in production patch"),
+        (r"\bHEVM_ADDRESS\b", "HEVM_ADDRESS cheatcode reference in production patch"),
+        (r"\bvm\s*\.\s*(?:warp|roll|prank|deal|expectRevert|store|load|mockCall)\b", "Cheatcode invocation in production patch"),
+    ]
+    for filename, code in patched_sources.items():
+        clean = re.sub(r'("(?:\\[\s\S]|[^"\\])*"|\'(?:\\[\s\S]|[^\'\\])*\')', '""', code)
+        clean = re.sub(r"//.*$", "", clean, flags=re.MULTILINE)
+        clean = re.sub(r"/\*.*?\*/", "", clean, flags=re.DOTALL)
+        for pattern, desc in banned:
+            if re.search(pattern, clean, re.IGNORECASE):
+                return False, f"Illegal patch rejected: contains '{desc}' in {filename}"
+    return True, None
+
+
 def check_poc_decoy_probes(poc_text: str) -> tuple[bool, str | None]:
     """Detect whether a submitted PoC attempts anti-cheat bypass via EVM bytecode introspection.
 
@@ -112,7 +130,7 @@ def check_poc_decoy_probes(poc_text: str) -> tuple[bool, str | None]:
 
     suspicious_patterns = [
         (r"\.\s*code\s*\.\s*length\b", "bytecode length inspection (.code.length)"),
-        (r"(?:\baddress\s*\([^)]+\)|\bthis|\btarget|\bvictim|\bvuln)\s*\.\s*code\b", "bytecode inspection (.code)"),
+        (r"(?:\baddress\s*\([^)]+\)|\bthis|\btarget|\bvictim|\bvuln|\bcontract|\binstance|\bsubject)\s*\.\s*code\b", "bytecode inspection (.code)"),
         (r"\bextcodesize\b", "assembly extcodesize inspection"),
         (r"\bextcodehash\b", "assembly extcodehash inspection"),
         (r"\bextcodecopy\b", "assembly extcodecopy inspection"),
@@ -164,7 +182,7 @@ def grade(
     if not poc_files:
         raise ChallengeError("submission has no poc/*.t.sol")
     poc_name = poc_files[0].name
-    poc_text = poc_files[0].read_text()
+    poc_text = poc_files[0].read_text(encoding="utf-8")
 
     patched_sources = dict(original_sources)
     patched_sources[target_file] = patched_target
@@ -273,6 +291,23 @@ def grade(
                         log.append(f"pocFailsAfterPatch: excessive gas consumed before failure ({g_used:,} gas in {test_name})")
                         break
 
+        # Ground-Truth PoC validation: If challenge contains solution/poc/Poc.t.sol,
+        # the patch MUST also neutralize the reference exploit (anti-collusion guard).
+        ref_poc_path = challenge_dir / "solution" / "poc" / "Poc.t.sol"
+        if poc_fails_after_patch and ref_poc_path.is_file():
+            ref_poc_text = _read(ref_poc_path)
+            ref_poc_name = "RefPoc.t.sol"
+            r_ref = _run(
+                "refPocFailsAfterPatch",
+                patched_sources,
+                {ref_poc_name: ref_poc_text},
+                f"test/{ref_poc_name}",
+                inspect_contract=contract_name,
+            )
+            if r_ref.compiled and not r_ref.timed_out and bool(r_ref.tests) and r_ref.any_passed:
+                poc_fails_after_patch = False
+                log.append("pocFailsAfterPatch: patch failed to neutralize reference exploit (collusion defense)")
+
     # 3. Hidden functional tests pass on the PATCHED contract.
     r3 = _run("hiddenTestsPass", patched_sources, {hidden_name: hidden_test}, f"test/{hidden_name}")
     hidden_tests_pass = r3.all_passed
@@ -310,13 +345,15 @@ def grade(
             storage_ok = False
             storage_violations.append("checkStorageLayout enabled but storage layout could not be determined")
 
-    patch_within_limits = within_lines and within_bytes and iface_ok and storage_ok
+    cheatcode_ok, cheatcode_err = check_patch_cheatcodes(patched_sources)
+    patch_within_limits = within_lines and within_bytes and iface_ok and storage_ok and cheatcode_ok
     storage_note = ""
     if r1.storage_layout is not None or meta.get("checkStorageLayout", False):
         storage_note = f" storage={'ok' if storage_ok else 'CORRUPTED ' + '; '.join(storage_violations)}"
+    cheatcode_note = f" cheatcode={'ok' if cheatcode_ok else 'VIOLATION: ' + str(cheatcode_err)}"
     log.append(
         f"patchWithinLimits: changedLines={changed}/{max_changed} bytes={nbytes}/{max_bytes} "
-        f"interface={'ok' if iface_ok else 'MISSING ' + ','.join(missing)}{storage_note}"
+        f"interface={'ok' if iface_ok else 'MISSING ' + ','.join(missing)}{storage_note}{cheatcode_note}"
     )
 
     # 5. Fuzz + invariant tests on the PATCHED contract, at the pinned schedule.

@@ -796,7 +796,7 @@ footer { padding: 48px 0 32px; }
 @keyframes axv-travel { from { transform: translateX(-130%); } to { transform: translateX(480%); } }
 
 @media (max-width: 1100px) {
-  .nav-bar { position: relative; }
+  .nav-bar { position: relative; clip-path: none !important; }
   .nav-toggle { display: inline-flex; align-items: center; justify-content: center; }
   .nav-links {
     display: none;

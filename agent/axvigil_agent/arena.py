@@ -83,7 +83,7 @@ import os
 import tempfile
 import threading
 import time
-from concurrent.futures import ThreadPoolExecutor
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from pathlib import Path
@@ -654,7 +654,7 @@ def run_arena(
     else:
         with ThreadPoolExecutor(max_workers=concurrency) as pool:
             futures = [pool.submit(worker, task) for task in pending]
-            for future in futures:
+            for future in as_completed(futures):
                 store(future.result())
 
     if not fresh and kept:
@@ -671,7 +671,7 @@ def _load_completed(path: Path) -> dict[str, dict]:
     if not path.is_file():
         return {}
     try:
-        data = json.loads(path.read_text())
+        data = json.loads(path.read_text(encoding="utf-8"))
     except (OSError, json.JSONDecodeError):
         return {}
     kept = {}
@@ -762,9 +762,9 @@ def _run_cell(
         with tempfile.TemporaryDirectory(prefix="axv-arena-") as tmp:
             render(task.mother, task.seed, Path(tmp))
             challenge_dir = Path(tmp)
-            meta = json.loads((challenge_dir / "challenge.json").read_text())
+            meta = json.loads((challenge_dir / "challenge.json").read_text(encoding="utf-8"))
             target = meta["targetFile"]
-            original = (challenge_dir / "src" / target).read_text()
+            original = (challenge_dir / "src" / target).read_text(encoding="utf-8")
             solved, winner, cut_short, last_patch, attempts, failed, challenge_id, evidence, attempt_checks = _solve_contestant(
                 task.contestant,
                 challenge_dir,
@@ -825,12 +825,12 @@ def _run_agentic_member(
         token_budget=token_budget, forge_runner=forge_runner,
         forge_bin=forge_bin, solc=solc, forge_timeout_s=timeout_s,
     )
-    meta = json.loads((Path(challenge_dir) / "challenge.json").read_text())
+    meta = json.loads((Path(challenge_dir) / "challenge.json").read_text(encoding="utf-8"))
     evidence = result.evidence(tool_protocol)
     cut = result.stop_reason == "request_cap"
     if emit:
         emit(f"[agentic] stop={result.stop_reason} steps={result.steps}")
-    original = (Path(challenge_dir) / "src" / meta["targetFile"]).read_text()
+    original = (Path(challenge_dir) / "src" / meta["targetFile"]).read_text(encoding="utf-8")
     target_changed = isinstance(result.patch, str) and result.patch != original
     if not target_changed:
         # A finished run that never edited the target is a graded miss, not an

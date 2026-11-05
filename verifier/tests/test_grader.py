@@ -12,7 +12,7 @@ from pathlib import Path
 
 import pytest
 
-from axvigil_verifier.grader import HIDDEN_FAIL_HINT, check_poc_decoy_probes, grade
+from axvigil_verifier.grader import HIDDEN_FAIL_HINT, check_patch_cheatcodes, check_poc_decoy_probes, grade
 from axvigil_verifier.keccak import submission_hash
 from axvigil_verifier.toolchain import discover_solc, forge_executable
 
@@ -263,3 +263,19 @@ def test_check_poc_decoy_probes_patterns():
         detected, reason = check_poc_decoy_probes(sample)
         assert detected is False, f"Failed to detect: {sample}"
         assert "Decoy PoC rejected" in reason
+
+
+def test_check_patch_cheatcodes_patterns():
+    ok, _ = check_patch_cheatcodes({"Vault.sol": "contract Vault { uint256 a; }"})
+    assert ok is True
+
+    bad = [
+        'import "forge-std/Vm.sol";',
+        'address constant V = 0x7109709ECfa91a80626fF3989D68f67F5b1DD12D;',
+        'vm.warp(100);',
+        'vm.prank(msg.sender);',
+    ]
+    for sample in bad:
+        detected, reason = check_patch_cheatcodes({"Vault.sol": f"contract Vault {{ {sample} }}"})
+        assert detected is False, f"Failed to reject cheatcode: {sample}"
+        assert "Illegal patch rejected" in reason
