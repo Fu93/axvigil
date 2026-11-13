@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import base64
 import json
+import time
 import urllib.error
 import urllib.parse
 import urllib.request
@@ -54,19 +55,7 @@ def call_view(rpc: str, contract: str, method: str, args: dict[str, Any]) -> Any
             ).decode("ascii"),
         },
     }
-    request = urllib.request.Request(
-        rpc,
-        data=json.dumps(payload).encode("utf-8"),
-        headers={"Content-Type": "application/json"},
-        method="POST",
-    )
-    try:
-        with urllib.request.urlopen(request, timeout=30) as response:
-            body = json.loads(response.read().decode("utf-8"))
-    except urllib.error.URLError as exc:
-        raise RuntimeError(f"testnet RPC request failed: {exc}") from exc
-    if "error" in body:
-        raise RuntimeError(json.dumps(body["error"]))
+    body = _rpc(rpc, payload)
     raw = bytes(body["result"]["result"])
     if not raw:
         return None
@@ -74,20 +63,36 @@ def call_view(rpc: str, contract: str, method: str, args: dict[str, Any]) -> Any
 
 
 def _rpc(rpc: str, payload: dict[str, Any]) -> dict[str, Any]:
-    request = urllib.request.Request(
-        rpc,
-        data=json.dumps(payload).encode("utf-8"),
-        headers={"Content-Type": "application/json"},
-        method="POST",
-    )
-    try:
-        with urllib.request.urlopen(request, timeout=30) as response:
-            body = json.loads(response.read().decode("utf-8"))
-    except urllib.error.URLError as exc:
-        raise RuntimeError(f"testnet RPC request failed: {exc}") from exc
-    if "error" in body:
-        raise RuntimeError(json.dumps(body["error"]))
-    return body
+    delay = 2.0
+    last: Exception | None = None
+    for attempt in range(5):
+        request = urllib.request.Request(
+            rpc,
+            data=json.dumps(payload).encode("utf-8"),
+            headers={"Content-Type": "application/json"},
+            method="POST",
+        )
+        try:
+            with urllib.request.urlopen(request, timeout=30) as response:
+                body = json.loads(response.read().decode("utf-8"))
+        except urllib.error.HTTPError as exc:
+            last = exc
+            if exc.code != 429 or attempt == 4:
+                raise RuntimeError(f"testnet RPC request failed: {exc}") from exc
+            time.sleep(delay)
+            delay *= 2
+            continue
+        except urllib.error.URLError as exc:
+            last = exc
+            if attempt == 4:
+                raise RuntimeError(f"testnet RPC request failed: {exc}") from exc
+            time.sleep(delay)
+            delay *= 2
+            continue
+        if "error" in body:
+            raise RuntimeError(json.dumps(body["error"]))
+        return body
+    raise RuntimeError(f"testnet RPC request failed: {last}")
 
 
 def view_access_key(rpc: str, account_id: str, public_key: str) -> dict[str, Any]:
