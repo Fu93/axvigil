@@ -25,6 +25,13 @@
   "honest_bundle_sha256": "c74a5decce5881665a2f462edc5ce2691b63f826ce3d540529801a72079075cb",
   "bad_evidence_hash": "709c83c6a5f33bfcb1fd67b714e05ccae04ac9318460b2d569efbd8214a90614",
   "bad_bundle_sha256": "75bca2ee58bec3a7779c9a5dce4450c3c352bd1d096dab70ea2d71f4803972e3",
+  "tx_times": {
+    "AEQxLtECw6dUuberg6KQQS3aeqKKoj4yYCmbwuKn3adf": "2026-11-13 10:13:40.244 UTC",
+    "5Wb9ZnddWsAtdgsceQhMJp4J5rxtgMviXQfuj1MCSnY3": "2026-11-13 10:13:44.513 UTC",
+    "CjF1UsedKLAggiv1ehstHy69dTPJanUmyV37CyeJFKWZ": "2026-11-13 10:13:51.761 UTC",
+    "Zq8baLTdz4GeTcgPvcyNMoxd6y7uDhqCV4HL6ZKL55Z": "2026-11-13 10:13:57.443 UTC",
+    "9b5Udnp4P6q5gRoCUMbbTwAAFXBfSaiyPNo5gJYGt1F3": "2026-11-13 10:16:07.501 UTC"
+  },
   "transactions": {
     "create_contract": "CQZsgQGrNLtYLEHUBucc6uf5bx5ryRZo4hmURTosFZYJ",
     "deploy": "8bnZeBuRs8RkiJFqaHuDxC4v6zJYxraY78DFDZHhQaN2",

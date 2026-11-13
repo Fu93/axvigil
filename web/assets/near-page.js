@@ -12,11 +12,7 @@ const state = {
   records: [],
   reputation: null,
   signature: "",
-  txTimes: {
-    AEQxLtECw6dUuberg6KQQS3aeqKKoj4yYCmbwuKn3adf: "2026-11-13 10:13:40.244 UTC",
-    "9b5Udnp4P6q5gRoCUMbbTwAAFXBfSaiyPNo5gJYGt1F3": "2026-11-13 10:16:07.501 UTC",
-    CjF1UsedKLAggiv1ehstHy69dTPJanUmyV37CyeJFKWZ: "2026-11-13 10:13:51.761 UTC",
-  },
+  txTimes: {},
   preview: new URLSearchParams(location.search).get("preview"),
 };
 
@@ -133,13 +129,30 @@ function labelFor(kind) {
   return "Unknown";
 }
 
+function displayTime(text) {
+  return String(text || "").replace(/(\d{4}-\d{2}-\d{2}) /, "$1\n");
+}
+
+function bakedTime(id) {
+  const table = (state.deployment && state.deployment.tx_times) || {};
+  return (state.txTimes && state.txTimes[id]) || table[id] || "";
+}
+
 function stepDetail(record, item) {
   const links = stepTx(record.evidence_hash);
-  if (item.id === "verify") return { time: "Off-chain grader", tx: null };
-  if (item.id === "window") return { time: formatChainTime(record.ready_at_ns) || "Window close on chain", tx: null };
+  if (item.id === "verify") return { time: "Off-chain grader", secondary: "", tx: null };
+  if (item.id === "window") {
+    const opened = links.anchor ? bakedTime(links.anchor.id) : "";
+    const closed = formatChainTime(record.ready_at_ns);
+    return {
+      time: opened || "Opened with the anchor",
+      secondary: closed ? "Closes " + closed : "",
+      tx: null,
+    };
+  }
   const tx = links[item.id] || null;
-  const cached = tx && state.txTimes ? state.txTimes[tx.id] : "";
-  return { time: cached || (tx ? "Reading chain time" : "Not taken"), tx };
+  if (!tx) return { time: "Not taken", secondary: "", tx: null };
+  return { time: bakedTime(tx.id), secondary: "", tx };
 }
 
 function renderTimeline(record) {
@@ -153,7 +166,8 @@ function renderTimeline(record) {
     return `<li class="tl-step ${klass}">
       <span class="tl-mark" aria-hidden="true"></span>
       <span class="tl-label">${escapeHtml(item.label)}</span>
-      <span class="tl-time"${detail.tx ? ` data-tx="${escapeHtml(detail.tx.id)}"` : ""}>${escapeHtml(detail.time)}</span>
+      <span class="tl-time"${detail.tx ? ` data-tx="${escapeHtml(detail.tx.id)}"` : ""}>${escapeHtml(displayTime(detail.time))}</span>
+      ${detail.secondary ? `<span class="tl-time secondary">${escapeHtml(displayTime(detail.secondary))}</span>` : ""}
       ${tx}
     </li>`;
   }).join("");
@@ -379,6 +393,41 @@ function drawTimelines() {
   });
 }
 
+const TIME_CACHE = "axvigil-near-tx-times";
+
+function readTimeCache() {
+  try {
+    const raw = sessionStorage.getItem(TIME_CACHE);
+    const parsed = raw ? JSON.parse(raw) : {};
+    return parsed && typeof parsed === "object" ? parsed : {};
+  } catch (err) {
+    return {};
+  }
+}
+
+function writeTimeCache() {
+  try {
+    sessionStorage.setItem(TIME_CACHE, JSON.stringify(state.txTimes));
+  } catch (err) {
+    /* private mode can refuse storage; the baked map still paints the cards */
+  }
+}
+
+async function rpcBackoff(payload) {
+  let wait = 700;
+  let last;
+  for (let attempt = 0; attempt < 4; attempt += 1) {
+    try {
+      return await rpc(payload, 12000);
+    } catch (err) {
+      last = err;
+      await new Promise((resolve) => setTimeout(resolve, wait));
+      wait = Math.min(wait * 2, 8000);
+    }
+  }
+  throw last || new Error("RPC");
+}
+
 async function fillTimes() {
   const jobs = [];
   for (const record of state.records) {
@@ -386,34 +435,33 @@ async function fillTimes() {
       if (step && step.id && !state.txTimes[step.id]) jobs.push(step);
     }
   }
-  for (let i = 0; i < jobs.length; i += 2) {
-    await Promise.all(jobs.slice(i, i + 2).map(async (step) => {
-      try {
-        const status = await rpc({
-          jsonrpc: "2.0",
-          id: "axvigil",
-          method: "EXPERIMENTAL_tx_status",
-          params: { tx_hash: step.id, sender_account_id: step.sender },
-        }, 20000);
-        const blockId = status.transaction_outcome && status.transaction_outcome.block_hash;
-        if (!blockId) throw new Error("no block");
-        const block = await rpc({
-          jsonrpc: "2.0",
-          id: "axvigil",
-          method: "block",
-          params: { block_id: blockId },
-        }, 20000);
-        state.txTimes[step.id] = formatChainTime(block.header.timestamp);
-      } catch (err) {
-        return;
-      }
-      await new Promise((resolve) => setTimeout(resolve, 400));
-    }));
+  for (const step of jobs) {
+    try {
+      const status = await rpcBackoff({
+        jsonrpc: "2.0",
+        id: "axvigil",
+        method: "EXPERIMENTAL_tx_status",
+        params: { tx_hash: step.id, sender_account_id: step.sender },
+      });
+      const blockId = status.transaction_outcome && status.transaction_outcome.block_hash;
+      if (!blockId) continue;
+      const block = await rpcBackoff({
+        jsonrpc: "2.0",
+        id: "axvigil",
+        method: "block",
+        params: { block_id: blockId },
+      });
+      const time = formatChainTime(block.header.timestamp);
+      if (!time) continue;
+      state.txTimes[step.id] = time;
+      writeTimeCache();
+      document.querySelectorAll(`[data-tx="${CSS.escape(step.id)}"]`).forEach((node) => {
+        if (!node.textContent.trim()) node.textContent = time;
+      });
+    } catch (err) {
+      /* keep the baked or cached time; never write a loading label */
+    }
   }
-  document.querySelectorAll("[data-tx]").forEach((node) => {
-    const time = state.txTimes[node.getAttribute("data-tx")];
-    if (time) node.textContent = time;
-  });
 }
 
 function bindCursor() {
@@ -477,6 +525,8 @@ async function main() {
     $("banner").textContent = "[: preview ] This view is sample data for the " + state.preview + " state. It is not a chain write.";
   }
   state.deployment = await loadDeployment();
+  state.txTimes = { ...readTimeCache(), ...(state.deployment.tx_times || {}) };
+  writeTimeCache();
   if (!String(state.deployment.contract || "").endsWith(".testnet")) {
     throw new Error("refusing a non-testnet contract");
   }

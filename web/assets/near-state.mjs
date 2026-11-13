@@ -65,6 +65,24 @@ export function plainGrade(vulnClass, difficulty) {
   return kind + " · " + tier;
 }
 
+export function parseUtc(text) {
+  if (!text || !text.includes("-")) return null;
+  const ms = Date.parse(String(text).replace(" UTC", "Z").replace(" ", "T"));
+  return Number.isFinite(ms) ? ms : null;
+}
+
+/** Primary column times should never go backwards. Missing notes are skipped. */
+export function timesInOrder(values) {
+  let previous = null;
+  for (const value of values) {
+    const ms = parseUtc(value);
+    if (ms == null) continue;
+    if (previous != null && ms < previous) return false;
+    previous = ms;
+  }
+  return true;
+}
+
 export function shortHash(hex) {
   const clean = String(hex || "").replace(/^0x/, "");
   if (clean.length <= 18) return clean;

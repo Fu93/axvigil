@@ -1,6 +1,9 @@
 import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
 import test from "node:test";
-import { formatRemain, phase, plainGrade, shortHash, timeline } from "./near-state.mjs";
+import { formatRemain, phase, plainGrade, shortHash, timeline, timesInOrder } from "./near-state.mjs";
+
+const deployment = JSON.parse(readFileSync(new URL("../../docs/near/deployment.json", import.meta.url), "utf8"));
 
 const ready = "1000000000000";
 
@@ -46,6 +49,42 @@ test("countdown pads hours minutes and seconds", () => {
 test("class and difficulty are words", () => {
   assert.equal(plainGrade(0, 0), "reentrancy · basic");
   assert.equal(plainGrade(1, 2), "price manipulation · legendary");
+});
+
+test("baked chain times stay in column order", () => {
+  const tx = deployment.transactions;
+  const times = deployment.tx_times;
+  assert.equal(timesInOrder([
+    times[tx.anchor_honest],
+    times[tx.anchor_honest],
+    times[tx.finalize_honest],
+  ]), true);
+  assert.equal(timesInOrder([
+    times[tx.anchor_bad],
+    times[tx.anchor_bad],
+    times[tx.challenge_bad],
+    times[tx.resolve_bad],
+  ]), true);
+  assert.equal(times[tx.anchor_bad] < times[tx.challenge_bad], true);
+  assert.equal(times[tx.challenge_bad] < times[tx.resolve_bad], true);
+});
+
+test("published column times do not run backwards", () => {
+  assert.equal(timesInOrder([
+    "2026-11-13 10:13:40.244 UTC",
+    "2026-11-13 10:13:40.244 UTC",
+    "2026-11-13 10:16:07.501 UTC",
+  ]), true);
+  assert.equal(timesInOrder([
+    "2026-11-13 10:13:44.513 UTC",
+    "2026-11-13 10:13:44.513 UTC",
+    "2026-11-13 10:13:51.761 UTC",
+    "2026-11-13 10:13:57.443 UTC",
+  ]), true);
+  assert.equal(timesInOrder([
+    "2026-11-13 10:15:15.102 UTC",
+    "2026-11-13 10:13:51.761 UTC",
+  ]), false);
 });
 
 test("short hash keeps both ends", () => {

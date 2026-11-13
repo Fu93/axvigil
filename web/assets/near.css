@@ -19,7 +19,7 @@ h1, h2 {
   scroll-margin-top: 120px;
 }
 
-.near-hero { position: relative; padding-bottom: 18px; }
+.near-hero { position: relative; padding-bottom: 0; }
 .near-hero::before {
   content: "";
   position: absolute;
@@ -82,7 +82,8 @@ html.js .near-line:nth-child(2) > span { animation-delay: 0.08s; }
 }
 .near-page .btn.yellow { box-shadow: var(--glow); }
 
-.records-sec { margin-top: 64px; }
+.records-sec { margin-top: 8px; }
+.records-sec h2 { margin-top: 4px; font-size: clamp(2.4rem, 5vw, 4.2rem); }
 .records { display: grid; gap: 22px; min-height: 420px; }
 .empty { margin: 0; color: var(--muted); font-family: var(--mono); }
 .near-card {
@@ -134,7 +135,15 @@ html.js .near-line:nth-child(2) > span { animation-delay: 0.08s; }
   margin: 22px 0 0;
   padding: 0;
 }
-.tl-step { min-width: 0; }
+.near-page .timeline li,
+.tl-step {
+  display: block;
+  min-width: 0;
+  grid-template-columns: none;
+  gap: 0;
+  padding: 0;
+  border: 0;
+}
 .tl-mark {
   display: block;
   height: 3px;
@@ -145,7 +154,11 @@ html.js .near-line:nth-child(2) > span { animation-delay: 0.08s; }
 .tl-step.is-done .tl-mark,
 .tl-step.is-now .tl-mark { background: #7cff5b; box-shadow: var(--glow); }
 .tl-step.is-now .tl-mark { background: #d6ffc8; }
-.tl-step.is-fail .tl-mark { background: var(--fail); box-shadow: 0 0 12px rgba(255, 141, 141, 0.75); }
+.near-card.is-revoked .tl-step.is-fail .tl-mark {
+  background: #ff4d4d;
+  box-shadow: 0 0 12px rgba(255, 77, 77, 0.95);
+  height: 4px;
+}
 html.js .timeline.is-drawn .tl-mark { animation: near-draw 0.7s cubic-bezier(0.16, 1, 0.3, 1) both; }
 html.js .timeline.is-drawn .tl-step:nth-child(2) .tl-mark { animation-delay: 0.08s; }
 html.js .timeline.is-drawn .tl-step:nth-child(3) .tl-mark { animation-delay: 0.16s; }
@@ -165,7 +178,16 @@ html.js .timeline:not(.is-drawn) .tl-mark { transform: scaleX(0); }
 .tl-step.is-now .tl-label { color: #7cff5b; }
 .tl-step.is-fail .tl-label { color: var(--fail); text-decoration: line-through; text-decoration-thickness: 2px; }
 .tl-step.is-skip .tl-label { color: #b7b6b2; }
-.tl-time { display: block; margin-top: 4px; color: var(--muted); line-height: 1.35; }
+.tl-time {
+  display: block;
+  margin-top: 4px;
+  color: var(--muted);
+  line-height: 1.35;
+  font-size: 0.72rem;
+  white-space: pre-line;
+  overflow-wrap: anywhere;
+}
+.tl-time.secondary { color: #b7b6b2; font-size: 0.72rem; }
 .tl-tx { display: inline-flex; align-items: center; min-height: 32px; padding: 0; }
 
 .key-stage {
