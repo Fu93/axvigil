@@ -27,7 +27,8 @@ function escapeHtml(value) {
 async function rpc(payload, timeout = 8000) {
   if (state.preview === "down") throw new Error("The testnet RPC did not answer.");
   const targets = [RPC];
-  if (location.protocol.startsWith("http")) targets.push(location.origin + "/near-rpc");
+  const host = location.hostname;
+  if (host === "localhost" || host === "127.0.0.1") targets.push(location.origin + "/near-rpc");
   let last;
   for (const url of targets) {
     try {
@@ -324,6 +325,7 @@ async function load() {
 }
 
 function showError(err) {
+  if (state.reputation && state.records.length) return;
   $("status").textContent = "[: rpc down ]";
   $("status").dataset.on = "no";
   $("error").hidden = false;
