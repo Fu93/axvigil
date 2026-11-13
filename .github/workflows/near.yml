@@ -1,0 +1,58 @@
+name: NEAR
+
+on:
+  push:
+    paths:
+      - 'near/**'
+      - 'web/near.html'
+      - 'web/assets/near.css'
+      - 'web/assets/near-page.js'
+      - 'web/assets/near-state.mjs'
+      - 'web/assets/near-state.test.mjs'
+      - 'scripts/serve.py'
+      - '.github/workflows/near.yml'
+  pull_request:
+    paths:
+      - 'near/**'
+      - 'web/near.html'
+      - 'web/assets/near.css'
+      - 'web/assets/near-page.js'
+      - 'web/assets/near-state.mjs'
+      - 'web/assets/near-state.test.mjs'
+      - 'scripts/serve.py'
+      - '.github/workflows/near.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  contract:
+    name: axvigil-record unit tests and wasm
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: wasm32-unknown-unknown
+      - name: Unit tests
+        run: cargo test --manifest-path near/contract/Cargo.toml --locked
+      - name: Release wasm
+        run: cargo build --manifest-path near/contract/Cargo.toml --release --target wasm32-unknown-unknown --locked
+
+  bridge:
+    name: verifier seal and testnet guards
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install pytest
+        run: python -m pip install pytest
+      - name: Bridge tests
+        run: PYTHONPATH=near/python python -m pytest near/python/tests -q
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: NEAR page state tests
+        run: node --test web/assets/near-state.test.mjs

@@ -1,0 +1,101 @@
+{
+  "network": "testnet",
+  "spec": "axvigil-record/1",
+  "near_sdk": "5.30.1",
+  "near_cli": "0.31.1",
+  "contract": "axvigil-rec-8735edcb.testnet",
+  "agent": "agent.axvigil-rec-8735edcb.testnet",
+  "extra_agents": [
+    "axv-ai-e21f88b3.testnet"
+  ],
+  "challenger": "challenger.axvigil-rec-8735edcb.testnet",
+  "resolver": "axvigil-rec-8735edcb.testnet",
+  "owner": "axvigil-rec-8735edcb.testnet",
+  "rpc": "https://rpc.testnet.near.org",
+  "window_seconds": 90,
+  "response_seconds": 3600,
+  "operator_bond_yocto": "0",
+  "challenge_bond_yocto": "0",
+  "scoped_key": {
+    "public_key": "ed25519:E9k6yKCDMxkfyQA6DdDTVBemiYB6s6oNR6Nz4Whcy8kA",
+    "allowance": "0.25 NEAR",
+    "receiver": "axvigil-rec-8735edcb.testnet",
+    "method_names": [
+      "anchor_evidence"
+    ]
+  },
+  "honest_evidence_hash": "d90054a2e3f54f11ac40fa32ba9562c1aa6538f7430be757e5a0ab5efe0b81ad",
+  "honest_bundle_sha256": "c74a5decce5881665a2f462edc5ce2691b63f826ce3d540529801a72079075cb",
+  "bad_evidence_hash": "709c83c6a5f33bfcb1fd67b714e05ccae04ac9318460b2d569efbd8214a90614",
+  "bad_bundle_sha256": "75bca2ee58bec3a7779c9a5dce4450c3c352bd1d096dab70ea2d71f4803972e3",
+  "tx_times": {
+    "AEQxLtECw6dUuberg6KQQS3aeqKKoj4yYCmbwuKn3adf": "2026-11-13 10:13:40.244 UTC",
+    "5Wb9ZnddWsAtdgsceQhMJp4J5rxtgMviXQfuj1MCSnY3": "2026-11-13 10:13:44.513 UTC",
+    "CjF1UsedKLAggiv1ehstHy69dTPJanUmyV37CyeJFKWZ": "2026-11-13 10:13:51.761 UTC",
+    "Zq8baLTdz4GeTcgPvcyNMoxd6y7uDhqCV4HL6ZKL55Z": "2026-11-13 10:13:57.443 UTC",
+    "9b5Udnp4P6q5gRoCUMbbTwAAFXBfSaiyPNo5gJYGt1F3": "2026-11-13 10:16:07.501 UTC",
+    "4uGRyCfp9ry1CvQ5m8BZQ5VZUn2uujCniQVkj1KkexfJ": "2026-11-13 12:11:36.373 UTC",
+    "C4GLgn37b6orwBHhzzUvPFJJHLunqB7gNRr8s6Z9Qw1R": "2026-11-13 12:11:40.518 UTC",
+    "Bz6yBTehH4sHa3u6RczoGV6f3Zye3AdbPu8LkrJNADSo": "2026-11-13 12:13:35.233 UTC",
+    "3QeMhnCS3DTJi1KvMHikPtUTSoupBMC7YqNmKDVnHK6r": "2026-11-13 12:13:54.573 UTC"
+  },
+  "record_labels": {
+    "675a3e0dee9782d908ce91ced643861b73e60dd368f9401e6e29b72d46955a37": "muse-spark-open",
+    "776ce13a3addb29cbf70b8e8e0b6e036fdd38c83b3a9c52899eb0c7ad3b85d7e": "DeepSeek-V4-Pro"
+  },
+  "record_txs": {
+    "675a3e0dee9782d908ce91ced643861b73e60dd368f9401e6e29b72d46955a37": {
+      "anchor": {
+        "id": "4uGRyCfp9ry1CvQ5m8BZQ5VZUn2uujCniQVkj1KkexfJ",
+        "sender": "axv-ai-e21f88b3.testnet"
+      },
+      "decide": {
+        "id": "Bz6yBTehH4sHa3u6RczoGV6f3Zye3AdbPu8LkrJNADSo",
+        "sender": "axv-ai-e21f88b3.testnet"
+      }
+    },
+    "776ce13a3addb29cbf70b8e8e0b6e036fdd38c83b3a9c52899eb0c7ad3b85d7e": {
+      "anchor": {
+        "id": "C4GLgn37b6orwBHhzzUvPFJJHLunqB7gNRr8s6Z9Qw1R",
+        "sender": "axv-ai-e21f88b3.testnet"
+      },
+      "decide": {
+        "id": "3QeMhnCS3DTJi1KvMHikPtUTSoupBMC7YqNmKDVnHK6r",
+        "sender": "axv-ai-e21f88b3.testnet"
+      }
+    }
+  },
+  "transactions": {
+    "create_contract": "CQZsgQGrNLtYLEHUBucc6uf5bx5ryRZo4hmURTosFZYJ",
+    "deploy": "8bnZeBuRs8RkiJFqaHuDxC4v6zJYxraY78DFDZHhQaN2",
+    "create_agent": "BEmsovzSyF9Sjdjj5i5oyTZ3e36oyomGFqX5YsbDzj8o",
+    "create_challenger": "GdAK9jXWhFaHUkz9ZRHqEsAo5DzdQYRrsgbGgsEaoWT7",
+    "register_agent": "3xmZSnMfzY2kP68jzQdaEhCuZ3HmyQeRXBLN9gposm2q",
+    "add_scoped_key": "62dzcWSDydfPrmYYtnwMM32GwZafRCYBTzuAV2dhmeL8",
+    "anchor_honest": "AEQxLtECw6dUuberg6KQQS3aeqKKoj4yYCmbwuKn3adf",
+    "anchor_bad": "5Wb9ZnddWsAtdgsceQhMJp4J5rxtgMviXQfuj1MCSnY3",
+    "challenge_bad": "CjF1UsedKLAggiv1ehstHy69dTPJanUmyV37CyeJFKWZ",
+    "resolve_bad": "Zq8baLTdz4GeTcgPvcyNMoxd6y7uDhqCV4HL6ZKL55Z",
+    "finalize_honest": "9b5Udnp4P6q5gRoCUMbbTwAAFXBfSaiyPNo5gJYGt1F3"
+  },
+  "early_finalize_before_window": {
+    "transaction": "EQH92Jic81KL1kAVZ5Lemtcm2RRXLJCesYyLxxFUn7tY",
+    "result": "wasm trap, record unchanged"
+  },
+  "explorers": {
+    "contract": "https://testnet.nearblocks.io/address/axvigil-rec-8735edcb.testnet",
+    "agent": "https://testnet.nearblocks.io/address/agent.axvigil-rec-8735edcb.testnet",
+    "contract_near_explorer": "https://explorer.testnet.near.org/accounts/axvigil-rec-8735edcb.testnet",
+    "create_contract": "https://testnet.nearblocks.io/txns/CQZsgQGrNLtYLEHUBucc6uf5bx5ryRZo4hmURTosFZYJ",
+    "deploy": "https://testnet.nearblocks.io/txns/8bnZeBuRs8RkiJFqaHuDxC4v6zJYxraY78DFDZHhQaN2",
+    "create_agent": "https://testnet.nearblocks.io/txns/BEmsovzSyF9Sjdjj5i5oyTZ3e36oyomGFqX5YsbDzj8o",
+    "create_challenger": "https://testnet.nearblocks.io/txns/GdAK9jXWhFaHUkz9ZRHqEsAo5DzdQYRrsgbGgsEaoWT7",
+    "register_agent": "https://testnet.nearblocks.io/txns/3xmZSnMfzY2kP68jzQdaEhCuZ3HmyQeRXBLN9gposm2q",
+    "add_scoped_key": "https://testnet.nearblocks.io/txns/62dzcWSDydfPrmYYtnwMM32GwZafRCYBTzuAV2dhmeL8",
+    "anchor_honest": "https://testnet.nearblocks.io/txns/AEQxLtECw6dUuberg6KQQS3aeqKKoj4yYCmbwuKn3adf",
+    "anchor_bad": "https://testnet.nearblocks.io/txns/5Wb9ZnddWsAtdgsceQhMJp4J5rxtgMviXQfuj1MCSnY3",
+    "challenge_bad": "https://testnet.nearblocks.io/txns/CjF1UsedKLAggiv1ehstHy69dTPJanUmyV37CyeJFKWZ",
+    "resolve_bad": "https://testnet.nearblocks.io/txns/Zq8baLTdz4GeTcgPvcyNMoxd6y7uDhqCV4HL6ZKL55Z",
+    "finalize_honest": "https://testnet.nearblocks.io/txns/9b5Udnp4P6q5gRoCUMbbTwAAFXBfSaiyPNo5gJYGt1F3"
+  }
+}

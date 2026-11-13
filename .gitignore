@@ -12,6 +12,9 @@ backend/evidence/
 /tmp/axvigil-challenges/
 verifier/out/
 variantgen/out/
+near/contract/target/
+near/.keys/
+near/out/
 *.egg-info/
 .venv/
 uv.lock

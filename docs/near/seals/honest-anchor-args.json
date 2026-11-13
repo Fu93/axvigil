@@ -1,0 +1,8 @@
+{
+  "evidence_hash": "d90054a2e3f54f11ac40fa32ba9562c1aa6538f7430be757e5a0ab5efe0b81ad",
+  "bundle_sha256": "c74a5decce5881665a2f462edc5ce2691b63f826ce3d540529801a72079075cb",
+  "vuln_class": 0,
+  "difficulty": 0,
+  "window_seconds": 90,
+  "passed": true
+}

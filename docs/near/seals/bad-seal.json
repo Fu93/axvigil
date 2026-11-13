@@ -1,0 +1,11 @@
+{
+  "schema": "axvigil-seal-1",
+  "evidence_hash": "709c83c6a5f33bfcb1fd67b714e05ccae04ac9318460b2d569efbd8214a90614",
+  "bundle_sha256": "75bca2ee58bec3a7779c9a5dce4450c3c352bd1d096dab70ea2d71f4803972e3",
+  "vuln_class": 0,
+  "difficulty": 0,
+  "passed": false,
+  "challenge_id": "reentrancy-001",
+  "seed": 0,
+  "canonical": "{\"challengeId\":\"reentrancy-001\",\"difficulty\":0,\"hiddenTestsPass\":true,\"invariantsHold\":true,\"passed\":false,\"patchWithinLimits\":true,\"pocFailsAfterPatch\":false,\"pocProvesBug\":true,\"seed\":0,\"submissionHash\":\"0x709c83c6a5f33bfcb1fd67b714e05ccae04ac9318460b2d569efbd8214a90614\",\"vulnClass\":0}\n"
+}

@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>AxVigil — NEAR record</title>
+<meta name="description" content="Live NEAR testnet view of AxVigil seals: challenge window, finalize, revoke, and a function-call key that can only anchor.">
+<meta name="theme-color" content="#1C1D1A">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M1 5V1h4M11 1h4v4M15 11v4h-4M5 15H1v-4' fill='none' stroke='%23EFEEEC' stroke-width='1.4'/%3E%3C/svg%3E">
+<link rel="preload" href="assets/fonts/MonaSansDisplaySemiExpanded-ExtraBold.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;700;800&family=IBM+Plex+Mono:wght@400;500;700&display=swap" media="print" onload="this.media='all'">
+<noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;700;800&family=IBM+Plex+Mono:wght@400;500;700&display=swap"></noscript>
+<link rel="stylesheet" href="assets/site.css?v=3">
+<link rel="stylesheet" href="assets/near.css?v=6">
+<script>document.documentElement.classList.add("js");</script>
+</head>
+<body class="near-page">
+<a class="skip" href="#content">Skip to content</a>
+<div class="near-cursor" id="near-cursor" aria-hidden="true"></div>
+<header class="site-header">
+  <div class="nav-bar">
+    <a class="logo" href="index.html" aria-label="AxVigil">
+      <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M1 5V1h4M11 1h4v4M15 11v4h-4M5 15H1v-4" fill="none" stroke="currentColor" stroke-width="1.4"/></svg>
+      AxVigil
+    </a>
+    <button class="nav-toggle" type="button" aria-expanded="false" aria-controls="site-nav">
+      <span></span>
+      <span class="sr">Menu</span>
+    </button>
+    <ul class="nav-links" id="site-nav">
+      <li class="pill" aria-hidden="true"></li>
+      <li><a href="index.html">Home</a></li>
+      <li><a href="demo.html">Demo</a></li>
+      <li><a href="near.html" aria-current="page">Near</a></li>
+    </ul>
+    <div class="nav-end">
+      <a class="btn yellow desktop-cta" href="#records">Records</a>
+    </div>
+  </div>
+</header>
+
+<main class="near-main dark" id="content">
+  <section class="near-hero wrap" id="top">
+    <p class="bracket near-kicker reveal">[:NEAR] · testnet</p>
+    <h1 class="display"><span class="near-line"><span>The seal,</span></span><span class="near-line"><span>on NEAR.</span></span></h1>
+    <p class="lede reveal">The verifier grades the patch. This page only reads the testnet contract. A function-call key can publish the claim. It cannot finalize it or move the balance.</p>
+    <p class="ticker" id="ticker" role="status" aria-live="polite">
+      <span class="live-flag" id="status" data-on="no">[: reading ]</span>
+      <span class="tick"><b id="rep-final">3</b> finalized</span>
+      <span class="tick"><b id="rep-revoked">1</b> revoked</span>
+      <span class="tick"><b id="rep-pending">0</b> pending</span>
+      <span class="tick">valid <b id="rep-valid" data-on="yes">true</b></span>
+    </p>
+    <div class="near-actions">
+      <a class="btn yellow" id="contract-link" href="https://testnet.nearblocks.io/address/axvigil-rec-8735edcb.testnet" target="_blank" rel="noopener">axvigil-rec-8735edcb.testnet</a>
+      <a class="btn ghost" id="agent-link" href="https://testnet.nearblocks.io/address/agent.axvigil-rec-8735edcb.testnet" target="_blank" rel="noopener">agent.axvigil-rec-8735edcb.testnet</a>
+      <button class="btn ghost" id="retry" type="button">Retry</button>
+    </div>
+    <p class="near-banner" id="banner" hidden></p>
+    <p class="near-error" id="error" hidden role="alert"></p>
+  </section>
+
+  <section class="wrap records-sec" id="records">
+    <p class="idx reveal">_001 / <span id="record-count">004</span></p>
+    <h2 class="display reveal">Records</h2>
+    <div class="records" id="record-list">
+      <p class="empty" id="empty-records" hidden>No seals on this agent.</p>
+    </div>
+  </section>
+
+  <section class="key-stage" id="key">
+    <div class="wrap">
+      <p class="idx reveal">_002</p>
+      <h2 class="display reveal">Scoped key</h2>
+      <div class="key-split">
+        <div class="key-allow">
+          <p class="bracket">[:allowed]</p>
+          <p class="key-method" id="key-methods">anchor_
+evidence</p>
+          <dl class="key-list">
+            <div><dt>Public key</dt><dd id="key-public">ed25519:E9k6yKCDMxkfyQA6DdDTVBemiYB6s6oNR6Nz4Whcy8kA</dd></div>
+            <div><dt>Allowance</dt><dd id="key-allowance">0.25 NEAR</dd></div>
+            <div><dt>Contract</dt><dd>axvigil-rec-8735edcb.testnet</dd></div>
+          </dl>
+        </div>
+        <div class="key-deny">
+          <p class="bracket">[:rejected]</p>
+          <article class="denial">
+            <strong>finalize</strong>
+            <p>Transaction method name &lt;finalize&gt; isn't allowed by the access key.</p>
+          </article>
+          <article class="denial">
+            <strong>transfer</strong>
+            <p>Transaction requires a full permission access key.</p>
+          </article>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="wrap challenge-sec" id="challenge">
+    <p class="idx reveal">_003</p>
+    <h2 class="display reveal">Challenge</h2>
+    <p class="lede" id="challenge-note">Reading the window.</p>
+    <pre class="command" id="challenge-copy">…</pre>
+    <p class="near-actions"><button class="btn ghost" type="button" id="copy-command">Copy command</button></p>
+  </section>
+</main>
+<script type="module" src="assets/near-page.js?v=8"></script>
+</body>
+</html>

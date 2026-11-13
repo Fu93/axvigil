@@ -1,0 +1,1 @@
+{"challengeId":"reentrancy-001","difficulty":0,"hiddenTestsPass":true,"invariantsHold":true,"passed":true,"patchWithinLimits":true,"pocFailsAfterPatch":true,"pocProvesBug":true,"seed":0,"submissionHash":"0xd90054a2e3f54f11ac40fa32ba9562c1aa6538f7430be757e5a0ab5efe0b81ad","vulnClass":0}

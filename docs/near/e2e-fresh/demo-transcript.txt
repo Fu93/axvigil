@@ -1,0 +1,564 @@
+network testnet
+contract axvigil-rec-2039660e.testnet
+agent agent.axvigil-rec-2039660e.testnet
+challenger challenger.axvigil-rec-2039660e.testnet
+resolver axvigil-rec-2039660e.testnet
+window_seconds 90
+response_seconds 3600
+bonds 0 yoctoNEAR
+step submodule
+step forge-build
+No files changed, compilation skipped
+step wasm
+    Finished `release` profile [optimized] target(s) in 0.07s
+step create-contract
+
+===== create_contract (exit 0) =====
+├  Your transaction:
+│    signer_id:    testnet
+│    actions:
+│       -- create account:      axvigil-rec-2039660e.testnet
+│       -- add access key:     
+│                       public key:   ed25519:HtffxP6Sn7a8MMiuvsHb5vLuYYkvmae8pvCcvZf4RQRW
+│                       permission:   FullAccess
+│     [0m
+[33m├  Warning: 
+│    [31mFailed to save the access key <ed25519:HtffxP6Sn7a8MMiuvsHb5vLuYYkvmae8pvCcvZf4RQRW> to the keychain.
+│    Failed to save password to keychain. You may need to install the secure keychain package by following this instruction: https://github.com/jaraco/keyring#using-keyring-on-headless-linux-systems[39m
+│    [31mThe data for the access key will be stored in the legacy keychain.[39m
+[0m
+├  Transaction Execution Info:
+│    Transaction ID: BtHzjJqNZfE7VXmmvY9XekjJK77sx3KFcsTGjzXYBT9v
+│    To see the transaction in the transaction explorer, please open this url in your browser:
+│    https://explorer.testnet.near.org/transactions/BtHzjJqNZfE7VXmmvY9XekjJK77sx3KFcsTGjzXYBT9v
+[0m
+New account <axvigil-rec-2039660e.testnet> created successfully.
+The data for the access key is saved in a file /home/ubuntu/.near-credentials/testnet/axvigil-rec-2039660e.testnet/ed25519_HtffxP6Sn7a8MMiuvsHb5vLuYYkvmae8pvCcvZf4RQRW.json
+The data for the access key is saved in a file /home/ubuntu/.near-credentials/testnet/axvigil-rec-2039660e.testnet.json
+
+
+Here is your console command if you need to script it or re-run:
+    [33mnear account create-account sponsor-by-faucet-service axvigil-rec-2039660e.testnet autogenerate-new-keypair --signature-scheme ed25519 save-to-keychain network-config testnet create[39m
+
+create_contract tx BtHzjJqNZfE7VXmmvY9XekjJK77sx3KFcsTGjzXYBT9v
+step deploy
+
+===== deploy (exit 0) =====
+├  Unsigned transaction:
+│    signer_id:    axvigil-rec-2039660e.testnet
+│    receiver_id:  axvigil-rec-2039660e.testnet
+│    actions:
+│       -- deploy code <3cqbAut3QtiMMNRr8dpqJg1gk1iNopNz4MX9qrRTwZFz> to a account <axvigil-rec-2039660e.testnet>
+│       -- function call:      
+│                       method name:  new
+│                       args:         {
+│                                       "challenge_bond_yocto": "0",
+│                                       "operator_bond_yocto": "0",
+│                                       "response_seconds": 3600
+│                                     }
+│                       gas:          100.0 Tgas
+│                       deposit:      0 NEAR
+│     [0m
+[33m├  Warning: no access keys found in keychain, trying legacy keychain[0m
+├  Your transaction was signed successfully.
+│    Public key: ed25519:HtffxP6Sn7a8MMiuvsHb5vLuYYkvmae8pvCcvZf4RQRW
+│    Signature:  ed25519:2Ayobo1vCLknc89hy5wCNxmafYaoNWwWMAR3fpDWML2GmBaeujAVScvuuXsowio6kNHJSphDob4uVeCbFqufqoKN
+│     [0m
+├  Transaction Execution Info:
+│    Gas used: 17.9 Tgas
+│    Transaction fee: 0.001763752435839 NEAR
+│    Transaction ID: BS6t57FZWZvJrtHhoX8vvVFxdvmQNwCttxPzRPvUQhCH
+│    To see the transaction in the transaction explorer, please open this url in your browser:
+│    https://explorer.testnet.near.org/transactions/BS6t57FZWZvJrtHhoX8vvVFxdvmQNwCttxPzRPvUQhCH
+│     [0m
+├  Function execution logs:
+│    [36mLogs [axvigil-rec-2039660e.testnet]:[39m   [2mNo logs[0m
+│    [36mLogs [axvigil-rec-2039660e.testnet]:[39m   [2mNo logs[0m
+│     [0m
+├  Function execution return value:
+│    Empty return value
+│     [0m
+
+Contract code has been successfully deployed.
+The "new" call to <axvigil-rec-2039660e.testnet> on behalf of <axvigil-rec-2039660e.testnet> succeeded.
+
+
+
+
+Here is your console command if you need to script it or re-run:
+    [33mnear contract deploy axvigil-rec-2039660e.testnet use-file /agent/repos/axvigil/near/contract/target/wasm32-unknown-unknown/release/axvigil_record.wasm with-init-call new file-args /agent/repos/axvigil/near/.keys/demo/init.json prepaid-gas '100.0 Tgas' attached-deposit '0 NEAR' network-config testnet sign-with-keychain send[39m
+
+deploy tx BS6t57FZWZvJrtHhoX8vvVFxdvmQNwCttxPzRPvUQhCH
+step create-agent
+
+===== create_agent (exit 0) =====
+├  Unsigned transaction:
+│    signer_id:    axvigil-rec-2039660e.testnet
+│    receiver_id:  agent.axvigil-rec-2039660e.testnet
+│    actions:
+│       -- create account:      agent.axvigil-rec-2039660e.testnet
+│       -- transfer deposit:    2 NEAR
+│       -- add access key:     
+│                       public key:   ed25519:4Bh7s8YS8njmxWgE1X1D9bXkzJCgwqEqiBu4anmNQG1W
+│                       nonce:        0
+│                       permission:   FullAccess
+│     [0m
+[33m├  Warning: no access keys found in keychain, trying legacy keychain[0m
+├  Your transaction was signed successfully.
+│    Public key: ed25519:HtffxP6Sn7a8MMiuvsHb5vLuYYkvmae8pvCcvZf4RQRW
+│    Signature:  ed25519:yJP71cubKtUQGhh7r2A8rjsio2Q88vPJhaLtsQ3sZN4cwKaEPsUNaLSVKYWkjS653PmgCQjAekx6CC3g1bPf4aE
+│     [0m
+[33m├  Warning: 
+│    [31mFailed to save the access key <ed25519:4Bh7s8YS8njmxWgE1X1D9bXkzJCgwqEqiBu4anmNQG1W> to the keychain.
+│    Failed to save password to keychain. You may need to install the secure keychain package by following this instruction: https://github.com/jaraco/keyring#using-keyring-on-headless-linux-systems[39m
+│    [31mThe data for the access key will be stored in the legacy keychain.[39m
+[0m
+├  Transaction Execution Info:
+│    Gas used: 8.6 Tgas
+│    Transaction fee: 0.0071149895375 NEAR
+│    Transaction ID: H6oFWbM9YNsjqgjottr1676VybepuTFzu6FyzvhXkxCw
+│    To see the transaction in the transaction explorer, please open this url in your browser:
+│    https://explorer.testnet.near.org/transactions/H6oFWbM9YNsjqgjottr1676VybepuTFzu6FyzvhXkxCw
+│     [0m
+
+
+New account <agent.axvigil-rec-2039660e.testnet> has been successfully created.
+<axvigil-rec-2039660e.testnet> has transferred 2 NEAR to <agent.axvigil-rec-2039660e.testnet> successfully.
+Added access key = ed25519:4Bh7s8YS8njmxWgE1X1D9bXkzJCgwqEqiBu4anmNQG1W to agent.axvigil-rec-2039660e.testnet.
+
+The data for the access key is saved in a file /home/ubuntu/.near-credentials/testnet/agent.axvigil-rec-2039660e.testnet/ed25519_4Bh7s8YS8njmxWgE1X1D9bXkzJCgwqEqiBu4anmNQG1W.json
+The data for the access key is saved in a file /home/ubuntu/.near-credentials/testnet/agent.axvigil-rec-2039660e.testnet.json
+
+
+Here is your console command if you need to script it or re-run:
+    [33mnear account create-account fund-myself agent.axvigil-rec-2039660e.testnet '2 NEAR' autogenerate-new-keypair --signature-scheme ed25519 save-to-keychain sign-as axvigil-rec-2039660e.testnet network-config testnet sign-with-keychain send[39m
+
+create_agent tx H6oFWbM9YNsjqgjottr1676VybepuTFzu6FyzvhXkxCw
+step create-challenger
+
+===== create_challenger (exit 0) =====
+├  Unsigned transaction:
+│    signer_id:    axvigil-rec-2039660e.testnet
+│    receiver_id:  challenger.axvigil-rec-2039660e.testnet
+│    actions:
+│       -- create account:      challenger.axvigil-rec-2039660e.testnet
+│       -- transfer deposit:    1 NEAR
+│       -- add access key:     
+│                       public key:   ed25519:73jM6pJ3LkwVfpSCmbRzFPmS6Ej9nvugLLkhKYvSSAyc
+│                       nonce:        0
+│                       permission:   FullAccess
+│     [0m
+[33m├  Warning: no access keys found in keychain, trying legacy keychain[0m
+├  Your transaction was signed successfully.
+│    Public key: ed25519:HtffxP6Sn7a8MMiuvsHb5vLuYYkvmae8pvCcvZf4RQRW
+│    Signature:  ed25519:5FatWsue5VqnMYN392Mp4sU6wpkDGatdrU2qTaFSdvdtRdHsN18qK56NHUsvfNsCfkCiijT2uaFdM2e6rPXMxHvv
+│     [0m
+[33m├  Warning: 
+│    [31mFailed to save the access key <ed25519:73jM6pJ3LkwVfpSCmbRzFPmS6Ej9nvugLLkhKYvSSAyc> to the keychain.
+│    Failed to save password to keychain. You may need to install the secure keychain package by following this instruction: https://github.com/jaraco/keyring#using-keyring-on-headless-linux-systems[39m
+│    [31mThe data for the access key will be stored in the legacy keychain.[39m
+[0m
+├  Transaction Execution Info:
+│    Gas used: 8.6 Tgas
+│    Transaction fee: 0.0071149895375 NEAR
+│    Transaction ID: 2xTHEoQPzs3m9cfmYZLq8EzwchtT9cp5YnvUYjYf8ky6
+│    To see the transaction in the transaction explorer, please open this url in your browser:
+│    https://explorer.testnet.near.org/transactions/2xTHEoQPzs3m9cfmYZLq8EzwchtT9cp5YnvUYjYf8ky6
+│     [0m
+
+
+New account <challenger.axvigil-rec-2039660e.testnet> has been successfully created.
+<axvigil-rec-2039660e.testnet> has transferred 1 NEAR to <challenger.axvigil-rec-2039660e.testnet> successfully.
+Added access key = ed25519:73jM6pJ3LkwVfpSCmbRzFPmS6Ej9nvugLLkhKYvSSAyc to challenger.axvigil-rec-2039660e.testnet.
+
+The data for the access key is saved in a file /home/ubuntu/.near-credentials/testnet/challenger.axvigil-rec-2039660e.testnet/ed25519_73jM6pJ3LkwVfpSCmbRzFPmS6Ej9nvugLLkhKYvSSAyc.json
+The data for the access key is saved in a file /home/ubuntu/.near-credentials/testnet/challenger.axvigil-rec-2039660e.testnet.json
+
+
+Here is your console command if you need to script it or re-run:
+    [33mnear account create-account fund-myself challenger.axvigil-rec-2039660e.testnet '1 NEAR' autogenerate-new-keypair --signature-scheme ed25519 save-to-keychain sign-as axvigil-rec-2039660e.testnet network-config testnet sign-with-keychain send[39m
+
+create_challenger tx 2xTHEoQPzs3m9cfmYZLq8EzwchtT9cp5YnvUYjYf8ky6
+step register-agent
+
+===== register_agent (exit 0) =====
+├  Unsigned transaction:
+│    signer_id:    agent.axvigil-rec-2039660e.testnet
+│    receiver_id:  axvigil-rec-2039660e.testnet
+│    actions:
+│       -- function call:      
+│                       method name:  register_agent
+│                       args:         {}
+│                       gas:          100.0 Tgas
+│                       deposit:      0 NEAR
+│     [0m
+[33m├  Warning: no access keys found in keychain, trying legacy keychain[0m
+├  Your transaction was signed successfully.
+│    Public key: ed25519:4Bh7s8YS8njmxWgE1X1D9bXkzJCgwqEqiBu4anmNQG1W
+│    Signature:  ed25519:2YiBknYZbRuwYBkmxvbbmWEy7w4uYhytwr3LnJUQrdXsdn7W8VzMZ2J58T1btkUeZL9Dn3i6NxoGnqfoZcYiaVdS
+│     [0m
+├  Transaction Execution Info:
+│    Gas used: 2.2 Tgas
+│    Transaction fee: 0.0001923028435111 NEAR
+│    Transaction ID: ATnfAXXxc5ZseVPnjXw3koKjEyt8VzbXvGDCcWaCLS3n
+│    To see the transaction in the transaction explorer, please open this url in your browser:
+│    https://explorer.testnet.near.org/transactions/ATnfAXXxc5ZseVPnjXw3koKjEyt8VzbXvGDCcWaCLS3n
+│     [0m
+├  Function execution logs:
+│    [36mLogs [axvigil-rec-2039660e.testnet]:[39m
+│      EVENT_JSON:{"standard":"axvigil-record","version":"1.0.0","event":"register_agent","data":[{"agent":"agent.axvigil-rec-2039660e.testnet"}]}
+│    [36mLogs [agent.axvigil-rec-2039660e.testnet]:[39m   [2mNo logs[0m
+│     [0m
+├  Function execution return value:
+│    Empty return value
+│     [0m
+
+
+The "register_agent" call to <axvigil-rec-2039660e.testnet> on behalf of <agent.axvigil-rec-2039660e.testnet> succeeded.
+
+
+
+
+Here is your console command if you need to script it or re-run:
+    [33mnear contract call-function as-transaction axvigil-rec-2039660e.testnet register_agent json-args {} prepaid-gas '100.0 Tgas' attached-deposit '0 NEAR' sign-as agent.axvigil-rec-2039660e.testnet network-config testnet sign-with-keychain send[39m
+
+register_agent tx ATnfAXXxc5ZseVPnjXw3koKjEyt8VzbXvGDCcWaCLS3n
+scoped_key_public ed25519:4qAg9LEWayPLGmwPWX6aF3sjBzCGZP6qMRRRK4zLAyW3
+scoped_key_methods anchor_evidence
+scoped_key_allowance 0.25 NEAR
+scoped_key_receiver axvigil-rec-2039660e.testnet
+step add-scoped-key
+
+===== add_scoped_key (exit 0) =====
+├  Unsigned transaction:
+│    signer_id:    agent.axvigil-rec-2039660e.testnet
+│    receiver_id:  agent.axvigil-rec-2039660e.testnet
+│    actions:
+│       -- add access key:     
+│                       public key:   ed25519:4qAg9LEWayPLGmwPWX6aF3sjBzCGZP6qMRRRK4zLAyW3
+│                       nonce:        0
+│                       permission:   FunctionCall(FunctionCallPermission { allowance: Some(NearToken { inner: 250000000000000000000000 }), receiver_id: "axvigil-rec-2039660e.testnet", method_names: ["anchor_evidence"] })
+│     [0m
+[33m├  Warning: no access keys found in keychain, trying legacy keychain[0m
+├  Your transaction was signed successfully.
+│    Public key: ed25519:4Bh7s8YS8njmxWgE1X1D9bXkzJCgwqEqiBu4anmNQG1W
+│    Signature:  ed25519:5SX1CQu9dR3n3jyLsFpJ9mg4vb2MTn9KBkkkNnjNCjM76ZE7a79D8hVFhkUyv8NnuUuM9sv3KeBUeYxYfFsAXu8Z
+│     [0m
+├  Transaction Execution Info:
+│    Gas used: 0.644 Tgas
+│    Transaction fee: 0.0000420615860592 NEAR
+│    Transaction ID: 5b6vWmbndbVKoxWHLmrYdtrzStGEo3BapUZb7ahodHvc
+│    To see the transaction in the transaction explorer, please open this url in your browser:
+│    https://explorer.testnet.near.org/transactions/5b6vWmbndbVKoxWHLmrYdtrzStGEo3BapUZb7ahodHvc
+│     [0m
+
+
+Added access key = ed25519:4qAg9LEWayPLGmwPWX6aF3sjBzCGZP6qMRRRK4zLAyW3 to agent.axvigil-rec-2039660e.testnet.
+
+
+
+
+Here is your console command if you need to script it or re-run:
+    [33mnear account add-key agent.axvigil-rec-2039660e.testnet grant-function-call-access --allowance '0.25 NEAR' --contract-account-id axvigil-rec-2039660e.testnet --function-names anchor_evidence use-manually-provided-public-key ed25519:4qAg9LEWayPLGmwPWX6aF3sjBzCGZP6qMRRRK4zLAyW3 network-config testnet sign-with-keychain send[39m
+
+add_scoped_key tx 5b6vWmbndbVKoxWHLmrYdtrzStGEo3BapUZb7ahodHvc
+step grade-honest
+honest_evidence_hash d90054a2e3f54f11ac40fa32ba9562c1aa6538f7430be757e5a0ab5efe0b81ad
+step grade-unfixed
+bad_evidence_hash 709c83c6a5f33bfcb1fd67b714e05ccae04ac9318460b2d569efbd8214a90614
+bad seal passed=false; the anchor below claims passed=true
+step anchor-honest
+
+===== anchor_honest (exit 0) =====
+├  Unsigned transaction:
+│    signer_id:    agent.axvigil-rec-2039660e.testnet
+│    receiver_id:  axvigil-rec-2039660e.testnet
+│    actions:
+│       -- function call:      
+│                       method name:  anchor_evidence
+│                       args:         {
+│                                       "bundle_sha256": "c74a5decce5881665a2f462edc5ce2691b63f826ce3d540529801a72079075cb",
+│                                       "difficulty": 0,
+│                                       "evidence_hash": "d90054a2e3f54f11ac40fa32ba9562c1aa6538f7430be757e5a0ab5efe0b81ad",
+│                                       "passed": true,
+│                                       "vuln_class": 0,
+│                                       "window_seconds": 90
+│                                     }
+│                       gas:          100.0 Tgas
+│                       deposit:      0 NEAR
+│     [0m
+├  Your transaction was signed successfully.
+│    Public key: ed25519:4qAg9LEWayPLGmwPWX6aF3sjBzCGZP6qMRRRK4zLAyW3
+│    Signature:  ed25519:AceRSvZAXGJmV2BttrNPN1eE5LL4xJgiXr81GbwvVUXp5N8zQTj9TdHEqFF8UbYCW8mCCjKz6Kkt2NvncCm93xo
+│     [0m
+├  Transaction Execution Info:
+│    Gas used: 2.6 Tgas
+│    Transaction fee: 0.0002323708404885 NEAR
+│    Transaction ID: cT8gz2C2t2GpMmWDFcWhz5L8myfDUYWDFbyx43eWD3M
+│    To see the transaction in the transaction explorer, please open this url in your browser:
+│    https://explorer.testnet.near.org/transactions/cT8gz2C2t2GpMmWDFcWhz5L8myfDUYWDFbyx43eWD3M
+│     [0m
+├  Function execution logs:
+│    [36mLogs [axvigil-rec-2039660e.testnet]:[39m
+│      EVENT_JSON:{"standard":"axvigil-record","version":"1.0.0","event":"anchor_evidence","data":[{"agent":"agent.axvigil-rec-2039660e.testnet","evidence_hash":"d90054a2e3f54f11ac40fa32ba9562c1aa6538f7430be757e5a0ab5efe0b81ad","bundle_sha256":"c74a5decce5881665a2f462edc5ce2691b63f826ce3d540529801a72079075cb","vuln_class":0,"difficulty":0,"ready_at_ns":"1794569960646994448"}]}
+│    [36mLogs [agent.axvigil-rec-2039660e.testnet]:[39m   [2mNo logs[0m
+│     [0m
+├  Function execution return value:
+│    Empty return value
+│     [0m
+
+
+The "anchor_evidence" call to <axvigil-rec-2039660e.testnet> on behalf of <agent.axvigil-rec-2039660e.testnet> succeeded.
+
+
+
+
+Here is your console command if you need to script it or re-run:
+    [33mnear contract call-function as-transaction axvigil-rec-2039660e.testnet anchor_evidence file-args /agent/repos/axvigil/near/.keys/demo/honest-args.json prepaid-gas '100.0 Tgas' attached-deposit '0 NEAR' sign-as agent.axvigil-rec-2039660e.testnet network-config testnet sign-with-access-key-file /agent/repos/axvigil/near/.keys/demo/agent-scoped.json send[39m
+
+anchor_honest tx cT8gz2C2t2GpMmWDFcWhz5L8myfDUYWDFbyx43eWD3M
+step anchor-bad
+
+===== anchor_bad (exit 0) =====
+├  Unsigned transaction:
+│    signer_id:    agent.axvigil-rec-2039660e.testnet
+│    receiver_id:  axvigil-rec-2039660e.testnet
+│    actions:
+│       -- function call:      
+│                       method name:  anchor_evidence
+│                       args:         {
+│                                       "bundle_sha256": "75bca2ee58bec3a7779c9a5dce4450c3c352bd1d096dab70ea2d71f4803972e3",
+│                                       "difficulty": 0,
+│                                       "evidence_hash": "709c83c6a5f33bfcb1fd67b714e05ccae04ac9318460b2d569efbd8214a90614",
+│                                       "passed": true,
+│                                       "vuln_class": 0,
+│                                       "window_seconds": 90
+│                                     }
+│                       gas:          100.0 Tgas
+│                       deposit:      0 NEAR
+│     [0m
+├  Your transaction was signed successfully.
+│    Public key: ed25519:4qAg9LEWayPLGmwPWX6aF3sjBzCGZP6qMRRRK4zLAyW3
+│    Signature:  ed25519:EWjWcdrCKwSXMwBPTK7D7tr1MnsDAt73mkiV2QKpSarrLYUFWTCabCUHUGqjLrbGBxjvDNp7SuMbGjSmbFeQ89R
+│     [0m
+├  Transaction Execution Info:
+│    Gas used: 2.6 Tgas
+│    Transaction fee: 0.0002338230081745 NEAR
+│    Transaction ID: CuKrFbMKBDFb4gxwQHF94KCAmC8822xZ3Tc6LkuSve7u
+│    To see the transaction in the transaction explorer, please open this url in your browser:
+│    https://explorer.testnet.near.org/transactions/CuKrFbMKBDFb4gxwQHF94KCAmC8822xZ3Tc6LkuSve7u
+│     [0m
+├  Function execution logs:
+│    [36mLogs [axvigil-rec-2039660e.testnet]:[39m
+│      EVENT_JSON:{"standard":"axvigil-record","version":"1.0.0","event":"anchor_evidence","data":[{"agent":"agent.axvigil-rec-2039660e.testnet","evidence_hash":"709c83c6a5f33bfcb1fd67b714e05ccae04ac9318460b2d569efbd8214a90614","bundle_sha256":"75bca2ee58bec3a7779c9a5dce4450c3c352bd1d096dab70ea2d71f4803972e3","vuln_class":0,"difficulty":0,"ready_at_ns":"1794569964875705176"}]}
+│    [36mLogs [agent.axvigil-rec-2039660e.testnet]:[39m   [2mNo logs[0m
+│     [0m
+├  Function execution return value:
+│    Empty return value
+│     [0m
+
+
+The "anchor_evidence" call to <axvigil-rec-2039660e.testnet> on behalf of <agent.axvigil-rec-2039660e.testnet> succeeded.
+
+
+
+
+Here is your console command if you need to script it or re-run:
+    [33mnear contract call-function as-transaction axvigil-rec-2039660e.testnet anchor_evidence file-args /agent/repos/axvigil/near/.keys/demo/bad-args.json prepaid-gas '100.0 Tgas' attached-deposit '0 NEAR' sign-as agent.axvigil-rec-2039660e.testnet network-config testnet sign-with-access-key-file /agent/repos/axvigil/near/.keys/demo/agent-scoped.json send[39m
+
+anchor_bad tx CuKrFbMKBDFb4gxwQHF94KCAmC8822xZ3Tc6LkuSve7u
+step scoped-key-cannot-finalize
+
+===== scoped_finalize (exit 1) =====
+├  Unsigned transaction:
+│    signer_id:    agent.axvigil-rec-2039660e.testnet
+│    receiver_id:  axvigil-rec-2039660e.testnet
+│    actions:
+│       -- function call:      
+│                       method name:  finalize
+│                       args:         {
+│                                       "evidence_hash": "d90054a2e3f54f11ac40fa32ba9562c1aa6538f7430be757e5a0ab5efe0b81ad"
+│                                     }
+│                       gas:          100.0 Tgas
+│                       deposit:      0 NEAR
+│     [0m
+├  Your transaction was signed successfully.
+│    Public key: ed25519:4qAg9LEWayPLGmwPWX6aF3sjBzCGZP6qMRRRK4zLAyW3
+│    Signature:  ed25519:3X4t8Ay95iQKhmgHPCcw5QTNs3KyCfVdYoMh2ALykDwxzJ5gP7FZTQvBq8BUKxbKEqSPTGBKyRiuwk7inYGxBK4z
+│     [0m
+
+Here is your console command if you need to script it or re-run:
+    [33mnear contract call-function as-transaction axvigil-rec-2039660e.testnet finalize json-args '{"evidence_hash":"d90054a2e3f54f11ac40fa32ba9562c1aa6538f7430be757e5a0ab5efe0b81ad"}' prepaid-gas '100.0 Tgas' attached-deposit '0 NEAR' sign-as agent.axvigil-rec-2039660e.testnet network-config testnet sign-with-access-key-file /agent/repos/axvigil/near/.keys/demo/agent-scoped.json send[39m
+
+Error: 
+   0: [91mError: Transaction method name <finalize> isn't allowed by the access key.[0m
+
+Location:
+   [35msrc/transaction_signature_options/send/mod.rs[0m:[35m185[0m
+scoped_finalize denied (exit 1)
+step scoped-key-cannot-transfer
+
+===== scoped_transfer (exit 1) =====
+├  Unsigned transaction:
+│    signer_id:    agent.axvigil-rec-2039660e.testnet
+│    receiver_id:  challenger.axvigil-rec-2039660e.testnet
+│    actions:
+│       -- transfer deposit:    0.01 NEAR
+│     [0m
+├  Your transaction was signed successfully.
+│    Public key: ed25519:4qAg9LEWayPLGmwPWX6aF3sjBzCGZP6qMRRRK4zLAyW3
+│    Signature:  ed25519:5z1R2WvUhcVSLf8HSCJ4V2m2fKbvATFEHyam4WSU2bMAoBHVk8G1WD8PPxNFceFQ6NqC5w4mnR7dZnsdZKjxPTHa
+│     [0m
+
+Here is your console command if you need to script it or re-run:
+    [33mnear tokens agent.axvigil-rec-2039660e.testnet send-near challenger.axvigil-rec-2039660e.testnet '0.01 NEAR' network-config testnet sign-with-access-key-file /agent/repos/axvigil/near/.keys/demo/agent-scoped.json send[39m
+
+Error: 
+   0: [91mError: Transaction requires a full permission access key.[0m
+
+Location:
+   [35msrc/transaction_signature_options/send/mod.rs[0m:[35m185[0m
+scoped_transfer denied (exit 1)
+step challenge-bad
+
+===== challenge_bad (exit 0) =====
+├  Unsigned transaction:
+│    signer_id:    challenger.axvigil-rec-2039660e.testnet
+│    receiver_id:  axvigil-rec-2039660e.testnet
+│    actions:
+│       -- function call:      
+│                       method name:  challenge
+│                       args:         {
+│                                       "challenge_hash": "75bca2ee58bec3a7779c9a5dce4450c3c352bd1d096dab70ea2d71f4803972e3",
+│                                       "evidence_hash": "709c83c6a5f33bfcb1fd67b714e05ccae04ac9318460b2d569efbd8214a90614"
+│                                     }
+│                       gas:          100.0 Tgas
+│                       deposit:      0 NEAR
+│     [0m
+[33m├  Warning: no access keys found in keychain, trying legacy keychain[0m
+├  Your transaction was signed successfully.
+│    Public key: ed25519:73jM6pJ3LkwVfpSCmbRzFPmS6Ej9nvugLLkhKYvSSAyc
+│    Signature:  ed25519:4yopmhWuMkWEQe31FzC2DW2FdKBYMLit45kciuZj2wnAGxTj8y9pwxP64Gw8Fj2pNiGJ2GS3mSdJQo2vVtD32FxB
+│     [0m
+├  Transaction Execution Info:
+│    Gas used: 2.4 Tgas
+│    Transaction fee: 0.0002135146407461 NEAR
+│    Transaction ID: EdRaNEaKFJrQEhYFQ6i3PHC7mu66HqB93u7YtDavswz6
+│    To see the transaction in the transaction explorer, please open this url in your browser:
+│    https://explorer.testnet.near.org/transactions/EdRaNEaKFJrQEhYFQ6i3PHC7mu66HqB93u7YtDavswz6
+│     [0m
+├  Function execution logs:
+│    [36mLogs [axvigil-rec-2039660e.testnet]:[39m
+│      EVENT_JSON:{"standard":"axvigil-record","version":"1.0.0","event":"challenge","data":[{"evidence_hash":"709c83c6a5f33bfcb1fd67b714e05ccae04ac9318460b2d569efbd8214a90614","challenger":"challenger.axvigil-rec-2039660e.testnet","challenge_hash":"75bca2ee58bec3a7779c9a5dce4450c3c352bd1d096dab70ea2d71f4803972e3","respond_by_ns":"1794573482078917243"}]}
+│    [36mLogs [challenger.axvigil-rec-2039660e.testnet]:[39m   [2mNo logs[0m
+│     [0m
+├  Function execution return value:
+│    Empty return value
+│     [0m
+
+
+The "challenge" call to <axvigil-rec-2039660e.testnet> on behalf of <challenger.axvigil-rec-2039660e.testnet> succeeded.
+
+
+
+
+Here is your console command if you need to script it or re-run:
+    [33mnear contract call-function as-transaction axvigil-rec-2039660e.testnet challenge file-args /agent/repos/axvigil/near/.keys/demo/challenge-args.json prepaid-gas '100.0 Tgas' attached-deposit '0 NEAR' sign-as challenger.axvigil-rec-2039660e.testnet network-config testnet sign-with-keychain send[39m
+
+challenge_bad tx EdRaNEaKFJrQEhYFQ6i3PHC7mu66HqB93u7YtDavswz6
+step resolve-bad
+
+===== resolve_bad (exit 0) =====
+├  Unsigned transaction:
+│    signer_id:    axvigil-rec-2039660e.testnet
+│    receiver_id:  axvigil-rec-2039660e.testnet
+│    actions:
+│       -- function call:      
+│                       method name:  resolve_challenge
+│                       args:         {
+│                                       "evidence_hash": "709c83c6a5f33bfcb1fd67b714e05ccae04ac9318460b2d569efbd8214a90614",
+│                                       "upheld": true
+│                                     }
+│                       gas:          100.0 Tgas
+│                       deposit:      0 NEAR
+│     [0m
+[33m├  Warning: no access keys found in keychain, trying legacy keychain[0m
+├  Your transaction was signed successfully.
+│    Public key: ed25519:HtffxP6Sn7a8MMiuvsHb5vLuYYkvmae8pvCcvZf4RQRW
+│    Signature:  ed25519:2xqg4TzzwX4sjap3tgwDfKNd1GJXi4SpMEN3F3iSRCPpDqYKN4h56xqp2SFawTjvb3uDq9tiSULaee3JmUhNFLhC
+│     [0m
+├  Transaction Execution Info:
+│    Gas used: 2.6 Tgas
+│    Transaction fee: 0.0002282177762077 NEAR
+│    Transaction ID: FXHr1sp1TLfrnjsgAxMxB17tiJCrcoPCi9PWdAingiYg
+│    To see the transaction in the transaction explorer, please open this url in your browser:
+│    https://explorer.testnet.near.org/transactions/FXHr1sp1TLfrnjsgAxMxB17tiJCrcoPCi9PWdAingiYg
+│     [0m
+├  Function execution logs:
+│    [36mLogs [axvigil-rec-2039660e.testnet]:[39m
+│      EVENT_JSON:{"standard":"axvigil-record","version":"1.0.0","event":"revoke","data":[{"evidence_hash":"709c83c6a5f33bfcb1fd67b714e05ccae04ac9318460b2d569efbd8214a90614","agent":"agent.axvigil-rec-2039660e.testnet"}]}
+│    [36mLogs [axvigil-rec-2039660e.testnet]:[39m   [2mNo logs[0m
+│     [0m
+├  Function execution return value:
+│    Empty return value
+│     [0m
+
+
+The "resolve_challenge" call to <axvigil-rec-2039660e.testnet> on behalf of <axvigil-rec-2039660e.testnet> succeeded.
+
+
+
+
+Here is your console command if you need to script it or re-run:
+    [33mnear contract call-function as-transaction axvigil-rec-2039660e.testnet resolve_challenge file-args /agent/repos/axvigil/near/.keys/demo/resolve-args.json prepaid-gas '100.0 Tgas' attached-deposit '0 NEAR' sign-as axvigil-rec-2039660e.testnet network-config testnet sign-with-keychain send[39m
+
+resolve_bad tx FXHr1sp1TLfrnjsgAxMxB17tiJCrcoPCi9PWdAingiYg
+step wait-for-window
+step finalize-honest
+
+===== finalize_honest (exit 0) =====
+├  Unsigned transaction:
+│    signer_id:    challenger.axvigil-rec-2039660e.testnet
+│    receiver_id:  axvigil-rec-2039660e.testnet
+│    actions:
+│       -- function call:      
+│                       method name:  finalize
+│                       args:         {
+│                                       "evidence_hash": "d90054a2e3f54f11ac40fa32ba9562c1aa6538f7430be757e5a0ab5efe0b81ad"
+│                                     }
+│                       gas:          100.0 Tgas
+│                       deposit:      0 NEAR
+│     [0m
+[33m├  Warning: no access keys found in keychain, trying legacy keychain[0m
+├  Your transaction was signed successfully.
+│    Public key: ed25519:73jM6pJ3LkwVfpSCmbRzFPmS6Ej9nvugLLkhKYvSSAyc
+│    Signature:  ed25519:3quirqYMJ8s8TkbNtk1GN3qvTfKokPpYvdvqCe9cqxELGpZcLcoiBycdKcgc79hHKx9tfM4xjFPxQjaHmvgdeELx
+│     [0m
+├  Transaction Execution Info:
+│    Gas used: 2.5 Tgas
+│    Transaction fee: 0.0002255628642867 NEAR
+│    Transaction ID: 81PGJZwAjeW28hx6zHDaZ3j3v3SDd4hDM7rYCckWxbSi
+│    To see the transaction in the transaction explorer, please open this url in your browser:
+│    https://explorer.testnet.near.org/transactions/81PGJZwAjeW28hx6zHDaZ3j3v3SDd4hDM7rYCckWxbSi
+│     [0m
+├  Function execution logs:
+│    [36mLogs [axvigil-rec-2039660e.testnet]:[39m
+│      EVENT_JSON:{"standard":"axvigil-record","version":"1.0.0","event":"finalize","data":[{"evidence_hash":"d90054a2e3f54f11ac40fa32ba9562c1aa6538f7430be757e5a0ab5efe0b81ad","agent":"agent.axvigil-rec-2039660e.testnet"}]}
+│    [36mLogs [challenger.axvigil-rec-2039660e.testnet]:[39m   [2mNo logs[0m
+│     [0m
+├  Function execution return value:
+│    Empty return value
+│     [0m
+
+
+The "finalize" call to <axvigil-rec-2039660e.testnet> on behalf of <challenger.axvigil-rec-2039660e.testnet> succeeded.
+
+
+
+
+Here is your console command if you need to script it or re-run:
+    [33mnear contract call-function as-transaction axvigil-rec-2039660e.testnet finalize file-args /agent/repos/axvigil/near/.keys/demo/finalize-args.json prepaid-gas '100.0 Tgas' attached-deposit '0 NEAR' sign-as challenger.axvigil-rec-2039660e.testnet network-config testnet sign-with-keychain send[39m
+
+finalize_honest tx 81PGJZwAjeW28hx6zHDaZ3j3v3SDd4hDM7rYCckWxbSi
+step view
+demo complete

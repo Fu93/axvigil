@@ -1,0 +1,69 @@
+NEAR testnet demo of axvigil-record
+network: testnet
+rpc: https://rpc.testnet.near.org
+contract / resolver / owner: axvigil-rec-8735edcb.testnet
+agent: agent.axvigil-rec-8735edcb.testnet
+challenger: challenger.axvigil-rec-8735edcb.testnet
+window_seconds: 90
+response_seconds: 3600
+bonds: 0 yoctoNEAR
+scoped key public: ed25519:E9k6yKCDMxkfyQA6DdDTVBemiYB6s6oNR6Nz4Whcy8kA
+scoped key allowance: 0.25 NEAR
+scoped key receiver: axvigil-rec-8735edcb.testnet
+scoped key methods: anchor_evidence
+
+The account was created with the testnet faucet. Private keys stayed in the
+near-cli keychain and in near/.keys/ on the deploy machine. They are not in
+this file.
+
+Transactions
+create_contract  CQZsgQGrNLtYLEHUBucc6uf5bx5ryRZo4hmURTosFZYJ
+deploy           8bnZeBuRs8RkiJFqaHuDxC4v6zJYxraY78DFDZHhQaN2
+create_agent     BEmsovzSyF9Sjdjj5i5oyTZ3e36oyomGFqX5YsbDzj8o
+create_challenger GdAK9jXWhFaHUkz9ZRHqEsAo5DzdQYRrsgbGgsEaoWT7
+register_agent   3xmZSnMfzY2kP68jzQdaEhCuZ3HmyQeRXBLN9gposm2q
+add_scoped_key   62dzcWSDydfPrmYYtnwMM32GwZafRCYBTzuAV2dhmeL8
+anchor_honest    AEQxLtECw6dUuberg6KQQS3aeqKKoj4yYCmbwuKn3adf
+anchor_bad       5Wb9ZnddWsAtdgsceQhMJp4J5rxtgMviXQfuj1MCSnY3
+challenge_bad    CjF1UsedKLAggiv1ehstHy69dTPJanUmyV37CyeJFKWZ
+resolve_bad      Zq8baLTdz4GeTcgPvcyNMoxd6y7uDhqCV4HL6ZKL55Z
+finalize_honest  9b5Udnp4P6q5gRoCUMbbTwAAFXBfSaiyPNo5gJYGt1F3
+
+Explorer prefix: https://testnet.nearblocks.io/txns/<id>
+Also: https://explorer.testnet.near.org/transactions/<id>
+
+Honest seal, from the real verifier on challenges/reentrancy-001 sample patch:
+  passed: true
+  evidence_hash: d90054a2e3f54f11ac40fa32ba9562c1aa6538f7430be757e5a0ab5efe0b81ad
+  bundle_sha256: c74a5decce5881665a2f462edc5ce2691b63f826ce3d540529801a72079075cb
+  anchor signed by the function-call key
+
+Unfixed source, from the real verifier (vulnerable Vault.sol submitted as the patch):
+  passed: false
+  evidence_hash: 709c83c6a5f33bfcb1fd67b714e05ccae04ac9318460b2d569efbd8214a90614
+  bundle_sha256: 75bca2ee58bec3a7779c9a5dce4450c3c352bd1d096dab70ea2d71f4803972e3
+False claim: anchor_evidence was called with passed=true and that same bundle_sha256.
+The contract stores the claim. It does not re-run Foundry.
+Challenger posted challenge_hash = that bundle_sha256.
+Resolver (the contract account) called resolve_challenge upheld=true.
+
+Scoped key denials, signed with the same function-call key:
+  finalize: Transaction method name <finalize> isn't allowed by the access key.
+  transfer: Transaction requires a full permission access key.
+
+An earlier finalize of the honest record, sent before ready_at_ns, aborted:
+  EQH92Jic81KL1kAVZ5Lemtcm2RRXLJCesYyLxxFUn7tY
+  block time 2026-11-13T10:14:03Z, ready_at 2026-11-13T10:15:10Z
+  result: wasm trap, record stayed Pending
+The successful finalize is 9b5Udnp4P6q5gRoCUMbbTwAAFXBfSaiyPNo5gJYGt1F3
+at 2026-11-13T10:15:26Z, after the window.
+Log: EVENT_JSON finalize evidence_hash d90054a2e3f54f11ac40fa32ba9562c1aa6538f7430be757e5a0ab5efe0b81ad
+
+Final view (python3 -m axvigil_near view --deployment docs/near/deployment.json):
+  spec: axvigil-record/1
+  honest status: Final
+  bad status: Revoked
+  reputation finalized: 1
+  reputation revoked: 1
+  reputation pending: 0
+  is_valid: true
