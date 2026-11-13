@@ -1,4 +1,4 @@
-import { formatRemain, phase, shortHash, timeline } from "./near-state.mjs";
+import { formatRemain, phase, plainGrade, shortHash, timeline } from "./near-state.mjs";
 
 const RPC = "https://rpc.testnet.near.org";
 const EXPLORER = "https://testnet.nearblocks.io";
@@ -12,6 +12,11 @@ const state = {
   records: [],
   reputation: null,
   signature: "",
+  txTimes: {
+    AEQxLtECw6dUuberg6KQQS3aeqKKoj4yYCmbwuKn3adf: "2026-11-13 10:13:40.244 UTC",
+    "9b5Udnp4P6q5gRoCUMbbTwAAFXBfSaiyPNo5gJYGt1F3": "2026-11-13 10:16:07.501 UTC",
+    CjF1UsedKLAggiv1ehstHy69dTPJanUmyV37CyeJFKWZ: "2026-11-13 10:13:51.761 UTC",
+  },
   preview: new URLSearchParams(location.search).get("preview"),
 };
 
@@ -23,7 +28,7 @@ function escapeHtml(value) {
   }[ch]));
 }
 
-async function rpc(payload) {
+async function rpc(payload, timeout = 8000) {
   if (state.preview === "down") throw new Error("The testnet RPC did not answer.");
   const targets = [RPC];
   if (location.protocol.startsWith("http")) targets.push(location.origin + "/near-rpc");
@@ -34,10 +39,11 @@ async function rpc(payload) {
         method: "POST",
         headers: { "content-type": "application/json" },
         body: JSON.stringify(payload),
-        signal: AbortSignal.timeout(4000),
+        signal: AbortSignal.timeout(timeout),
       });
       if (!response.ok) throw new Error("RPC " + response.status);
-      const body = await response.json();
+      const text = await response.text();
+      const body = JSON.parse(text.replace(/:(\s*)(\d{16,})/g, ":$1\"$2\""));
       if (body.error) throw new Error(body.error.message || "RPC error");
       return body.result;
     } catch (err) {
@@ -89,16 +95,33 @@ function nowNs() {
   return state.chainNs + elapsedMs * 1000000n;
 }
 
-function txFor(hash) {
+function stepTx(hash) {
   const deployment = state.deployment;
   const txs = deployment.transactions || {};
+  const agent = deployment.agent;
+  const challenger = deployment.challenger;
+  const contract = deployment.contract;
   if (hash === deployment.honest_evidence_hash) {
-    return [["Anchor", txs.anchor_honest], ["Finalize", txs.finalize_honest]];
+    return {
+      anchor: { id: txs.anchor_honest, sender: agent },
+      decide: { id: txs.finalize_honest, sender: challenger },
+    };
   }
   if (hash === deployment.bad_evidence_hash) {
-    return [["Anchor", txs.anchor_bad], ["Challenge", txs.challenge_bad], ["Revoke", txs.resolve_bad]];
+    return {
+      anchor: { id: txs.anchor_bad, sender: agent },
+      decide: { id: txs.challenge_bad, sender: challenger },
+      revoked: { id: txs.resolve_bad, sender: contract },
+    };
   }
-  return [];
+  return {};
+}
+
+function formatChainTime(ns) {
+  if (ns == null || ns === "" || ns === "0") return "";
+  const ms = Number(BigInt(ns) / 1000000n);
+  if (!Number.isFinite(ms)) return "";
+  return new Date(ms).toISOString().replace(".000", "").replace("T", " ").replace("Z", " UTC");
 }
 
 function labelFor(kind) {
@@ -110,13 +133,30 @@ function labelFor(kind) {
   return "Unknown";
 }
 
+function stepDetail(record, item) {
+  const links = stepTx(record.evidence_hash);
+  if (item.id === "verify") return { time: "Off-chain grader", tx: null };
+  if (item.id === "window") return { time: formatChainTime(record.ready_at_ns) || "Window close on chain", tx: null };
+  const tx = links[item.id] || null;
+  const cached = tx && state.txTimes ? state.txTimes[tx.id] : "";
+  return { time: cached || (tx ? "Reading chain time" : "Not taken"), tx };
+}
+
 function renderTimeline(record) {
-  return timeline(record, nowNs()).map((item) => (
-    `<li class="tl-step is-${item.state}">
+  return timeline(record, nowNs()).map((item) => {
+    const detail = stepDetail(record, item);
+    const fail = item.id === "revoked" && item.state === "done";
+    const klass = fail ? "is-fail" : "is-" + item.state;
+    const tx = detail.tx
+      ? `<a class="tl-tx" href="${EXPLORER}/txns/${encodeURIComponent(detail.tx.id)}" target="_blank" rel="noopener">tx <span aria-hidden="true">↗</span></a>`
+      : "";
+    return `<li class="tl-step ${klass}">
       <span class="tl-mark" aria-hidden="true"></span>
       <span class="tl-label">${escapeHtml(item.label)}</span>
-    </li>`
-  )).join("");
+      <span class="tl-time"${detail.tx ? ` data-tx="${escapeHtml(detail.tx.id)}"` : ""}>${escapeHtml(detail.time)}</span>
+      ${tx}
+    </li>`;
+  }).join("");
 }
 
 function clockHtml(record, kind) {
@@ -130,10 +170,8 @@ function clockHtml(record, kind) {
 
 function renderRecord(record) {
   const kind = phase(record, nowNs());
-  const links = txFor(record.evidence_hash).filter((pair) => pair[1]).map(([name, id]) => (
-    `<a class="tx" href="${EXPLORER}/txns/${encodeURIComponent(id)}" target="_blank" rel="noopener">${escapeHtml(name)} <span aria-hidden="true">↗</span></a>`
-  )).join("");
-  return `<article class="near-card" data-hash="${escapeHtml(record.evidence_hash)}">
+  const cardClass = kind === "revoked" ? " is-revoked" : "";
+  return `<article class="near-card${cardClass}" data-hash="${escapeHtml(record.evidence_hash)}">
     <header class="card-top">
       <p class="bracket">[:${escapeHtml(labelFor(kind).toUpperCase())}]</p>
       <p class="who">${escapeHtml(record.agent)}</p>
@@ -141,11 +179,10 @@ function renderRecord(record) {
     ${clockHtml(record, kind)}
     <p class="hash-row">
       <code title="${escapeHtml(record.evidence_hash)}">${escapeHtml(shortHash(record.evidence_hash))}</code>
-      <button type="button" class="copy" data-copy="${escapeHtml(record.evidence_hash)}">[ copy ]</button>
+      <button type="button" class="copy" data-copy="${escapeHtml(record.evidence_hash)}">[ copy hash ]</button>
     </p>
-    <p class="meta">bundle ${escapeHtml(shortHash(record.bundle_sha256))} · class ${escapeHtml(record.vuln_class)} · difficulty ${escapeHtml(record.difficulty)}</p>
-    <ol class="timeline" aria-label="Record timeline">${renderTimeline(record)}</ol>
-    <p class="txs">${links}</p>
+    <p class="meta">${escapeHtml(plainGrade(record.vuln_class, record.difficulty))}</p>
+    <ol class="timeline" aria-label="Verify, anchor, window, final or challenged, revoked">${renderTimeline(record)}</ol>
   </article>`;
 }
 
@@ -178,6 +215,7 @@ function render() {
     $("record-list").innerHTML = state.records.map(renderRecord).join("");
     $("record-list").appendChild(empty);
     state.signature = next;
+    drawTimelines();
   }
   const open = state.records.find((record) => phase(record, nowNs()) === "window");
   const challenge = $("challenge-copy");
@@ -322,6 +360,91 @@ function bindCopy() {
   });
 }
 
+function drawTimelines() {
+  document.querySelectorAll(".timeline").forEach((node) => {
+    if (node.dataset.watched) return;
+    node.dataset.watched = "1";
+    if (REDUCE || !("IntersectionObserver" in window)) {
+      node.classList.add("is-drawn");
+      return;
+    }
+    const obs = new IntersectionObserver((entries) => {
+      entries.forEach((entry) => {
+        if (!entry.isIntersecting) return;
+        entry.target.classList.add("is-drawn");
+        obs.disconnect();
+      });
+    }, { threshold: 0.3 });
+    obs.observe(node);
+  });
+}
+
+async function fillTimes() {
+  const jobs = [];
+  for (const record of state.records) {
+    for (const step of Object.values(stepTx(record.evidence_hash))) {
+      if (step && step.id && !state.txTimes[step.id]) jobs.push(step);
+    }
+  }
+  for (let i = 0; i < jobs.length; i += 2) {
+    await Promise.all(jobs.slice(i, i + 2).map(async (step) => {
+      try {
+        const status = await rpc({
+          jsonrpc: "2.0",
+          id: "axvigil",
+          method: "EXPERIMENTAL_tx_status",
+          params: { tx_hash: step.id, sender_account_id: step.sender },
+        }, 20000);
+        const blockId = status.transaction_outcome && status.transaction_outcome.block_hash;
+        if (!blockId) throw new Error("no block");
+        const block = await rpc({
+          jsonrpc: "2.0",
+          id: "axvigil",
+          method: "block",
+          params: { block_id: blockId },
+        }, 20000);
+        state.txTimes[step.id] = formatChainTime(block.header.timestamp);
+      } catch (err) {
+        return;
+      }
+      await new Promise((resolve) => setTimeout(resolve, 400));
+    }));
+  }
+  document.querySelectorAll("[data-tx]").forEach((node) => {
+    const time = state.txTimes[node.getAttribute("data-tx")];
+    if (time) node.textContent = time;
+  });
+}
+
+function bindCursor() {
+  const cursor = $("near-cursor");
+  if (!FINE || REDUCE || !cursor) return;
+  document.documentElement.classList.add("fine");
+  window.addEventListener("pointermove", (event) => {
+    cursor.style.left = event.clientX + "px";
+    cursor.style.top = event.clientY + "px";
+  }, { passive: true });
+}
+
+function bindReveals() {
+  const nodes = document.querySelectorAll(".reveal");
+  if (REDUCE || !("IntersectionObserver" in window)) {
+    nodes.forEach((node) => node.classList.add("in"));
+    return;
+  }
+  const obs = new IntersectionObserver((entries) => {
+    entries.forEach((entry) => {
+      if (!entry.isIntersecting) return;
+      entry.target.classList.add("in");
+      obs.unobserve(entry.target);
+    });
+  }, { threshold: 0.2 });
+  nodes.forEach((node, index) => {
+    node.style.transitionDelay = Math.min(index, 5) * 70 + "ms";
+    obs.observe(node);
+  });
+}
+
 function bindMagnets() {
   if (!FINE || REDUCE) return;
   document.querySelectorAll("a.btn, .nav-links a, button.btn").forEach((el) => {
@@ -335,17 +458,25 @@ function bindMagnets() {
   });
 }
 
+async function loadDeployment() {
+  for (const url of ["near-deployment.json", "../docs/near/deployment.json"]) {
+    const response = await fetch(url);
+    if (response.ok) return response.json();
+  }
+  throw new Error("deployment.json missing");
+}
+
 async function main() {
   bindNav();
   bindCopy();
   bindMagnets();
+  bindCursor();
+  bindReveals();
   if (state.preview) {
     $("banner").hidden = false;
     $("banner").textContent = "[: preview ] This view is sample data for the " + state.preview + " state. It is not a chain write.";
   }
-  const response = await fetch("../docs/near/deployment.json");
-  if (!response.ok) throw new Error("deployment.json " + response.status);
-  state.deployment = await response.json();
+  state.deployment = await loadDeployment();
   if (!String(state.deployment.contract || "").endsWith(".testnet")) {
     throw new Error("refusing a non-testnet contract");
   }
@@ -356,13 +487,15 @@ async function main() {
   const key = state.deployment.scoped_key || {};
   $("key-public").textContent = key.public_key || "";
   $("key-allowance").textContent = key.allowance || "";
-  $("key-methods").textContent = (key.method_names || []).join(", ") || "anchor_evidence";
+  const methodName = (key.method_names || ["anchor_evidence"]).join(", ");
+  $("key-methods").textContent = methodName.replaceAll("_", "_\n");
   $("retry").addEventListener("click", () => {
     $("status").textContent = "[: reading ]";
     $("status").dataset.on = "no";
     load().catch(showError);
   });
   await load();
+  fillTimes().catch(() => {});
   window.setInterval(tick, 1000);
   if (!state.preview) window.setInterval(() => { load().catch(showError); }, 20000);
 }

@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { formatRemain, phase, shortHash, timeline } from "./near-state.mjs";
+import { formatRemain, phase, plainGrade, shortHash, timeline } from "./near-state.mjs";
 
 const ready = "1000000000000";
 
@@ -41,6 +41,11 @@ test("countdown pads hours minutes and seconds", () => {
   assert.equal(formatRemain(0), "00:00:00");
   assert.equal(formatRemain(3661000), "01:01:01");
   assert.equal(formatRemain(90000000), "1d 01:00:00");
+});
+
+test("class and difficulty are words", () => {
+  assert.equal(plainGrade(0, 0), "reentrancy · basic");
+  assert.equal(plainGrade(1, 2), "price manipulation · legendary");
 });
 
 test("short hash keeps both ends", () => {

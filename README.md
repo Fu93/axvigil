@@ -347,7 +347,11 @@ PYTHONPATH=near/python python3 -m axvigil_near view --deployment docs/near/deplo
 
 See `"spec": "axvigil-record/1"`, honest `"status": "Final"`, bad `"status": "Revoked"`, `"finalized": 1`, `"revoked": 1`, `"is_valid": true`. The same object is saved at [`docs/near/view.json`](docs/near/view.json).
 
-6. Open the page. There is no public site host in this repo (no GitHub Pages, no Render service). The page reads the live testnet RPC.
+6. Open the page. Judges can use the public page published from this branch (not from `main`):
+
+https://fu93.github.io/axvigil/near.html
+
+The same page locally:
 
 ```bash
 python3 scripts/serve.py

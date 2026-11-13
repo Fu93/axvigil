@@ -11,11 +11,12 @@
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;700;800&family=IBM+Plex+Mono:wght@400;500;700&display=swap" media="print" onload="this.media='all'">
 <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;700;800&family=IBM+Plex+Mono:wght@400;500;700&display=swap"></noscript>
 <link rel="stylesheet" href="assets/site.css?v=3">
-<link rel="stylesheet" href="assets/near.css?v=2">
+<link rel="stylesheet" href="assets/near.css?v=3">
 <script>document.documentElement.classList.add("js");</script>
 </head>
-<body>
+<body class="near-page">
 <a class="skip" href="#content">Skip to content</a>
+<div class="near-cursor" id="near-cursor" aria-hidden="true"></div>
 <header class="site-header">
   <div class="nav-bar">
     <a class="logo" href="index.html" aria-label="AxVigil">
@@ -39,116 +40,72 @@
 </header>
 
 <main class="near-main dark" id="content">
-  <div class="wrap">
-    <section class="near-hero">
-      <p class="bracket near-kicker">[:NEAR] · testnet</p>
-      <h1 class="display"><span class="near-line"><span>The seal,</span></span><span class="near-line"><span>on NEAR.</span></span></h1>
-      <p class="lede">The verifier still grades the patch. This page reads the testnet contract. No key. A function-call key on the agent can publish a claim and cannot finalize it or move the balance.</p>
-      <div class="near-actions">
-        <a class="btn ghost" id="contract-link" href="https://testnet.nearblocks.io/address/axvigil-rec-8735edcb.testnet" target="_blank" rel="noopener">axvigil-rec-8735edcb.testnet</a>
-        <a class="btn ghost" id="agent-link" href="https://testnet.nearblocks.io/address/agent.axvigil-rec-8735edcb.testnet" target="_blank" rel="noopener">agent.axvigil-rec-8735edcb.testnet</a>
-        <p class="live-flag" id="status" data-on="no" role="status" aria-live="polite">[: reading ]</p>
-        <button class="btn ghost" id="retry" type="button">Retry</button>
-      </div>
-      <p class="near-banner" id="banner" hidden></p>
-      <p class="near-error" id="error" hidden role="alert"></p>
-    </section>
-
-    <div class="near-grid">
-      <aside class="panel" id="reputation">
-        <p class="idx">_001</p>
-        <h2 class="display">Reputation</h2>
-        <div class="stat-row">
-          <div><strong id="rep-final">1</strong><span>Finalized</span></div>
-          <div><strong id="rep-revoked">1</strong><span>Revoked</span></div>
-          <div><strong id="rep-pending">0</strong><span>Pending</span></div>
-          <div><strong id="rep-valid" data-on="yes">true</strong><span>is_valid</span></div>
-        </div>
-      </aside>
-      <section id="records">
-        <p class="idx">_002 / <span id="record-count">002</span></p>
-        <h2 class="display">Records</h2>
-        <div class="records" id="record-list" data-static="1">
-          <article class="near-card" data-hash="d90054a2e3f54f11ac40fa32ba9562c1aa6538f7430be757e5a0ab5efe0b81ad">
-            <header class="card-top">
-              <p class="bracket">[:FINAL]</p>
-              <p class="who">agent.axvigil-rec-8735edcb.testnet</p>
-            </header>
-            <p class="hash-row">
-              <code>d90054a2…0b81ad</code>
-              <button type="button" class="copy" data-copy="d90054a2e3f54f11ac40fa32ba9562c1aa6538f7430be757e5a0ab5efe0b81ad">[ copy ]</button>
-            </p>
-            <p class="meta">bundle c74a5dec…9075cb · class 0 · difficulty 0</p>
-            <ol class="timeline" aria-label="Record timeline">
-              <li class="tl-step is-done"><span class="tl-mark" aria-hidden="true"></span><span class="tl-label">Verify</span></li>
-              <li class="tl-step is-done"><span class="tl-mark" aria-hidden="true"></span><span class="tl-label">Anchor</span></li>
-              <li class="tl-step is-done"><span class="tl-mark" aria-hidden="true"></span><span class="tl-label">Window</span></li>
-              <li class="tl-step is-done"><span class="tl-mark" aria-hidden="true"></span><span class="tl-label">Final</span></li>
-              <li class="tl-step is-skip"><span class="tl-mark" aria-hidden="true"></span><span class="tl-label">Revoked</span></li>
-            </ol>
-            <p class="txs">
-              <a class="tx" href="https://testnet.nearblocks.io/txns/AEQxLtECw6dUuberg6KQQS3aeqKKoj4yYCmbwuKn3adf" target="_blank" rel="noopener">Anchor <span aria-hidden="true">↗</span></a>
-              <a class="tx" href="https://testnet.nearblocks.io/txns/9b5Udnp4P6q5gRoCUMbbTwAAFXBfSaiyPNo5gJYGt1F3" target="_blank" rel="noopener">Finalize <span aria-hidden="true">↗</span></a>
-            </p>
-          </article>
-          <article class="near-card" data-hash="709c83c6a5f33bfcb1fd67b714e05ccae04ac9318460b2d569efbd8214a90614">
-            <header class="card-top">
-              <p class="bracket">[:REVOKED]</p>
-              <p class="who">agent.axvigil-rec-8735edcb.testnet</p>
-            </header>
-            <p class="hash-row">
-              <code>709c83c6…a90614</code>
-              <button type="button" class="copy" data-copy="709c83c6a5f33bfcb1fd67b714e05ccae04ac9318460b2d569efbd8214a90614">[ copy ]</button>
-            </p>
-            <p class="meta">bundle 75bca2ee…3972e3 · class 0 · difficulty 0</p>
-            <ol class="timeline" aria-label="Record timeline">
-              <li class="tl-step is-done"><span class="tl-mark" aria-hidden="true"></span><span class="tl-label">Verify</span></li>
-              <li class="tl-step is-done"><span class="tl-mark" aria-hidden="true"></span><span class="tl-label">Anchor</span></li>
-              <li class="tl-step is-done"><span class="tl-mark" aria-hidden="true"></span><span class="tl-label">Window</span></li>
-              <li class="tl-step is-done"><span class="tl-mark" aria-hidden="true"></span><span class="tl-label">Challenged</span></li>
-              <li class="tl-step is-done"><span class="tl-mark" aria-hidden="true"></span><span class="tl-label">Revoked</span></li>
-            </ol>
-            <p class="txs">
-              <a class="tx" href="https://testnet.nearblocks.io/txns/5Wb9ZnddWsAtdgsceQhMJp4J5rxtgMviXQfuj1MCSnY3" target="_blank" rel="noopener">Anchor <span aria-hidden="true">↗</span></a>
-              <a class="tx" href="https://testnet.nearblocks.io/txns/CjF1UsedKLAggiv1ehstHy69dTPJanUmyV37CyeJFKWZ" target="_blank" rel="noopener">Challenge <span aria-hidden="true">↗</span></a>
-              <a class="tx" href="https://testnet.nearblocks.io/txns/Zq8baLTdz4GeTcgPvcyNMoxd6y7uDhqCV4HL6ZKL55Z" target="_blank" rel="noopener">Revoke <span aria-hidden="true">↗</span></a>
-            </p>
-          </article>
-          <p class="empty" id="empty-records" hidden>No seals on this agent.</p>
-        </div>
-      </section>
+  <section class="near-hero wrap" id="top">
+    <p class="bracket near-kicker reveal">[:NEAR] · testnet</p>
+    <h1 class="display"><span class="near-line"><span>The seal,</span></span><span class="near-line"><span>on NEAR.</span></span></h1>
+    <p class="lede reveal">The verifier grades the patch. This page only reads the testnet contract. A function-call key can publish the claim. It cannot finalize it or move the balance.</p>
+    <p class="ticker" id="ticker" role="status" aria-live="polite">
+      <span class="live-flag" id="status" data-on="no">[: reading ]</span>
+      <span class="tick"><b id="rep-final">1</b> finalized</span>
+      <span class="tick"><b id="rep-revoked">1</b> revoked</span>
+      <span class="tick"><b id="rep-pending">0</b> pending</span>
+      <span class="tick">valid <b id="rep-valid" data-on="yes">true</b></span>
+    </p>
+    <div class="near-actions">
+      <a class="btn yellow" id="contract-link" href="https://testnet.nearblocks.io/address/axvigil-rec-8735edcb.testnet" target="_blank" rel="noopener">axvigil-rec-8735edcb.testnet</a>
+      <a class="btn ghost" id="agent-link" href="https://testnet.nearblocks.io/address/agent.axvigil-rec-8735edcb.testnet" target="_blank" rel="noopener">agent.axvigil-rec-8735edcb.testnet</a>
+      <button class="btn ghost" id="retry" type="button">Retry</button>
     </div>
+    <p class="near-banner" id="banner" hidden></p>
+    <p class="near-error" id="error" hidden role="alert"></p>
+  </section>
 
-    <section class="panel sec-gap" id="key">
-      <p class="idx">_003</p>
-      <h2 class="display">Scoped key</h2>
-      <p class="lede">The key is allowed one method on one contract. The protocol rejected the other two calls. Those receipts never landed.</p>
-      <dl class="key-list">
-        <div><dt>Public key</dt><dd id="key-public">…</dd></div>
-        <div><dt>Allowance</dt><dd id="key-allowance">…</dd></div>
-        <div><dt>Methods</dt><dd id="key-methods">anchor_evidence</dd></div>
-      </dl>
-      <div class="denials">
-        <article class="denial">
-          <strong>finalize · rejected</strong>
-          <p>Transaction method name &lt;finalize&gt; isn't allowed by the access key.</p>
-        </article>
-        <article class="denial">
-          <strong>transfer · rejected</strong>
-          <p>Transaction requires a full permission access key.</p>
-        </article>
+  <section class="wrap records-sec" id="records">
+    <p class="idx reveal">_001 / <span id="record-count">002</span></p>
+    <h2 class="display reveal">Records</h2>
+    <div class="records" id="record-list">
+      <p class="empty" id="empty-records" hidden>No seals on this agent.</p>
+    </div>
+  </section>
+
+  <section class="key-stage" id="key">
+    <div class="wrap">
+      <p class="idx reveal">_002</p>
+      <h2 class="display reveal">Scoped key</h2>
+      <div class="key-split">
+        <div class="key-allow">
+          <p class="bracket">[:allowed]</p>
+          <p class="key-method" id="key-methods">anchor_
+evidence</p>
+          <dl class="key-list">
+            <div><dt>Public key</dt><dd id="key-public">ed25519:E9k6yKCDMxkfyQA6DdDTVBemiYB6s6oNR6Nz4Whcy8kA</dd></div>
+            <div><dt>Allowance</dt><dd id="key-allowance">0.25 NEAR</dd></div>
+            <div><dt>Contract</dt><dd>axvigil-rec-8735edcb.testnet</dd></div>
+          </dl>
+        </div>
+        <div class="key-deny">
+          <p class="bracket">[:rejected]</p>
+          <article class="denial">
+            <strong>finalize</strong>
+            <p>Transaction method name &lt;finalize&gt; isn't allowed by the access key.</p>
+          </article>
+          <article class="denial">
+            <strong>transfer</strong>
+            <p>Transaction requires a full permission access key.</p>
+          </article>
+        </div>
       </div>
-    </section>
+    </div>
+  </section>
 
-    <section class="panel sec-gap" id="challenge">
-      <p class="idx">_004</p>
-      <h2 class="display">Challenge</h2>
-      <p class="lede" id="challenge-note">Reading the window.</p>
-      <pre class="command" id="challenge-copy">…</pre>
-      <p class="near-actions"><button class="btn ghost" type="button" id="copy-command">Copy command</button></p>
-    </section>
-  </div>
+  <section class="wrap challenge-sec" id="challenge">
+    <p class="idx reveal">_003</p>
+    <h2 class="display reveal">Challenge</h2>
+    <p class="lede" id="challenge-note">Reading the window.</p>
+    <pre class="command" id="challenge-copy">…</pre>
+    <p class="near-actions"><button class="btn ghost" type="button" id="copy-command">Copy command</button></p>
+  </section>
 </main>
-<script type="module" src="assets/near-page.js?v=2"></script>
+<script type="module" src="assets/near-page.js?v=3"></script>
 </body>
 </html>

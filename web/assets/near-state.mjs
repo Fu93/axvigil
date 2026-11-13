@@ -56,6 +56,15 @@ export function timeline(record, nowNs) {
   ];
 }
 
+const CLASSES = ["reentrancy", "price manipulation", "access control"];
+const DIFFICULTIES = ["basic", "advanced", "legendary"];
+
+export function plainGrade(vulnClass, difficulty) {
+  const kind = CLASSES[vulnClass] || "unknown class";
+  const tier = DIFFICULTIES[difficulty] || "unknown tier";
+  return kind + " · " + tier;
+}
+
 export function shortHash(hex) {
   const clean = String(hex || "").replace(/^0x/, "");
   if (clean.length <= 18) return clean;
