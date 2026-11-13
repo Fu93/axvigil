@@ -111,7 +111,8 @@ function stepTx(hash) {
       revoked: { id: txs.resolve_bad, sender: contract },
     };
   }
-  return {};
+  const extra = (deployment.record_txs || {})[hash];
+  return extra || {};
 }
 
 function formatChainTime(ns) {
@@ -196,9 +197,16 @@ function renderRecord(record) {
       <code title="${escapeHtml(record.evidence_hash)}">${escapeHtml(shortHash(record.evidence_hash))}</code>
       <button type="button" class="copy" data-copy="${escapeHtml(record.evidence_hash)}">[ copy hash ]</button>
     </p>
-    <p class="meta">${escapeHtml(plainGrade(record.vuln_class, record.difficulty))}</p>
+    <p class="meta">${escapeHtml(recordMeta(record))}</p>
     <ol class="timeline" aria-label="Verify, anchor, window, final or challenged, revoked">${renderTimeline(record)}</ol>
   </article>`;
+}
+
+function recordMeta(record) {
+  const grade = plainGrade(record.vuln_class, record.difficulty);
+  const labels = (state.deployment && state.deployment.record_labels) || {};
+  const label = labels[record.evidence_hash] || "";
+  return label ? grade + " · " + label : grade;
 }
 
 function dataSignature() {
@@ -251,7 +259,7 @@ function render() {
     $("challenge-note").textContent = "This agent has no records. A pending seal would print the challenge command here.";
   } else {
     challenge.textContent = "No record is inside a challenge window.";
-    $("challenge-note").textContent = "The published records are already Final and Revoked. A new pending anchor prints the challenge command here. The page does not open a wallet.";
+    $("challenge-note").textContent = "The published records are already Final or Revoked. A new pending anchor prints the challenge command here. The page does not open a wallet.";
   }
 }
 
@@ -303,15 +311,22 @@ async function load() {
   let reputation = { finalized: 0, revoked: 0, pending: 0, is_valid: false, records: [] };
   let records = [];
   if (state.preview !== "empty" && state.preview !== "window") {
-    const [, fetched] = await Promise.all([
+    const accounts = [deployment.agent].concat(deployment.extra_agents || []);
+    const [, ...reps] = await Promise.all([
       chainNow(),
-      view(deployment.contract, "get_reputation", { account: deployment.agent }),
+      ...accounts.map((account) => view(deployment.contract, "get_reputation", { account })),
     ]);
-    reputation = fetched;
-    const hashes = reputation.records || [];
+    const hashes = reps.flatMap((rep) => rep.records || []);
     records = (await Promise.all(hashes.map((hash) => (
       view(deployment.contract, "get_record", { evidence_hash: hash })
     )))).filter(Boolean);
+    reputation = {
+      finalized: reps.reduce((sum, rep) => sum + Number(rep.finalized || 0), 0),
+      revoked: reps.reduce((sum, rep) => sum + Number(rep.revoked || 0), 0),
+      pending: reps.reduce((sum, rep) => sum + Number(rep.pending || 0), 0),
+      is_valid: reps.length > 0 && reps.every((rep) => rep.is_valid),
+      records: hashes,
+    };
   } else {
     await chainNow();
   }

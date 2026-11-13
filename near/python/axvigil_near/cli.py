@@ -14,7 +14,14 @@ from typing import Any
 
 from .keys import write_key_file
 from .redact import assert_no_secret, redact, transaction_id
-from .rpc import DEFAULT_RPC, assert_testnet_account, assert_testnet_rpc, call_view
+from .rpc import (
+    DEFAULT_RPC,
+    access_key_summary,
+    assert_testnet_account,
+    assert_testnet_rpc,
+    call_view,
+    view_access_key,
+)
 from .seal import anchor_args, seal_from_result
 
 
@@ -203,6 +210,16 @@ def _cmd_view(args: argparse.Namespace) -> int:
     return 0
 
 
+def _cmd_access_key(args: argparse.Namespace) -> int:
+    rpc = assert_testnet_rpc(args.rpc)
+    result = view_access_key(rpc, args.account, args.public_key)
+    summary = access_key_summary(result)
+    summary["account"] = args.account
+    summary["public_key"] = args.public_key
+    _write_or_print(summary, None)
+    return 0
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(prog="axvigil_near")
     sub = parser.add_subparsers(dest="cmd", required=True)
@@ -247,6 +264,12 @@ def main(argv: list[str] | None = None) -> int:
     view.add_argument("--agent")
     view.add_argument("--record")
     view.set_defaults(func=_cmd_view)
+
+    key_view = sub.add_parser("access-key", help="read one testnet access key")
+    key_view.add_argument("--rpc", default=DEFAULT_RPC)
+    key_view.add_argument("--account", required=True)
+    key_view.add_argument("--public-key", required=True)
+    key_view.set_defaults(func=_cmd_access_key)
 
     parsed = parser.parse_args(argv)
     if parsed.cmd == "seal" and not parsed.result:

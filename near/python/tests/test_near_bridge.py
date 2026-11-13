@@ -6,7 +6,7 @@ from pathlib import Path
 
 from axvigil_near.keys import b58decode, b58encode, write_key_file
 from axvigil_near.redact import assert_no_secret, redact, transaction_id
-from axvigil_near.rpc import assert_testnet_account, assert_testnet_rpc
+from axvigil_near.rpc import access_key_summary, assert_testnet_account, assert_testnet_rpc
 from axvigil_near.seal import anchor_args, canonical_json, seal_from_result
 
 ROOT = Path(__file__).resolve().parents[3]
@@ -193,3 +193,18 @@ def test_demo_script_is_testnet_only():
     assert "--claim-pass" in script
     assert "ready_at_ns" in script
     assert "mainnet" in script  # the refusal text
+
+
+def test_function_call_key_summary_keeps_the_method_list():
+    summary = access_key_summary({
+        "permission": {
+            "FunctionCall": {
+                "allowance": "1",
+                "method_names": ["anchor_evidence"],
+                "receiver_id": "axvigil-rec-8735edcb.testnet",
+            }
+        }
+    })
+    assert summary["kind"] == "function_call"
+    assert summary["method_names"] == ["anchor_evidence"]
+    assert access_key_summary({"permission": "FullAccess"})["kind"] == "full_access"

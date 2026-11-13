@@ -5,6 +5,9 @@
   "near_cli": "0.31.1",
   "contract": "axvigil-rec-8735edcb.testnet",
   "agent": "agent.axvigil-rec-8735edcb.testnet",
+  "extra_agents": [
+    "axv-ai-e21f88b3.testnet"
+  ],
   "challenger": "challenger.axvigil-rec-8735edcb.testnet",
   "resolver": "axvigil-rec-8735edcb.testnet",
   "owner": "axvigil-rec-8735edcb.testnet",
@@ -30,7 +33,37 @@
     "5Wb9ZnddWsAtdgsceQhMJp4J5rxtgMviXQfuj1MCSnY3": "2026-11-13 10:13:44.513 UTC",
     "CjF1UsedKLAggiv1ehstHy69dTPJanUmyV37CyeJFKWZ": "2026-11-13 10:13:51.761 UTC",
     "Zq8baLTdz4GeTcgPvcyNMoxd6y7uDhqCV4HL6ZKL55Z": "2026-11-13 10:13:57.443 UTC",
-    "9b5Udnp4P6q5gRoCUMbbTwAAFXBfSaiyPNo5gJYGt1F3": "2026-11-13 10:16:07.501 UTC"
+    "9b5Udnp4P6q5gRoCUMbbTwAAFXBfSaiyPNo5gJYGt1F3": "2026-11-13 10:16:07.501 UTC",
+    "4uGRyCfp9ry1CvQ5m8BZQ5VZUn2uujCniQVkj1KkexfJ": "2026-11-13 12:11:36.373 UTC",
+    "C4GLgn37b6orwBHhzzUvPFJJHLunqB7gNRr8s6Z9Qw1R": "2026-11-13 12:11:40.518 UTC",
+    "Bz6yBTehH4sHa3u6RczoGV6f3Zye3AdbPu8LkrJNADSo": "2026-11-13 12:13:35.233 UTC",
+    "3QeMhnCS3DTJi1KvMHikPtUTSoupBMC7YqNmKDVnHK6r": "2026-11-13 12:13:54.573 UTC"
+  },
+  "record_labels": {
+    "675a3e0dee9782d908ce91ced643861b73e60dd368f9401e6e29b72d46955a37": "muse-spark-open",
+    "776ce13a3addb29cbf70b8e8e0b6e036fdd38c83b3a9c52899eb0c7ad3b85d7e": "DeepSeek-V4-Pro"
+  },
+  "record_txs": {
+    "675a3e0dee9782d908ce91ced643861b73e60dd368f9401e6e29b72d46955a37": {
+      "anchor": {
+        "id": "4uGRyCfp9ry1CvQ5m8BZQ5VZUn2uujCniQVkj1KkexfJ",
+        "sender": "axv-ai-e21f88b3.testnet"
+      },
+      "decide": {
+        "id": "Bz6yBTehH4sHa3u6RczoGV6f3Zye3AdbPu8LkrJNADSo",
+        "sender": "axv-ai-e21f88b3.testnet"
+      }
+    },
+    "776ce13a3addb29cbf70b8e8e0b6e036fdd38c83b3a9c52899eb0c7ad3b85d7e": {
+      "anchor": {
+        "id": "C4GLgn37b6orwBHhzzUvPFJJHLunqB7gNRr8s6Z9Qw1R",
+        "sender": "axv-ai-e21f88b3.testnet"
+      },
+      "decide": {
+        "id": "3QeMhnCS3DTJi1KvMHikPtUTSoupBMC7YqNmKDVnHK6r",
+        "sender": "axv-ai-e21f88b3.testnet"
+      }
+    }
   },
   "transactions": {
     "create_contract": "CQZsgQGrNLtYLEHUBucc6uf5bx5ryRZo4hmURTosFZYJ",

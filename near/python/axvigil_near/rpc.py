@@ -71,3 +71,61 @@ def call_view(rpc: str, contract: str, method: str, args: dict[str, Any]) -> Any
     if not raw:
         return None
     return json.loads(raw.decode("utf-8"))
+
+
+def _rpc(rpc: str, payload: dict[str, Any]) -> dict[str, Any]:
+    request = urllib.request.Request(
+        rpc,
+        data=json.dumps(payload).encode("utf-8"),
+        headers={"Content-Type": "application/json"},
+        method="POST",
+    )
+    try:
+        with urllib.request.urlopen(request, timeout=30) as response:
+            body = json.loads(response.read().decode("utf-8"))
+    except urllib.error.URLError as exc:
+        raise RuntimeError(f"testnet RPC request failed: {exc}") from exc
+    if "error" in body:
+        raise RuntimeError(json.dumps(body["error"]))
+    return body
+
+
+def view_access_key(rpc: str, account_id: str, public_key: str) -> dict[str, Any]:
+    rpc = assert_testnet_rpc(rpc)
+    account_id = assert_testnet_account(account_id)
+    if not public_key.startswith("ed25519:"):
+        raise ValueError("public key must start with ed25519:")
+    body = _rpc(
+        rpc,
+        {
+            "jsonrpc": "2.0",
+            "id": "axvigil",
+            "method": "query",
+            "params": {
+                "request_type": "view_access_key",
+                "finality": "final",
+                "account_id": account_id,
+                "public_key": public_key,
+            },
+        },
+    )
+    result = body.get("result")
+    if not isinstance(result, dict):
+        raise RuntimeError("access key query returned no result")
+    return result
+
+
+def access_key_summary(result: dict[str, Any]) -> dict[str, Any]:
+    """Describe a view_access_key result without the nonce."""
+    permission = (result or {}).get("permission")
+    if permission == "FullAccess" or (isinstance(permission, dict) and "FullAccess" in permission):
+        return {"kind": "full_access", "method_names": []}
+    if isinstance(permission, dict) and "FunctionCall" in permission:
+        call = permission["FunctionCall"] or {}
+        return {
+            "kind": "function_call",
+            "allowance_yocto": call.get("allowance"),
+            "receiver_id": call.get("receiver_id"),
+            "method_names": list(call.get("method_names") or []),
+        }
+    return {"kind": "unknown", "method_names": []}
