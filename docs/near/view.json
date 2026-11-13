@@ -1,0 +1,47 @@
+{
+  "contract": "axvigil-rec-8735edcb.testnet",
+  "spec": "axvigil-record/1",
+  "reputation": {
+    "account": "agent.axvigil-rec-8735edcb.testnet",
+    "registered": true,
+    "banned": false,
+    "pending": 0,
+    "finalized": 1,
+    "revoked": 1,
+    "is_valid": true,
+    "records": [
+      "d90054a2e3f54f11ac40fa32ba9562c1aa6538f7430be757e5a0ab5efe0b81ad",
+      "709c83c6a5f33bfcb1fd67b714e05ccae04ac9318460b2d569efbd8214a90614"
+    ]
+  },
+  "honest": {
+    "agent": "agent.axvigil-rec-8735edcb.testnet",
+    "evidence_hash": "d90054a2e3f54f11ac40fa32ba9562c1aa6538f7430be757e5a0ab5efe0b81ad",
+    "bundle_sha256": "c74a5decce5881665a2f462edc5ce2691b63f826ce3d540529801a72079075cb",
+    "vuln_class": 0,
+    "difficulty": 0,
+    "status": "Final",
+    "ready_at_ns": "1794564910916842623",
+    "respond_by_ns": "0",
+    "challenger": null,
+    "challenge_hash": null,
+    "operator_bond_yocto": "0",
+    "challenge_bond_yocto": "0",
+    "passed_claim": true
+  },
+  "bad": {
+    "agent": "agent.axvigil-rec-8735edcb.testnet",
+    "evidence_hash": "709c83c6a5f33bfcb1fd67b714e05ccae04ac9318460b2d569efbd8214a90614",
+    "bundle_sha256": "75bca2ee58bec3a7779c9a5dce4450c3c352bd1d096dab70ea2d71f4803972e3",
+    "vuln_class": 0,
+    "difficulty": 0,
+    "status": "Revoked",
+    "ready_at_ns": "1794564915102847930",
+    "respond_by_ns": "1794568432386715723",
+    "challenger": "challenger.axvigil-rec-8735edcb.testnet",
+    "challenge_hash": "75bca2ee58bec3a7779c9a5dce4450c3c352bd1d096dab70ea2d71f4803972e3",
+    "operator_bond_yocto": "0",
+    "challenge_bond_yocto": "0",
+    "passed_claim": true
+  }
+}

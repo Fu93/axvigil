@@ -274,6 +274,104 @@ Five mothers are minimal offline reproductions of public DeFi incidents (Qubit, 
 
 A mint can stay pending for a configurable window so anyone can recompute the evidence and challenge it. Two of three validators sign an EIP-712 `ChallengeVerdict`; an upheld challenge flags the collectible and drops that skill solve from `isValid`. After the window, `finalize` confirms an unchallenged record. The mechanism, deploy script, demo commands, and trust assumptions are in [`docs/challenge-window.md`](docs/challenge-window.md).
 
+## NEAR HACKATHON
+
+This section is the NEAR work. The rest of the repository is the existing BSC testnet product and is also the Meta Global AI Developer Hackathon entry. That baseline was not changed. The NEAR integration is this branch only.
+
+- Track: 06 AI Security & Defense (policy engine, sandboxed function-call key, reputation, verification).
+- Window: NEAR code in this branch, after tag `pre-near-hackathon` (`012106b38511060b31d9f7ec81358306915f674c`). Diff: https://github.com/Fu93/axvigil/compare/pre-near-hackathon...cursor/near-hackathon-10d5
+- What was added: a NEAR testnet contract `axvigil-record` that stores an AxVigil verifier seal, opens a challenge window, and updates a reputation counter. A Python command turns a verifier result into the contract arguments. A function-call access key can call only `anchor_evidence`.
+- Libraries: `near-sdk` 5.30.1 (Rust contract). `near-cli-rs` 0.31.1 and OpenSSL 3 are used by the deploy script, not linked into the contract. The grader is the existing `verifier/` package. No new paid API.
+- Network: NEAR testnet only. The script rejects mainnet. Bonds are implemented and covered by unit tests; the published demo uses 0 yoctoNEAR.
+
+The contract does not run Foundry. `evidence_hash` is the existing AxVigil `submissionHash` (keccak of challenge id, seed, patch, and PoC). `bundle_sha256` is sha256 of the canonical grade JSON in `docs/near/seals/*.canonical.json`. A resolver account calls `resolve_challenge`. On this deployment the resolver is the contract account, one key, not the BSC 2-of-3 validator set.
+
+Deployed account: `axvigil-rec-8735edcb.testnet`
+
+| Role | Account |
+|---|---|
+| Contract, owner, resolver | `axvigil-rec-8735edcb.testnet` |
+| Agent | `agent.axvigil-rec-8735edcb.testnet` |
+| Challenger | `challenger.axvigil-rec-8735edcb.testnet` |
+
+Honest record `d90054a2e3f54f11ac40fa32ba9562c1aa6538f7430be757e5a0ab5efe0b81ad` is `Final`. False claim `709c83c6a5f33bfcb1fd67b714e05ccae04ac9318460b2d569efbd8214a90614` is `Revoked`. Reputation: `finalized` 1, `revoked` 1, `is_valid` true. Transaction ids and explorer links: [`docs/near/deployment.json`](docs/near/deployment.json). Run log: [`docs/near/demo-transcript.txt`](docs/near/demo-transcript.txt).
+
+### Do this, see this
+
+From the repo root.
+
+1. Contract unit tests. Needs Rust 1.95 or newer (this machine used 1.100) and the lockfile.
+
+```bash
+cargo test --manifest-path near/contract/Cargo.toml --locked
+```
+
+See: `test result: ok. 31 passed; 0 failed`
+
+2. Seal and guard tests. No forge, no network, no key.
+
+```bash
+PYTHONPATH=near/python python3 -m pytest near/python/tests -q
+```
+
+See: `9 passed`
+
+3. Seal a fixture result. The `a` hash is the fixture, not the testnet record.
+
+```bash
+PYTHONPATH=near/python python3 -m axvigil_near seal --result near/python/tests/fixtures/pass.json
+```
+
+See `"passed": true` and `"bundle_sha256": "9c90f3166171bc962269b51f9bdb6940527f544d1b56c9238c37279fbb0988dd"`.
+
+4. Check the published seals from the testnet run.
+
+```bash
+sha256sum docs/near/seals/honest.canonical.json docs/near/seals/bad.canonical.json
+```
+
+See:
+
+```text
+c74a5decce5881665a2f462edc5ce2691b63f826ce3d540529801a72079075cb  docs/near/seals/honest.canonical.json
+75bca2ee58bec3a7779c9a5dce4450c3c352bd1d096dab70ea2d71f4803972e3  docs/near/seals/bad.canonical.json
+```
+
+`docs/near/seals/bad-seal.json` has `"passed": false`. `docs/near/seals/bad-anchor-args.json` has `"passed": true` and the same `bundle_sha256`. That is the false claim that was anchored.
+
+5. Read the deployed contract. No key. Uses `https://rpc.testnet.near.org` only.
+
+```bash
+PYTHONPATH=near/python python3 -m axvigil_near view --deployment docs/near/deployment.json
+```
+
+See `"spec": "axvigil-record/1"`, honest `"status": "Final"`, bad `"status": "Revoked"`, `"finalized": 1`, `"revoked": 1`, `"is_valid": true`. The same object is saved at [`docs/near/view.json`](docs/near/view.json).
+
+6. Reproduce on testnet. This creates a new faucet-funded account and broadcasts. It does not touch the account above.
+
+```bash
+export I_UNDERSTAND_THIS_SENDS_TESTNET_TX=1
+./near/scripts/demo_testnet.sh
+```
+
+Needs `near` (near-cli-rs 0.31.x), `forge`, `cargo`, `openssl`, and network. The script initializes the Foundry submodules, grades `challenges/reentrancy-001`, deploys, adds a function-call key limited to `anchor_evidence` with allowance `0.25 NEAR`, anchors both seals with that key, then uses other keys to challenge, revoke, and finalize. It sleeps until the record's `ready_at_ns`. See the script print `honest status Final` and `bad status Revoked` inside the final view JSON, and two denials from the scoped key:
+
+```text
+Transaction method name <finalize> isn't allowed by the access key.
+Transaction requires a full permission access key.
+```
+
+Calling `finalize` before `ready_at_ns` aborts that receipt with a wasm trap and does not change the record. The script waits. A trap from the published run, followed by the successful finalize, is in the transcript.
+
+### Limitations
+
+- Testnet only. Not audited. Do not put mainnet funds in it.
+- The contract stores hashes and a boolean claim. It does not re-grade. A single resolver account can uphold or reject. Two colluding parties (the agent key and the resolver) can finalize a false claim if nobody challenges, or revoke a good one.
+- The owner can `ban_agent`. That clears `is_valid` and does not rewrite the counters.
+- The NEAR account id is the agent. This is not the BSC Agent ID NFT.
+- The function-call key restriction is enforced by the NEAR protocol, not by a second check inside `anchor_evidence`. A full-access key on the same account can still call every method.
+- Demo bonds are zero. Non-zero bonds are in `near/contract` unit tests, including pull-payment `withdraw`.
+
 ## License
 
 This project is MIT-licensed. See [LICENSE](LICENSE).
