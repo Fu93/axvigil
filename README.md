@@ -347,9 +347,7 @@ PYTHONPATH=near/python python3 -m axvigil_near view --deployment docs/near/deplo
 
 See `"spec": "axvigil-record/1"`, honest `"status": "Final"`, bad `"status": "Revoked"`, `"finalized": 1`, `"revoked": 1`, `"is_valid": true`. The same object is saved at [`docs/near/view.json`](docs/near/view.json).
 
-6. Open the page. Judges can use the public page published from this branch (not from `main`):
-
-https://fu93.github.io/axvigil/near.html
+6. Open the page. The publish workflow on this branch is `.github/workflows/pages.yml`. It uploads `web/` and deploys with GitHub Actions. The site URL is https://fu93.github.io/axvigil/near.html after Pages is set to GitHub Actions at https://github.com/Fu93/axvigil/settings/pages. That switch is not available to this token (the Pages API returned 403), so the URL is not serving yet.
 
 The same page locally:
 
