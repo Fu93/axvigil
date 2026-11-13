@@ -16,9 +16,37 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  allow-branch:
+    name: Allow this branch
+    runs-on: ubuntu-latest
+    permissions:
+      administration: write
+    steps:
+      - name: Add the branch to the github-pages environment
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -eu
+          name="${{ github.ref_name }}"
+          code=$(curl -sS -o /tmp/pages-branch.json -w '%{http_code}' -X POST \
+            -H "Authorization: Bearer ${GH_TOKEN}" \
+            -H "Accept: application/vnd.github+json" \
+            "https://api.github.com/repos/${{ github.repository }}/environments/github-pages/deployment-branch-policies" \
+            -d "{\"name\":\"${name}\",\"type\":\"branch\"}")
+          echo "branch policy status ${code}"
+          # 422 means this branch is already on the list.
+          if [ "${code}" != "200" ] && [ "${code}" != "201" ] && [ "${code}" != "422" ]; then
+            cat /tmp/pages-branch.json
+            exit 1
+          fi
   deploy:
     name: Publish the NEAR page
+    needs: allow-branch
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
     environment:
       name: github-pages
       url: ${{ steps.deploy.outputs.page_url }}
