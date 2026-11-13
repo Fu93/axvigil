@@ -347,7 +347,25 @@ PYTHONPATH=near/python python3 -m axvigil_near view --deployment docs/near/deplo
 
 See `"spec": "axvigil-record/1"`, honest `"status": "Final"`, bad `"status": "Revoked"`, `"finalized": 1`, `"revoked": 1`, `"is_valid": true`. The same object is saved at [`docs/near/view.json`](docs/near/view.json).
 
-6. Reproduce on testnet. This creates a new faucet-funded account and broadcasts. It does not touch the account above.
+6. Open the page. There is no public site host in this repo (no GitHub Pages, no Render service). The page reads the live testnet RPC.
+
+```bash
+python3 scripts/serve.py
+```
+
+Open http://127.0.0.1:8080/web/near.html
+
+See the contract id `axvigil-rec-8735edcb.testnet`, reputation `finalized 1` / `revoked 1` / `is_valid true`, the honest card `[:FINAL]`, the other card `[:REVOKED]`, and the scoped-key lines `finalize · rejected` and `transfer · rejected`. The chain account is https://testnet.nearblocks.io/address/axvigil-rec-8735edcb.testnet
+
+`?preview=window` shows a labeled countdown sample. `?preview=empty` shows no seals. `?preview=down` shows the RPC failure. Those three do not read or write the contract. The page without a query is the live view.
+
+```bash
+node --test web/assets/near-state.test.mjs
+```
+
+See `pass` on the status rules (window, final, revoked, countdown).
+
+7. Reproduce on testnet. This creates a new faucet-funded account and broadcasts. It does not touch the account above.
 
 ```bash
 export I_UNDERSTAND_THIS_SENDS_TESTNET_TX=1

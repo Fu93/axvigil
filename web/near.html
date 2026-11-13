@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>AxVigil — NEAR record</title>
+<meta name="description" content="Live NEAR testnet view of AxVigil seals: challenge window, finalize, revoke, and a function-call key that can only anchor.">
+<meta name="theme-color" content="#1C1D1A">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M1 5V1h4M11 1h4v4M15 11v4h-4M5 15H1v-4' fill='none' stroke='%23EFEEEC' stroke-width='1.4'/%3E%3C/svg%3E">
+<link rel="preload" href="assets/fonts/MonaSansDisplaySemiExpanded-ExtraBold.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;700;800&family=IBM+Plex+Mono:wght@400;500;700&display=swap" media="print" onload="this.media='all'">
+<noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;700;800&family=IBM+Plex+Mono:wght@400;500;700&display=swap"></noscript>
+<link rel="stylesheet" href="assets/site.css?v=3">
+<link rel="stylesheet" href="assets/near.css?v=2">
+<script>document.documentElement.classList.add("js");</script>
+</head>
+<body>
+<a class="skip" href="#content">Skip to content</a>
+<header class="site-header">
+  <div class="nav-bar">
+    <a class="logo" href="index.html" aria-label="AxVigil">
+      <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M1 5V1h4M11 1h4v4M15 11v4h-4M5 15H1v-4" fill="none" stroke="currentColor" stroke-width="1.4"/></svg>
+      AxVigil
+    </a>
+    <button class="nav-toggle" type="button" aria-expanded="false" aria-controls="site-nav">
+      <span></span>
+      <span class="sr">Menu</span>
+    </button>
+    <ul class="nav-links" id="site-nav">
+      <li class="pill" aria-hidden="true"></li>
+      <li><a href="index.html">Home</a></li>
+      <li><a href="demo.html">Demo</a></li>
+      <li><a href="near.html" aria-current="page">Near</a></li>
+    </ul>
+    <div class="nav-end">
+      <a class="btn yellow desktop-cta" href="#records">Records</a>
+    </div>
+  </div>
+</header>
+
+<main class="near-main dark" id="content">
+  <div class="wrap">
+    <section class="near-hero">
+      <p class="bracket near-kicker">[:NEAR] · testnet</p>
+      <h1 class="display"><span class="near-line"><span>The seal,</span></span><span class="near-line"><span>on NEAR.</span></span></h1>
+      <p class="lede">The verifier still grades the patch. This page reads the testnet contract. No key. A function-call key on the agent can publish a claim and cannot finalize it or move the balance.</p>
+      <div class="near-actions">
+        <a class="btn ghost" id="contract-link" href="https://testnet.nearblocks.io/address/axvigil-rec-8735edcb.testnet" target="_blank" rel="noopener">axvigil-rec-8735edcb.testnet</a>
+        <a class="btn ghost" id="agent-link" href="https://testnet.nearblocks.io/address/agent.axvigil-rec-8735edcb.testnet" target="_blank" rel="noopener">agent.axvigil-rec-8735edcb.testnet</a>
+        <p class="live-flag" id="status" data-on="no" role="status" aria-live="polite">[: reading ]</p>
+        <button class="btn ghost" id="retry" type="button">Retry</button>
+      </div>
+      <p class="near-banner" id="banner" hidden></p>
+      <p class="near-error" id="error" hidden role="alert"></p>
+    </section>
+
+    <div class="near-grid">
+      <aside class="panel" id="reputation">
+        <p class="idx">_001</p>
+        <h2 class="display">Reputation</h2>
+        <div class="stat-row">
+          <div><strong id="rep-final">1</strong><span>Finalized</span></div>
+          <div><strong id="rep-revoked">1</strong><span>Revoked</span></div>
+          <div><strong id="rep-pending">0</strong><span>Pending</span></div>
+          <div><strong id="rep-valid" data-on="yes">true</strong><span>is_valid</span></div>
+        </div>
+      </aside>
+      <section id="records">
+        <p class="idx">_002 / <span id="record-count">002</span></p>
+        <h2 class="display">Records</h2>
+        <div class="records" id="record-list" data-static="1">
+          <article class="near-card" data-hash="d90054a2e3f54f11ac40fa32ba9562c1aa6538f7430be757e5a0ab5efe0b81ad">
+            <header class="card-top">
+              <p class="bracket">[:FINAL]</p>
+              <p class="who">agent.axvigil-rec-8735edcb.testnet</p>
+            </header>
+            <p class="hash-row">
+              <code>d90054a2…0b81ad</code>
+              <button type="button" class="copy" data-copy="d90054a2e3f54f11ac40fa32ba9562c1aa6538f7430be757e5a0ab5efe0b81ad">[ copy ]</button>
+            </p>
+            <p class="meta">bundle c74a5dec…9075cb · class 0 · difficulty 0</p>
+            <ol class="timeline" aria-label="Record timeline">
+              <li class="tl-step is-done"><span class="tl-mark" aria-hidden="true"></span><span class="tl-label">Verify</span></li>
+              <li class="tl-step is-done"><span class="tl-mark" aria-hidden="true"></span><span class="tl-label">Anchor</span></li>
+              <li class="tl-step is-done"><span class="tl-mark" aria-hidden="true"></span><span class="tl-label">Window</span></li>
+              <li class="tl-step is-done"><span class="tl-mark" aria-hidden="true"></span><span class="tl-label">Final</span></li>
+              <li class="tl-step is-skip"><span class="tl-mark" aria-hidden="true"></span><span class="tl-label">Revoked</span></li>
+            </ol>
+            <p class="txs">
+              <a class="tx" href="https://testnet.nearblocks.io/txns/AEQxLtECw6dUuberg6KQQS3aeqKKoj4yYCmbwuKn3adf" target="_blank" rel="noopener">Anchor <span aria-hidden="true">↗</span></a>
+              <a class="tx" href="https://testnet.nearblocks.io/txns/9b5Udnp4P6q5gRoCUMbbTwAAFXBfSaiyPNo5gJYGt1F3" target="_blank" rel="noopener">Finalize <span aria-hidden="true">↗</span></a>
+            </p>
+          </article>
+          <article class="near-card" data-hash="709c83c6a5f33bfcb1fd67b714e05ccae04ac9318460b2d569efbd8214a90614">
+            <header class="card-top">
+              <p class="bracket">[:REVOKED]</p>
+              <p class="who">agent.axvigil-rec-8735edcb.testnet</p>
+            </header>
+            <p class="hash-row">
+              <code>709c83c6…a90614</code>
+              <button type="button" class="copy" data-copy="709c83c6a5f33bfcb1fd67b714e05ccae04ac9318460b2d569efbd8214a90614">[ copy ]</button>
+            </p>
+            <p class="meta">bundle 75bca2ee…3972e3 · class 0 · difficulty 0</p>
+            <ol class="timeline" aria-label="Record timeline">
+              <li class="tl-step is-done"><span class="tl-mark" aria-hidden="true"></span><span class="tl-label">Verify</span></li>
+              <li class="tl-step is-done"><span class="tl-mark" aria-hidden="true"></span><span class="tl-label">Anchor</span></li>
+              <li class="tl-step is-done"><span class="tl-mark" aria-hidden="true"></span><span class="tl-label">Window</span></li>
+              <li class="tl-step is-done"><span class="tl-mark" aria-hidden="true"></span><span class="tl-label">Challenged</span></li>
+              <li class="tl-step is-done"><span class="tl-mark" aria-hidden="true"></span><span class="tl-label">Revoked</span></li>
+            </ol>
+            <p class="txs">
+              <a class="tx" href="https://testnet.nearblocks.io/txns/5Wb9ZnddWsAtdgsceQhMJp4J5rxtgMviXQfuj1MCSnY3" target="_blank" rel="noopener">Anchor <span aria-hidden="true">↗</span></a>
+              <a class="tx" href="https://testnet.nearblocks.io/txns/CjF1UsedKLAggiv1ehstHy69dTPJanUmyV37CyeJFKWZ" target="_blank" rel="noopener">Challenge <span aria-hidden="true">↗</span></a>
+              <a class="tx" href="https://testnet.nearblocks.io/txns/Zq8baLTdz4GeTcgPvcyNMoxd6y7uDhqCV4HL6ZKL55Z" target="_blank" rel="noopener">Revoke <span aria-hidden="true">↗</span></a>
+            </p>
+          </article>
+          <p class="empty" id="empty-records" hidden>No seals on this agent.</p>
+        </div>
+      </section>
+    </div>
+
+    <section class="panel sec-gap" id="key">
+      <p class="idx">_003</p>
+      <h2 class="display">Scoped key</h2>
+      <p class="lede">The key is allowed one method on one contract. The protocol rejected the other two calls. Those receipts never landed.</p>
+      <dl class="key-list">
+        <div><dt>Public key</dt><dd id="key-public">…</dd></div>
+        <div><dt>Allowance</dt><dd id="key-allowance">…</dd></div>
+        <div><dt>Methods</dt><dd id="key-methods">anchor_evidence</dd></div>
+      </dl>
+      <div class="denials">
+        <article class="denial">
+          <strong>finalize · rejected</strong>
+          <p>Transaction method name &lt;finalize&gt; isn't allowed by the access key.</p>
+        </article>
+        <article class="denial">
+          <strong>transfer · rejected</strong>
+          <p>Transaction requires a full permission access key.</p>
+        </article>
+      </div>
+    </section>
+
+    <section class="panel sec-gap" id="challenge">
+      <p class="idx">_004</p>
+      <h2 class="display">Challenge</h2>
+      <p class="lede" id="challenge-note">Reading the window.</p>
+      <pre class="command" id="challenge-copy">…</pre>
+      <p class="near-actions"><button class="btn ghost" type="button" id="copy-command">Copy command</button></p>
+    </section>
+  </div>
+</main>
+<script type="module" src="assets/near-page.js?v=2"></script>
+</body>
+</html>
