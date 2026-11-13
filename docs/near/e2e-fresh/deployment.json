@@ -1,0 +1,54 @@
+{
+  "network": "testnet",
+  "spec": "axvigil-record/1",
+  "contract": "axvigil-rec-2039660e.testnet",
+  "agent": "agent.axvigil-rec-2039660e.testnet",
+  "challenger": "challenger.axvigil-rec-2039660e.testnet",
+  "resolver": "axvigil-rec-2039660e.testnet",
+  "owner": "axvigil-rec-2039660e.testnet",
+  "rpc": "https://rpc.testnet.near.org",
+  "window_seconds": 90,
+  "response_seconds": 3600,
+  "operator_bond_yocto": "0",
+  "challenge_bond_yocto": "0",
+  "scoped_key": {
+    "public_key": "ed25519:4qAg9LEWayPLGmwPWX6aF3sjBzCGZP6qMRRRK4zLAyW3",
+    "allowance": "0.25 NEAR",
+    "receiver": "axvigil-rec-2039660e.testnet",
+    "method_names": [
+      "anchor_evidence"
+    ]
+  },
+  "honest_evidence_hash": "d90054a2e3f54f11ac40fa32ba9562c1aa6538f7430be757e5a0ab5efe0b81ad",
+  "honest_bundle_sha256": "c74a5decce5881665a2f462edc5ce2691b63f826ce3d540529801a72079075cb",
+  "bad_evidence_hash": "709c83c6a5f33bfcb1fd67b714e05ccae04ac9318460b2d569efbd8214a90614",
+  "bad_bundle_sha256": "75bca2ee58bec3a7779c9a5dce4450c3c352bd1d096dab70ea2d71f4803972e3",
+  "transactions": {
+    "create_contract": "BtHzjJqNZfE7VXmmvY9XekjJK77sx3KFcsTGjzXYBT9v",
+    "deploy": "BS6t57FZWZvJrtHhoX8vvVFxdvmQNwCttxPzRPvUQhCH",
+    "create_agent": "H6oFWbM9YNsjqgjottr1676VybepuTFzu6FyzvhXkxCw",
+    "create_challenger": "2xTHEoQPzs3m9cfmYZLq8EzwchtT9cp5YnvUYjYf8ky6",
+    "register_agent": "ATnfAXXxc5ZseVPnjXw3koKjEyt8VzbXvGDCcWaCLS3n",
+    "add_scoped_key": "5b6vWmbndbVKoxWHLmrYdtrzStGEo3BapUZb7ahodHvc",
+    "anchor_honest": "cT8gz2C2t2GpMmWDFcWhz5L8myfDUYWDFbyx43eWD3M",
+    "anchor_bad": "CuKrFbMKBDFb4gxwQHF94KCAmC8822xZ3Tc6LkuSve7u",
+    "challenge_bad": "EdRaNEaKFJrQEhYFQ6i3PHC7mu66HqB93u7YtDavswz6",
+    "resolve_bad": "FXHr1sp1TLfrnjsgAxMxB17tiJCrcoPCi9PWdAingiYg",
+    "finalize_honest": "81PGJZwAjeW28hx6zHDaZ3j3v3SDd4hDM7rYCckWxbSi"
+  },
+  "explorers": {
+    "contract": "https://testnet.nearblocks.io/address/axvigil-rec-2039660e.testnet",
+    "agent": "https://testnet.nearblocks.io/address/agent.axvigil-rec-2039660e.testnet",
+    "create_contract": "https://testnet.nearblocks.io/txns/BtHzjJqNZfE7VXmmvY9XekjJK77sx3KFcsTGjzXYBT9v",
+    "deploy": "https://testnet.nearblocks.io/txns/BS6t57FZWZvJrtHhoX8vvVFxdvmQNwCttxPzRPvUQhCH",
+    "create_agent": "https://testnet.nearblocks.io/txns/H6oFWbM9YNsjqgjottr1676VybepuTFzu6FyzvhXkxCw",
+    "create_challenger": "https://testnet.nearblocks.io/txns/2xTHEoQPzs3m9cfmYZLq8EzwchtT9cp5YnvUYjYf8ky6",
+    "register_agent": "https://testnet.nearblocks.io/txns/ATnfAXXxc5ZseVPnjXw3koKjEyt8VzbXvGDCcWaCLS3n",
+    "add_scoped_key": "https://testnet.nearblocks.io/txns/5b6vWmbndbVKoxWHLmrYdtrzStGEo3BapUZb7ahodHvc",
+    "anchor_honest": "https://testnet.nearblocks.io/txns/cT8gz2C2t2GpMmWDFcWhz5L8myfDUYWDFbyx43eWD3M",
+    "anchor_bad": "https://testnet.nearblocks.io/txns/CuKrFbMKBDFb4gxwQHF94KCAmC8822xZ3Tc6LkuSve7u",
+    "challenge_bad": "https://testnet.nearblocks.io/txns/EdRaNEaKFJrQEhYFQ6i3PHC7mu66HqB93u7YtDavswz6",
+    "resolve_bad": "https://testnet.nearblocks.io/txns/FXHr1sp1TLfrnjsgAxMxB17tiJCrcoPCi9PWdAingiYg",
+    "finalize_honest": "https://testnet.nearblocks.io/txns/81PGJZwAjeW28hx6zHDaZ3j3v3SDd4hDM7rYCckWxbSi"
+  }
+}

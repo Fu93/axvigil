@@ -347,7 +347,11 @@ PYTHONPATH=near/python python3 -m axvigil_near view --deployment docs/near/deplo
 
 See `"spec": "axvigil-record/1"`, honest `"status": "Final"`, bad `"status": "Revoked"`, `"finalized": 1`, `"revoked": 1`, `"is_valid": true`. The same object is saved at [`docs/near/view.json`](docs/near/view.json).
 
-6. Open the page. The publish workflow on this branch is `.github/workflows/pages.yml`. It uploads `web/` and deploys with GitHub Actions. Pages is enabled for workflow builds. The `github-pages` environment currently allows deploys from `main` only, so a run from this branch stops with `Branch "cursor/near-hackathon-10d5" is not allowed to deploy to github-pages`. Add that branch under https://github.com/Fu93/axvigil/settings/environments/github-pages and re-run the workflow. Until that deploy succeeds, https://fu93.github.io/axvigil/near.html returns 404.
+6. Open the published page. The workflow `.github/workflows/pages.yml` on this branch uploads `web/` and deploys with GitHub Actions.
+
+Open https://fu93.github.io/axvigil/near.html
+
+See `[: live ]`, the contract id `axvigil-rec-8735edcb.testnet`, reputation `finalized 1` / `revoked 1` / `is_valid true`, the honest card `[:FINAL]`, and the other card `[:REVOKED]`. The window column shows the anchor time first and the close time under it. The revoked step bar is red. The times are the ones stored in `docs/near/deployment.json`, so a rate-limited RPC does not leave a loading label.
 
 The same page locally:
 
